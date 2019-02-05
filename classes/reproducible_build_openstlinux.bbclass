@@ -3,6 +3,10 @@
 # Original commit:
 #       curl: actually apply latest CVE patches
 #       f0394e80a37f1da47042a1aa0487594f390603f9
+#
+# Wait for bugfix
+#   13168: devtool: cannot add new recipe if reproducible_build class is inherited
+#   https://bugzilla.yoctoproject.org/show_bug.cgi?id=13168
 #-------------------------------------------------------------------------------
 
 # reproducible_build.bbclass
@@ -45,7 +49,6 @@ BUILD_REPRODUCIBLE_BINARIES ??= '1'
 inherit ${@oe.utils.ifelse(d.getVar('BUILD_REPRODUCIBLE_BINARIES') == '1', 'reproducible_build_simple', '')}
 
 SDE_DIR ="${WORKDIR}/source-date-epoch"
-#SDE_DIR ="${TOPDIR}/source-date-epoch"
 SDE_FILE = "${SDE_DIR}/__source_date_epoch.txt"
 
 SSTATETASKS += "do_deploy_source_date_epoch"
