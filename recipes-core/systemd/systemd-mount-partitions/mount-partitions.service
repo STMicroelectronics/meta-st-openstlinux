@@ -1,0 +1,16 @@
+[Unit]
+Description=Mount partitions
+DefaultDependencies=false
+Before=local-fs.target
+ConditionPathExists=##mountpoint##
+
+[Service]
+Type=oneshot
+RemainAfterExit=Yes
+StandardOutput=syslog
+TimeoutSec=0
+ExecStart=-/sbin/mount-partitions.sh start
+ExecStop=/sbin/mount-partitions.sh stop
+
+[Install]
+WantedBy=local-fs.target

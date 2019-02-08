@@ -1,0 +1,43 @@
+From e9d01965fa0decd29cdcf810b2b2228a79935fd0 Mon Sep 17 00:00:00 2001
+From: Hugues Fruchet <hugues.fruchet@st.com>
+Date: Wed, 12 Dec 2018 11:39:33 +0100
+Subject: [PATCH 5/9] waylandsink: do not hardcode dmabuf bufferpool info size
+
+Read pool config to get the maximum number of buffers
+for info size pool allocation.
+
+Signed-off-by: Hugues Fruchet <hugues.fruchet@st.com>
+---
+ ext/wayland/waylandpool.c | 12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
+
+diff --git a/ext/wayland/waylandpool.c b/ext/wayland/waylandpool.c
+index 6e98143..1ba1f85 100644
+--- a/ext/wayland/waylandpool.c
++++ b/ext/wayland/waylandpool.c
+@@ -357,11 +357,21 @@ gst_wayland_buffer_pool_start (GstBufferPool * pool)
+   int fd;
+   char filename[1024];
+   static int init = 0;
++  GstStructure *config;
++  guint config_max_buf;
+ 
+   GST_DEBUG_OBJECT (self, "Initializing wayland buffer pool");
+ 
++  /* get max size of pool */
++  config = gst_buffer_pool_get_config (pool);
++  gst_buffer_pool_config_get_params (config, NULL, NULL,
++      NULL, &config_max_buf);
++
++  if (config_max_buf == 0)
++      config_max_buf = 32;
++
+   /* configure */
+-  size = GST_VIDEO_INFO_SIZE (&self->info) * 15;
++  size = GST_VIDEO_INFO_SIZE (&self->info) * config_max_buf;
+ 
+   /* allocate shm pool */
+   snprintf (filename, 1024, "%s/%s-%d-%s", g_get_user_runtime_dir (),
+-- 
+2.7.4
+

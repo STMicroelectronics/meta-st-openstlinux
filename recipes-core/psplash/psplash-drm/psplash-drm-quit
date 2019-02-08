@@ -1,0 +1,9 @@
+#!/bin/sh
+PSPLASH_PID=`pidof psplash-drm`
+if [[ ! -z $PSPLASH_PID ]]; then
+    echo -n "Stop psplash: "
+    echo QUIT > /tmp/splash_fifo
+    #kill -9 $PSPLASH_PID
+    echo "done."
+fi
+

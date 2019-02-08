@@ -1,0 +1,10 @@
+[Unit]
+Description=Enable USB Ethernet gadget
+After=systemd-remount-fs.service
+
+[Service]
+Type=oneshot
+ExecStart=-/sbin/stm32_usbotg_eth_config.sh start
+
+[Install]
+WantedBy=multi-user.target

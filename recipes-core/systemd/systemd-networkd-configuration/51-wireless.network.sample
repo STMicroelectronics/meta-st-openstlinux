@@ -1,0 +1,30 @@
+[Match]
+Name=wlan*
+
+[Network]
+DHCP=ipv4
+
+# Documentation to activate manually wireless interface
+# 1. generate the specific wpa_supplicant file
+#    mkdir -p /etc/wpa_supplicant/
+#    echo "ctrl_interface=/var/run/wpa_supplicant" > /etc/wpa_supplicant/wpa_supplicant-wlan0.conf
+#    echo "eapol_version=1" >> /etc/wpa_supplicant/wpa_supplicant-wlan0.conf
+#    echo "ap_scan=1" >> /etc/wpa_supplicant/wpa_supplicant-wlan0.conf
+#    echo "fast_reauth=1" >> /etc/wpa_supplicant/wpa_supplicant-wlan0.conf
+#    echo "" >> /etc/wpa_supplicant/wpa_supplicant-wlan0.conf
+#    wpa_passphrase SSID_OF_NETWORK PASSWORD_OF_NETWORK >> /etc/wpa_supplicant/wpa_supplicant-wlan0.conf
+#    or
+#    wpa_passphrase ssid_of_network  >> /etc/wpa_supplicant/wpa_supplicant-wlan0.conf
+# 2. put in place network configuration
+#   rename file 51-wireless.network.sample to 51-wireless.network on /usr/lib/systemd/network/
+# 3. restart/start service
+#    systemctl enable systemd-networkd.service
+#    systemctl enable wpa_supplicant@wlan0.service
+#    systemctl restart systemd-networkd.service
+#    systemctl restart wpa_supplicant@wlan0.service
+# info:
+# How to list SSID available
+#    ifconfig wlan0 up
+#    iw dev wlan0 scan | grep SSID
+#    or
+#    iwlist wlan0 scanning | grep ESSID

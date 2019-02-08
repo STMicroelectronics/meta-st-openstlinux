@@ -1,0 +1,24 @@
+From e47ba37dc7ee1119a05b3d130d6c556e3575f5cb Mon Sep 17 00:00:00 2001
+From: Christophe Priouzeau <christophe.priouzeau@st.com>
+Date: Fri, 25 Aug 2017 12:22:24 +0200
+Subject: [PATCH] use openbox as default session
+
+---
+ data/lxdm.conf | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/data/lxdm.conf.in b/data/lxdm.conf.in
+index da36f3f..fe4b535 100644
+--- a/data/lxdm.conf.in
++++ b/data/lxdm.conf.in
+@@ -8,6 +8,7 @@
+ 
+ ## default session or desktop used when no systemwide config
+ # session=/usr/bin/startlxde
++session=/usr/bin/openbox-session
+ 
+ ## uncomment and set to set numlock on your keyboard
+ # numlock=0
+-- 
+2.7.4
+

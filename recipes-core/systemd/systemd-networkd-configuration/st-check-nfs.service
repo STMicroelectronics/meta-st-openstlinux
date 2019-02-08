@@ -1,0 +1,10 @@
+[Unit]
+Description=ST Verify if eth0 network interface are already configured
+Before=systemd-networkd.service
+After=network-pre.target
+
+[Service]
+ExecStart=/sbin/verify_eth0.sh
+
+[Install]
+WantedBy=multi-user.target

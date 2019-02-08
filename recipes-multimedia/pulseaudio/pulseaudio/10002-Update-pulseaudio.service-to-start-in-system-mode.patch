@@ -1,0 +1,41 @@
+From 0e67975b7e4849b2f8da448b61775b83b61f72f9 Mon Sep 17 00:00:00 2001
+From: Christophe Priouzeau <christophe.priouzeau@st.com>
+Date: Thu, 25 Oct 2018 17:50:36 +0200
+Subject: [PATCH 2/3] Update pulseaudio.service to start in system mode
+
+---
+ src/daemon/systemd/user/pulseaudio.service.in | 14 ++++++++++----
+ 1 file changed, 10 insertions(+), 4 deletions(-)
+
+diff --git a/src/daemon/systemd/user/pulseaudio.service.in b/src/daemon/systemd/user/pulseaudio.service.in
+index 46897bf..9f175e4 100644
+--- a/src/daemon/systemd/user/pulseaudio.service.in
++++ b/src/daemon/systemd/user/pulseaudio.service.in
+@@ -14,14 +14,20 @@ Description=Sound Service
+ # After=pulseaudio.socket is not needed, as it is already implicit in the
+ # socket-service relationship, see systemd.socket(5).
+ Requires=pulseaudio.socket
+-ConditionUser=!root
++Requires=dbus.service
++After=dbus.service
++#ConditionUser=!root
+ 
+ [Service]
+ # Note that notify will only work if --daemonize=no
+ Type=notify
+-ExecStart=@PA_BINARY@ --daemonize=no
+-Restart=on-failure
++PrivateTmp=true
++ExecStart=@PA_BINARY@ --system --realtime --disallow-exit --daemonize=no
++Restart=always
++RestartSec=5
++TimeoutSec=5
++
+ 
+ [Install]
+ Also=pulseaudio.socket
+-WantedBy=default.target
++WantedBy=multi-user.target
+-- 
+2.7.4
+

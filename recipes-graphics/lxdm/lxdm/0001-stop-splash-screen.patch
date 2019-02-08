@@ -1,0 +1,24 @@
+From ed54c23781f8a0c363650ecb1649a2a0fae88ddd Mon Sep 17 00:00:00 2001
+From: Christophe Priouzeau <christophe.priouzeau@st.com>
+Date: Fri, 25 Aug 2017 10:01:33 +0200
+Subject: [PATCH] stop splash screen
+
+---
+ systemd/lxdm.service | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/systemd/lxdm.service b/systemd/lxdm.service
+index bf4a0a8..f924229 100644
+--- a/systemd/lxdm.service
++++ b/systemd/lxdm.service
+@@ -4,6 +4,7 @@ Conflicts=getty@tty1.service plymouth-quit.service
+ After=systemd-user-sessions.service getty@tty1.service plymouth-quit.service
+ 
+ [Service]
++ExecStartPre=-/usr/bin/psplash-drm-quit
+ ExecStart=/usr/sbin/lxdm
+ Restart=always
+ IgnoreSIGPIPE=no
+-- 
+2.7.4
+

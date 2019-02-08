@@ -1,0 +1,33 @@
+From eb5e4896ff01d44c12c8f3ffe1954a2709cb862e Mon Sep 17 00:00:00 2001
+From: Jean-Philippe ROMAIN <jean-philippe.romain@st.com>
+Date: Thu, 12 Jan 2017 09:20:10 +0100
+Subject: [PATCH] qtbase: Cast EGL type for build issue
+
+Change-Id: I8872f9dd4459b60967f00c0a6ad9660155240a39
+---
+ config.tests/qpa/egl-x11/egl-x11.cpp | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/config.tests/qpa/egl-x11/egl-x11.cpp b/config.tests/qpa/egl-x11/egl-x11.cpp
+index 8753b69..1a1bbd5 100644
+--- a/config.tests/qpa/egl-x11/egl-x11.cpp
++++ b/config.tests/qpa/egl-x11/egl-x11.cpp
+@@ -44,11 +44,11 @@
+ 
+ int main(int, char **)
+ {
+-    Display *dpy = EGL_DEFAULT_DISPLAY;
++    EGLNativeDisplayType dpy = EGL_DEFAULT_DISPLAY;
+     EGLNativeDisplayType egldpy = XOpenDisplay("");
+     dpy = egldpy;
+-    EGLNativeWindowType w = XCreateWindow(dpy, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+-    XDestroyWindow(dpy, w);
+-    XCloseDisplay(dpy);
++    EGLNativeWindowType w = (EGLNativeWindowType)XCreateWindow((Display*)dpy, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
++    XDestroyWindow((Display*)dpy, (Window)w);
++    XCloseDisplay((Display*)dpy);
+     return 0;
+ }
+-- 
+1.9.1
+

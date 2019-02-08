@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<title>NetData STMicroelectronics Dashboard</title>
+
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+	<script>
+	// this section has to appear before loading dashboard.js
+
+	// Select a theme.
+	// uncomment on of the two themes:
+
+	//var netdataTheme = 'default'; // this is white
+	var netdataTheme = 'slate'; // this is dark
+
+
+	// Set the default netdata server.
+	// on charts without a 'data-host', this one will be used.
+	// the default is the server that dashboard.js is downloaded from.
+
+	// var netdataServer = 'http://my.server:19999/';
+	</script>
+
+	<!--
+		Load dashboard.js
+
+		to host this HTML file on your web server,
+		you have to load dashboard.js from the netdata server.
+
+		So, pick one the two below
+		If you pick the first, set the server name/IP.
+
+		The second assumes you host this file on /usr/share/netdata/web
+		and that you have chown it to be owned by netdata:netdata
+	-->
+	<!-- <script type="text/javascript" src="http://my.server:19999/dashboard.js"></script> -->
+	<script type="text/javascript" src="dashboard.js"></script>
+
+	<script>
+	// Set options for TV operation
+	// This has to be done, after dashboard.js is loaded
+
+	// destroy charts not shown (lowers memory on the browser)
+	NETDATA.options.current.destroy_on_hide = true;
+
+	// set this to false, to always show all dimensions
+	NETDATA.options.current.eliminate_zero_dimensions = true;
+
+	// always update the charts, even if focus is lost
+	NETDATA.options.current.stop_updates_when_focus_is_lost = false;
+
+	// Since you may render charts from many servers and any of them may
+	// become offline for some time, the charts will break.
+	// This will reload the page every RELOAD_EVERY minutes
+	var RELOAD_EVERY = 5;
+	setTimeout(function(){
+		location.reload();
+	}, RELOAD_EVERY * 60 * 1000);
+
+	</script>
+
+</head>
+<body>
+
+<div style="width: 100%; text-align: center; display: inline-block;">
+    <H1>STM32MP1 Dashboard</H1>
+
+    <div style="width: 100%; height: 24vh; text-align: center; display: inline-block;">
+        <div style="width: 100%; max-height: calc(100% - 15px); text-align: center; display: inline-block;">
+            <div style="width: 49%; height:100%; align: center; display: inline-block;">
+                <br/>
+                <div data-netdata="system.cpu"
+                        data-title="CPUs Average"
+                        data-chart-library="gauge"
+                        data-width="20%"
+                        data-height="100%"
+                        data-after="-300"
+                        data-points="300"
+                        data-colors="#DDDD00"
+                        ></div>
+                <div data-netdata="cpu.cpu0"
+                        data-title="CPU0 Average"
+                        data-chart-library="gauge"
+                        data-width="20%"
+                        data-height="100%"
+                        data-after="-300"
+                        data-points="300"
+                        data-colors="#DD0000"
+                        ></div>
+                <div data-netdata="cpu.cpu1"
+                        data-title="CPU1 Average"
+                        data-chart-library="gauge"
+                        data-width="20%"
+                        data-height="100%"
+                        data-after="-300"
+                        data-points="300"
+                        data-colors="#0000DD"
+                        ></div>
+                <div data-netdata="gpu.usage"
+                        data-title="GPU Average"
+                        data-chart-library="gauge"
+                        data-width="20%"
+                        data-height="100%"
+                        data-after="-300"
+                        data-points="300"
+                        ></div>
+            </div>
+        </div>
+    </div>
+    <center>
+    <table width="80%">
+        <TR>
+            <TD>
+                <!-- cpu-->
+                <div style="width: 100%; height: 24vh; text-align: center; display: inline-block;">
+                    <div style="width: 100%; height: 15px; text-align: center; display: inline-block;">
+                        <div style="width: 100%; height: calc(100% - 15px); text-align: center; display: inline-block;">
+                            <br/>
+                            <div data-netdata="system.cpu"
+                                data-title="CPU usage"
+                                data-chart-library="dygraph"
+                                data-width="100%"
+                                data-height="100%"
+                                data-after="-300"
+                                ></div>
+                        </div>
+                    </div>
+                </div>
+            </TD>
+        </TR>
+        <TR>
+            <TD>
+                <div style="width: 100%; height: 24vh; text-align: center; display: inline-block;">
+                    <div style="width: 100%; height: 15px; text-align: center; display: inline-block;">
+                        <div style="width: 100%; height: calc(100% - 15px); text-align: center; display: inline-block;">
+                            <br/>
+                            <div data-netdata="cpu.cpu0"
+                                data-title="CPU usage of CPU0"
+                                data-chart-library="dygraph"
+                                data-width="49%"
+                                data-height="50%"
+                                data-after="-300"
+                                ></div>
+                            <div data-netdata="cpu.cpu1"
+                                data-title="CPU usage of CPU1"
+                                data-chart-library="dygraph"
+                                data-width="49%"
+                                data-height="50%"
+                                data-after="-300"
+                                ></div>
+                        </div>
+                    </div>
+                </div>
+            </TD>
+        </TR>
+        <!-- interrup -->
+        <TR>
+            <TD>
+                <div style="width: 100%; height: 24vh; text-align: center; display: inline-block;">
+                    <div style="width: 100%; height: 15px; text-align: center; display: inline-block;">
+                        <div style="width: 100%; height: calc(100% - 15px); text-align: center; display: inline-block;">
+                            <br/>
+                            <div data-netdata="gpu.usage"
+                                data-title="CPUs Average"
+                                data-chart-library="dygraph"
+                                data-width="100%"
+                                data-height="100%"
+                                data-after="-300"
+                                ></div>
+
+                    </div>
+                </div>
+            </TD>
+        </TR>
+    </table>
+</center>
+
+    <div style="width: 100%; height: 23vh; text-align: center; display: inline-block;">
+        <div style="width: 100%; height: 15px; text-align: center; display: inline-block;">
+            <b>Netdata statistics</b>
+        </div>
+        <div style="width: 100%; max-height: calc(100% - 15px); text-align: center; display: inline-block;">
+            <div style="width: 49%; height:100%; align: center; display: inline-block;">
+                Network
+                <br/>
+                <div data-netdata="system.ipv4"
+                        data-dimensions="received"
+                        data-chart-library="easypiechart"
+                        data-title="IPv4 Inbound"
+                        data-units="kbps"
+                        data-width="20%"
+                        data-height="100%"
+                        data-after="-300"
+                        data-points="300"
+                        ></div>
+                <div data-netdata="system.ipv4"
+                        data-dimensions="sent"
+                        data-chart-library="easypiechart"
+                        data-title="IPv4 Outbound"
+                        data-units="kbps"
+                        data-width="20%"
+                        data-height="100%"
+                        data-after="-300"
+                        data-points="300"
+                        ></div>
+                <div data-netdata="ipv4.bcast"
+                        data-title="Ipv4 Broadcast"
+                        data-chart-library="easypiechart"
+                        data-units="kbps"
+                        data-width="20%"
+                        data-height="100%"
+                        data-after="-300"
+                        data-points="300"
+                        ></div>
+                <div data-netdata="ipv4.mcast"
+                        data-title="Ipv4 Multicast"
+                        data-chart-library="easypiechart"
+                        data-units="kbps"
+                        data-width="20%"
+                        data-height="100%"
+                        data-after="-300"
+                        data-points="300"
+                        ></div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

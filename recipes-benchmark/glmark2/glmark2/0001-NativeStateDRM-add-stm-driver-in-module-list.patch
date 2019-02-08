@@ -1,0 +1,25 @@
+From a2af1634f1b83ee5868318f90b462df1dd764ede Mon Sep 17 00:00:00 2001
+From: Benjamin Gaignard <benjamin.gaignard@st.com>
+Date: Thu, 6 Sep 2018 17:26:40 +0200
+Subject: [PATCH] NativeStateDRM: add stm driver in module list
+
+Signed-off-by: Benjamin Gaignard <benjamin.gaignard@st.com>
+---
+ src/native-state-drm.cpp | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/src/native-state-drm.cpp b/src/native-state-drm.cpp
+index d8582af..1098bd6 100644
+--- a/src/native-state-drm.cpp
++++ b/src/native-state-drm.cpp
+@@ -361,6 +361,7 @@ static int open_using_module_checking()
+         "exynos",
+         "pl111",
+         "vc4",
++        "stm",
+     };
+ 
+     int fd = -1;
+-- 
+2.15.0
+

@@ -1,0 +1,31 @@
+From f7ca67bb3372c50f612ee3e0b71057358663c42d Mon Sep 17 00:00:00 2001
+From: Christophe Priouzeau <christophe.priouzeau@st.com>
+Date: Fri, 17 Feb 2017 11:40:43 +0100
+Subject: [PATCH 1/4] Add autogen.sh
+
+---
+ autogen.sh | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+ create mode 100755 autogen.sh
+
+diff --git a/autogen.sh b/autogen.sh
+new file mode 100755
+index 0000000..71eed0e
+--- /dev/null
++++ b/autogen.sh
+@@ -0,0 +1,12 @@
++#!/bin/bash - 
++
++test -n "$srcdir" || srcdir=`dirname "$0"`
++test -n "$srcdir" || srcdir=.
++
++olddir=`pwd`
++(
++  cd "$srcdir" &&
++  autoreconf --force -v --install
++) || exit
++test -n "$NOCONFIGURE" || "$srcdir/configure" "$@"
++cd $olddir
+-- 
+2.7.4
+

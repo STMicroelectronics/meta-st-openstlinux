@@ -1,0 +1,74 @@
+# LAYER_CONF_VERSION is increased each time build/conf/bblayers.conf
+# changes incompatibly
+LCONF_VERSION = "7"
+
+BBPATH = "${TOPDIR}"
+BBFILES ?= ""
+OEROOT := "${@os.path.abspath(os.path.dirname(d.getVar('FILE')) + '/../..')}"
+
+#--------------------------
+# Layers var definition for buildsystem
+#
+OPENEMBEDDED = "${OPENEMBEDDED_NON_REMOVABLE}"
+
+OPENEMBEDDED_NON_REMOVABLE = "${OEROOT}/layers/openembedded-core/meta"
+
+POKY  = "${POKY_NON_REMOVABLE}"
+POKY += "${OEROOT}/layers/poky/meta-yocto-bsp"
+
+POKY_NON_REMOVABLE  = "${OEROOT}/layers/poky/meta"
+POKY_NON_REMOVABLE += "${OEROOT}/layers/poky/meta-yocto"
+
+#--------------------------
+#
+BASELAYERS ?= " \
+    ${OEROOT}/layers/meta-openembedded/meta-oe \
+    ${OEROOT}/layers/meta-openembedded/meta-gnome \
+    ${OEROOT}/layers/meta-openembedded/meta-xfce \
+    ${OEROOT}/layers/meta-openembedded/meta-initramfs \
+    ${OEROOT}/layers/meta-openembedded/meta-multimedia \
+    ${OEROOT}/layers/meta-openembedded/meta-networking \
+    ${OEROOT}/layers/meta-openembedded/meta-webserver \
+    ${OEROOT}/layers/meta-openembedded/meta-filesystems \
+    ${OEROOT}/layers/meta-openembedded/meta-perl \
+    ${OEROOT}/layers/meta-openembedded/meta-python \
+"
+
+BBLAYERS_NON_REMOVABLE ?= " \
+    ${@'${OPENEMBEDDED_NON_REMOVABLE}' if os.path.isfile('${OEROOT}/layers/openembedded-core/meta/conf/layer.conf') else '${POKY_NON_REMOVABLE}'} \
+  "
+
+BSPLAYER ?= " \
+    ${@'${OEROOT}/layers/meta-st/meta-st-cannes2' if os.path.isfile('${OEROOT}/layers/meta-st/meta-st-cannes2/conf/layer.conf') else ''} \
+    ${@'${OEROOT}/layers/meta-st/meta-st-stm32mp' if os.path.isfile('${OEROOT}/layers/meta-st/meta-st-stm32mp/conf/layer.conf') else ''} \
+    "
+
+ADDONSLAYERS = ""
+# linaro
+ADDONSLAYERS += "${@'${OEROOT}/layers/meta-linaro/meta-linaro' if os.path.isfile('${OEROOT}/layers/meta-linaro/meta-linaro/conf/layer.conf') else ''}"
+ADDONSLAYERS += "${@'${OEROOT}/layers/meta-linaro/meta-linaro-toolchain' if os.path.isfile('${OEROOT}/layers/meta-linaro/meta-linaro-toolchain/conf/layer.conf') else ''}"
+ADDONSLAYERS += "${@'${OEROOT}/layers/meta-openembedded/meta-networking' if os.path.isfile('${OEROOT}/layers/meta-linaro/meta-linaro/conf/layer.conf') else ''}"
+
+# Qt5
+ADDONSLAYERS += "${@'${OEROOT}/layers/meta-qt5' if os.path.isfile('${OEROOT}/layers/meta-qt5/conf/layer.conf') else ''}"
+
+# Security layer
+ADDONSLAYERS += " \
+    ${@'${OEROOT}/layers/meta-security \
+    ${OEROOT}/layers/meta-security/meta-tpm \
+    ${OEROOT}/layers/meta-openembedded/meta-perl \
+    ${OEROOT}/layers/meta-openembedded/meta-filesystems' \
+    if os.path.isfile('${OEROOT}/layers/meta-security/conf/layer.conf') else ''} \
+    "
+
+# specific to framework
+FRAMEWORKLAYERS += "${@'${OEROOT}/layers/meta-st/meta-st-openstlinux' if os.path.isfile('${OEROOT}/layers/meta-st/meta-st-openstlinux/conf/layer.conf') else ''}"
+
+# add BSP layer
+BBLAYERS += " \
+    ${BASELAYERS} \
+    ${BSPLAYER} \
+    ${ADDONSLAYERS} \
+    ${FRAMEWORKLAYERS} \
+    ${@'${OPENEMBEDDED}' if os.path.isfile('${OEROOT}/layers/openembedded-core/meta/conf/layer.conf') else '${POKY}'} \
+    "

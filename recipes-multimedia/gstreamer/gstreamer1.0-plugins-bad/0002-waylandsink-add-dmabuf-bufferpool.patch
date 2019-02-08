@@ -1,0 +1,1012 @@
+From 85c7cad1c3ffda5fbf09c47a604024966d304850 Mon Sep 17 00:00:00 2001
+From: Stephane Danieau <stephane.danieau@st.com>
+Date: Tue, 13 Mar 2018 15:20:22 +0100
+Subject: [PATCH 2/9] waylandsink: add dmabuf bufferpool
+
+Add support of DMA-buf allocated buffers through use of
+drm/kms kernel driver ioctl DRM_IOCTL_MODE_CREATE_DUMB.
+This pool is selected if video/x-raw(memory:DMABuf)
+is set in caps.
+
+Change-Id: I0507752a1a64ee2c657b73d8c802c44fd707f49f
+Signed-off-by: Hugues Fruchet <hugues.fruchet@st.com>
+---
+ ext/wayland/Makefile.am      |   1 +
+ ext/wayland/gstwaylandsink.c | 108 +++++++-
+ ext/wayland/waylandpool.c    | 640 +++++++++++++++++++++++++++++++++++++++++++
+ ext/wayland/waylandpool.h    | 105 +++++++
+ ext/wayland/wldisplay.c      |   3 +
+ ext/wayland/wldisplay.h      |   9 +-
+ 6 files changed, 854 insertions(+), 12 deletions(-)
+ create mode 100644 ext/wayland/waylandpool.c
+ create mode 100644 ext/wayland/waylandpool.h
+
+diff --git a/ext/wayland/Makefile.am b/ext/wayland/Makefile.am
+index 387f84f..7633464 100644
+--- a/ext/wayland/Makefile.am
++++ b/ext/wayland/Makefile.am
+@@ -8,6 +8,7 @@ BUILT_SOURCES = \
+ 
+ libgstwaylandsink_la_SOURCES =  \
+ 	gstwaylandsink.c \
++	waylandpool.c \
+ 	wlshmallocator.c \
+ 	wlbuffer.c \
+ 	wldisplay.c \
+diff --git a/ext/wayland/gstwaylandsink.c b/ext/wayland/gstwaylandsink.c
+index 5b8cc9e..be8c50c 100644
+--- a/ext/wayland/gstwaylandsink.c
++++ b/ext/wayland/gstwaylandsink.c
+@@ -46,6 +46,7 @@
+ #include "wlbuffer.h"
+ #include "wlshmallocator.h"
+ #include "wllinuxdmabuf.h"
++#include "waylandpool.h"
+ 
+ #include <gst/wayland/wayland.h>
+ #include <gst/video/videooverlay.h>
+@@ -512,6 +513,36 @@ gst_wayland_create_pool (GstWaylandSink * sink, GstCaps * caps)
+   return pool;
+ }
+ 
++static GstBufferPool *
++gst_wayland_create_dmabuf_pool (GstWaylandSink * sink, GstCaps * caps)
++{
++  GstBufferPool *pool = NULL;
++  GstStructure *structure;
++  gsize size = sink->video_info.size;
++  GstAllocator *alloc;
++
++  /* create a new DMABuf pool */
++  pool = gst_wayland_buffer_pool_new (sink->display);
++  if (!pool) {
++    GST_DEBUG_OBJECT (sink, "Failed to create new pool");
++    return NULL;
++  }
++
++  structure = gst_buffer_pool_get_config (pool);
++  gst_buffer_pool_config_set_params (structure, caps, info.size, 2, 0);
++  gst_buffer_pool_config_set_allocator (structure, NULL, &params);
++  alloc = gst_dmabuf_allocator_new ();
++  gst_buffer_pool_config_set_allocator (structure, alloc, NULL);
++  if (!gst_buffer_pool_set_config (pool, structure)) {
++    GST_DEBUG_OBJECT (sink, "failed setting config");
++    gst_object_unref (pool);
++    return NULL;
++  }
++  g_object_unref (alloc);
++
++  return pool;
++}
++
+ static gboolean
+ gst_wayland_sink_set_caps (GstBaseSink * bsink, GstCaps * caps)
+ {
+@@ -530,15 +561,9 @@ gst_wayland_sink_set_caps (GstBaseSink * bsink, GstCaps * caps)
+   format = GST_VIDEO_INFO_FORMAT (&sink->video_info);
+   sink->video_info_changed = TRUE;
+ 
+-  /* create a new pool for the new caps */
+-  if (sink->pool)
+-    gst_object_unref (sink->pool);
+-  sink->pool = gst_wayland_create_pool (sink, caps);
+-
+   use_dmabuf = gst_caps_features_contains (gst_caps_get_features (caps, 0),
+       GST_CAPS_FEATURE_MEMORY_DMABUF);
+ 
+-  /* validate the format base on the memory type. */
+   if (use_dmabuf) {
+     if (!gst_wl_display_check_format_for_dmabuf (sink->display, format))
+       goto unsupported_format;
+@@ -546,6 +571,14 @@ gst_wayland_sink_set_caps (GstBaseSink * bsink, GstCaps * caps)
+     goto unsupported_format;
+   }
+ 
++  /* create a new pool for the new caps */
++  if (sink->pool)
++    gst_object_unref (sink->pool);
++  if (use_dmabuf)
++    sink->pool = gst_wayland_create_dmabuf_pool (sink, caps);
++  else
++    sink->pool = gst_wayland_create_pool (sink, caps);
++
+   sink->use_dmabuf = use_dmabuf;
+ 
+   return TRUE;
+@@ -565,7 +598,7 @@ unsupported_format:
+ }
+ 
+ static gboolean
+-gst_wayland_sink_propose_allocation (GstBaseSink * bsink, GstQuery * query)
++gst_wayland_sink_propose_shm_allocation (GstBaseSink * bsink, GstQuery * query)
+ {
+   GstWaylandSink *sink = GST_WAYLAND_SINK (bsink);
+   GstCaps *caps;
+@@ -590,6 +623,67 @@ gst_wayland_sink_propose_allocation (GstBaseSink * bsink, GstQuery * query)
+   return TRUE;
+ }
+ 
++static gboolean
++gst_wayland_sink_propose_allocation (GstBaseSink * bsink, GstQuery * query)
++{
++  GstWaylandSink *sink = GST_WAYLAND_SINK (bsink);
++  GstCaps *caps;
++  GstBufferPool *pool = NULL;
++  GstStructure *config;
++  guint size;
++  gboolean need_pool;
++  GstAllocator *alloc;
++  GstCaps *pcaps;
++  guint config_min_buf, config_max_buf;
++
++  if (!sink->use_dmabuf)
++    return gst_wayland_sink_propose_shm_allocation(bsink, query);
++
++  /*
++   * propose DMA-buf allocator...
++   */
++  gst_query_parse_allocation (query, &caps, &need_pool);
++
++  if (need_pool) {
++    /* Fill query with DMABuf pool characteristics,
++     * to do so create a pool, get its characteristics
++     * to fill query and free it...
++     */
++    pool = gst_wayland_create_dmabuf_pool (sink, caps);
++    if (!pool)
++      goto no_pool;
++
++    config = gst_buffer_pool_get_config (pool);
++    gst_buffer_pool_config_get_params (config, &pcaps, &size,
++      &config_min_buf, &config_max_buf);
++    gst_query_add_allocation_pool (query, pool, size,
++      config_min_buf, config_max_buf);
++    g_object_unref (pool);
++  }
++
++  /*
++   * FIXME is there a case where !need_pool and we fill query with an
++   * allocator and alignment ?
++   */
++  alloc = gst_dmabuf_allocator_new ();
++  gst_query_add_allocation_param (query, alloc, NULL);
++  gst_object_unref (alloc);
++
++  /* we also support video metadata (alignment) */
++  gst_query_add_allocation_meta (query, GST_VIDEO_META_API_TYPE, NULL);
++
++  GST_WARNING_OBJECT (bsink, "Add dmabuf allocator");
++
++  return TRUE;
++
++  /* ERRORS */
++no_pool:
++  {
++    GST_DEBUG_OBJECT (bsink, "failed to propose the needed pool");
++    return FALSE;
++  }
++}
++
+ static void
+ frame_redraw_callback (void *data, struct wl_callback *callback, uint32_t time)
+ {
+diff --git a/ext/wayland/waylandpool.c b/ext/wayland/waylandpool.c
+new file mode 100644
+index 0000000..70e40b4
+--- /dev/null
++++ b/ext/wayland/waylandpool.c
+@@ -0,0 +1,640 @@
++/* GStreamer
++ * Copyright (C) 2012 Intel Corporation
++ * Copyright (C) 2012 Sreerenj Balachandran <sreerenj.balachandran@intel.com>
++ * Copyright (C) 2014 Collabora Ltd.
++ *
++ * This library is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU Library General Public
++ * License as published by the Free Software Foundation; either
++ * version 2 of the License, or (at your option) any later version.
++ *
++ * This library is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * Library General Public License for more details.
++ *
++ * You should have received a copy of the GNU Library General Public
++ * License along with this library; if not, write to the
++ * Free Software Foundation, Inc., 51 Franklin St, Fifth Floor,
++ * Boston, MA 02110-1301, USA.
++ */
++
++#ifdef HAVE_CONFIG_H
++#include "config.h"
++#endif
++
++#include "waylandpool.h"
++#include "wldisplay.h"
++#include "wlvideoformat.h"
++
++#include <errno.h>
++#include <fcntl.h>
++#include <stdio.h>
++#include <stdlib.h>
++#include <string.h>
++#include <unistd.h>
++#include <sys/mman.h>
++#include <sys/stat.h>
++#include <sys/types.h>
++
++#include <libdrm/drm.h>
++#include <xf86drm.h>
++#include <drm/drm_fourcc.h>
++
++GST_DEBUG_CATEGORY_EXTERN (gstwayland_debug);
++#define GST_CAT_DEFAULT gstwayland_debug
++
++/* wl metadata */
++GType
++gst_wl_meta_api_get_type (void)
++{
++  static volatile GType type;
++  static const gchar *tags[] =
++      { "memory", "size", "colorspace", "orientation", NULL };
++  if (g_once_init_enter (&type)) {
++    GType _type = gst_meta_api_type_register ("GstWlMetaAPI", tags);
++    g_once_init_leave (&type, _type);
++  }
++  return type;
++}
++
++static void
++gst_wl_meta_free (GstWlMeta * meta, GstBuffer * buffer)
++{
++  GstMemory *gmem;
++  GST_DEBUG ("destroying wl_buffer %p", meta->wbuffer);
++
++  gmem = gst_buffer_get_memory (buffer, 0);
++
++  if ((gmem != NULL) && gst_is_dmabuf_memory (gmem)) {
++    struct drm_mode_destroy_dumb destroy_arg;
++    int prime_fd = gst_dmabuf_memory_get_fd (gmem);
++
++    memset (&destroy_arg, 0, sizeof destroy_arg);
++    drmPrimeFDToHandle (meta->drm_fd, prime_fd, &destroy_arg.handle);
++    drmIoctl (meta->drm_fd, DRM_IOCTL_MODE_DESTROY_DUMB, &destroy_arg);
++    close (prime_fd);
++  } else {
++    if (meta->data)
++      munmap (meta->data, meta->size);
++  }
++  gst_memory_unref (gmem);
++
++  if (meta->wbuffer)
++    wl_buffer_destroy (meta->wbuffer);
++}
++
++static gboolean gst_wl_meta_init(GstMeta *meta, G_GNUC_UNUSED gpointer params, G_GNUC_UNUSED GstBuffer *buffer)
++{
++  /* Just to avoid a warning */
++  return TRUE;
++}
++
++const GstMetaInfo *
++gst_wl_meta_get_info (void)
++{
++  static const GstMetaInfo *wl_meta_info = NULL;
++  if (g_once_init_enter (&wl_meta_info)) {
++    const GstMetaInfo *meta =
++        gst_meta_register (GST_WL_META_API_TYPE, "GstWlMeta",
++        sizeof (GstWlMeta), (GstMetaInitFunction) gst_wl_meta_init,
++        (GstMetaFreeFunction) gst_wl_meta_free,
++        (GstMetaTransformFunction) NULL);
++    g_once_init_leave (&wl_meta_info, meta);
++  }
++  return wl_meta_info;
++}
++
++/* bufferpool */
++static void gst_wayland_buffer_pool_finalize (GObject * object);
++static gboolean gst_wayland_buffer_pool_set_config (GstBufferPool * pool,
++    GstStructure * config);
++static gboolean gst_wayland_buffer_pool_start (GstBufferPool * pool);
++static gboolean gst_wayland_buffer_pool_stop (GstBufferPool * pool);
++static GstFlowReturn gst_wayland_buffer_pool_alloc (GstBufferPool * pool,
++    GstBuffer ** buffer, GstBufferPoolAcquireParams * params);
++
++#define gst_wayland_buffer_pool_parent_class parent_class
++G_DEFINE_TYPE (GstWaylandBufferPool, gst_wayland_buffer_pool,
++    GST_TYPE_BUFFER_POOL);
++
++static const gchar **
++gst_wayland_buffer_pool_get_options (GstBufferPool * pool)
++{
++  static const gchar *options[] = {
++    GST_BUFFER_POOL_OPTION_VIDEO_ALIGNMENT, NULL
++  };
++  return options;
++}
++
++
++static void
++gst_wayland_buffer_pool_class_init (GstWaylandBufferPoolClass * klass)
++{
++  GObjectClass *gobject_class = (GObjectClass *) klass;
++  GstBufferPoolClass *gstbufferpool_class = (GstBufferPoolClass *) klass;
++  gobject_class->finalize = gst_wayland_buffer_pool_finalize;
++
++  gstbufferpool_class->set_config = gst_wayland_buffer_pool_set_config;
++  gstbufferpool_class->start = gst_wayland_buffer_pool_start;
++  gstbufferpool_class->stop = gst_wayland_buffer_pool_stop;
++  gstbufferpool_class->alloc_buffer = gst_wayland_buffer_pool_alloc;
++  gstbufferpool_class->get_options = gst_wayland_buffer_pool_get_options;
++}
++
++static void
++gst_wayland_buffer_pool_init (GstWaylandBufferPool * self)
++{
++  gst_video_info_init (&self->info);
++  g_mutex_init (&self->buffers_map_mutex);
++  self->buffers_map = g_hash_table_new (g_direct_hash, g_direct_equal);
++}
++
++static void
++gst_wayland_buffer_pool_finalize (GObject * object)
++{
++  GstWaylandBufferPool *pool = GST_WAYLAND_BUFFER_POOL_CAST (object);
++  if (pool->allocator)
++    gst_object_unref (pool->allocator);
++  pool->allocator = NULL;
++
++  if (pool->wl_pool)
++    gst_wayland_buffer_pool_stop (GST_BUFFER_POOL (pool));
++
++  if (pool->fd != -1)
++    close (pool->fd);
++
++  g_mutex_clear (&pool->buffers_map_mutex);
++  g_hash_table_unref (pool->buffers_map);
++
++  g_object_unref (pool->display);
++
++  G_OBJECT_CLASS (gst_wayland_buffer_pool_parent_class)->finalize (object);
++}
++
++static void
++buffer_release (void *data, struct wl_buffer *wl_buffer)
++{
++  GstWaylandBufferPool *self = data;
++  GstBuffer *buffer;
++  GstWlMeta *meta;
++  g_mutex_lock (&self->buffers_map_mutex);
++  buffer = g_hash_table_lookup (self->buffers_map, wl_buffer);
++
++  GST_LOG_OBJECT (self, "wl_buffer::release (GstBuffer: %p)", buffer);
++
++  if (buffer) {
++    meta = gst_buffer_get_wl_meta (buffer);
++    if (meta->used_by_compositor) {
++      meta->used_by_compositor = FALSE;
++      /* unlock before unref because stop() may be called from here */
++      g_mutex_unlock (&self->buffers_map_mutex);
++      gst_buffer_unref (buffer);
++      return;
++    }
++  }
++  g_mutex_unlock (&self->buffers_map_mutex);
++}
++
++static const struct wl_buffer_listener buffer_listener = {
++  buffer_release
++};
++
++void
++gst_wayland_compositor_acquire_buffer (GstWaylandBufferPool * self,
++    GstBuffer * buffer)
++{
++  GstWlMeta *meta;
++
++  meta = gst_buffer_get_wl_meta (buffer);
++  g_return_if_fail (meta != NULL);
++  g_return_if_fail (meta->pool == self);
++  g_return_if_fail (meta->used_by_compositor == FALSE);
++
++  meta->used_by_compositor = TRUE;
++  gst_buffer_ref (buffer);
++
++}
++
++static void
++unref_used_buffers (gpointer key, gpointer value, gpointer data)
++{
++  GstBuffer *buffer = value;
++  GstWlMeta *meta = gst_buffer_get_wl_meta (buffer);
++  GList **to_unref = data;
++
++  if (meta->used_by_compositor) {
++    meta->used_by_compositor = FALSE;
++    *to_unref = g_list_prepend (*to_unref, buffer);
++  }
++
++}
++
++void
++gst_wayland_compositor_release_all_buffers (GstWaylandBufferPool * self)
++{
++  GList *to_unref = NULL;
++
++  g_mutex_lock (&self->buffers_map_mutex);
++  g_hash_table_foreach (self->buffers_map, unref_used_buffers, &to_unref);
++  g_mutex_unlock (&self->buffers_map_mutex);
++
++  /* unref without the lock because stop() may be called from here */
++  if (to_unref) {
++    g_list_free_full (to_unref, (GDestroyNotify) gst_buffer_unref);
++  }
++}
++
++static gboolean
++gst_wayland_buffer_pool_set_config (GstBufferPool * pool, GstStructure * config)
++{
++
++  GstWaylandBufferPool *self = GST_WAYLAND_BUFFER_POOL_CAST (pool);
++  GstWlDisplay *display = self->display;
++  GstAllocationParams params;
++  GstVideoInfo info;
++  GstCaps *caps;
++  guint config_min_buf, config_max_buf;
++  gboolean has_alignment = FALSE;
++  GstVideoAlignment video_align;
++
++  if (self->allocator)
++    gst_object_unref (self->allocator);
++  self->allocator = NULL;
++
++  if (!gst_buffer_pool_config_get_params (config, &caps, NULL, &config_min_buf,
++          &config_max_buf))
++    goto wrong_config;
++
++  if (caps == NULL)
++    goto no_caps;
++
++  /* now parse the caps from the config */
++  if (!gst_video_info_from_caps (&info, caps))
++    goto wrong_caps;
++
++  /* parse extra alignment info */
++  has_alignment = gst_buffer_pool_config_has_option (config,
++      GST_BUFFER_POOL_OPTION_VIDEO_META);
++  if (has_alignment) {
++    /* get and apply the alignment to info */
++    if (gst_buffer_pool_config_get_video_alignment (config, &video_align)) {
++      gst_video_info_align (&info, &video_align);
++
++      GST_LOG_OBJECT (self, "padding %u-%ux%u-%u",
++          video_align.padding_top,
++          video_align.padding_left,
++          video_align.padding_right, video_align.padding_bottom);
++    }
++  }
++
++  if (!gst_buffer_pool_config_get_allocator (config, &self->allocator, &params))
++    goto wrong_allocator;
++
++  if (self->allocator)
++    gst_object_ref (self->allocator);
++
++  GST_LOG_OBJECT (self, "%dx%d, caps %" GST_PTR_FORMAT,
++      info.width, info.height, caps);
++
++  /* FIXME: Enable metadata checking handling based on the config of pool */
++  self->caps = gst_caps_ref (caps);
++  self->info = info;
++  self->width = info.width;
++  self->height = info.height;
++  self->size = GST_VIDEO_INFO_SIZE (&info);
++  /* Update size in the config to be inline with buffer pool setup */
++  gst_buffer_pool_config_set_params (config, caps, self->size, config_min_buf,
++      config_max_buf);
++
++  self->use_linux_dmabuf = (self->allocator
++      && g_strcmp0 (self->allocator->mem_type, GST_ALLOCATOR_DMABUF) == 0);
++
++  GST_LOG_OBJECT (self, "pool will use %s",
++      self->use_linux_dmabuf ? "linux_dmabuf" : "wl_shm");
++
++  if (self->use_linux_dmabuf && display->device_name) {
++    self->fd = open (display->device_name, O_RDWR, 0);
++
++    if (self->fd == -1) {
++      GST_ERROR_OBJECT (self, "can't open %s", display->device_name);
++      return FALSE;
++    }
++  }
++
++
++  return GST_BUFFER_POOL_CLASS (parent_class)->set_config (pool, config);
++  /* ERRORS */
++wrong_allocator:
++  {
++    GST_WARNING_OBJECT (pool, "no allocator");
++    return FALSE;
++  }
++wrong_config:
++  {
++    GST_WARNING_OBJECT (pool, "invalid config");
++    return FALSE;
++  }
++no_caps:
++  {
++    GST_WARNING_OBJECT (pool, "no caps in config");
++    return FALSE;
++  }
++wrong_caps:
++  {
++    GST_WARNING_OBJECT (pool,
++        "failed getting geometry from caps %" GST_PTR_FORMAT, caps);
++    return FALSE;
++  }
++
++}
++
++static gboolean
++gst_wayland_buffer_pool_start (GstBufferPool * pool)
++{
++  GstWaylandBufferPool *self = GST_WAYLAND_BUFFER_POOL (pool);
++  guint size = 0;
++  int fd;
++  char filename[1024];
++  static int init = 0;
++
++  GST_DEBUG_OBJECT (self, "Initializing wayland buffer pool");
++
++  /* configure */
++  size = GST_VIDEO_INFO_SIZE (&self->info) * 15;
++
++  /* allocate shm pool */
++  snprintf (filename, 1024, "%s/%s-%d-%s", g_get_user_runtime_dir (),
++      "wayland-shm", init++, "XXXXXX");
++
++  fd = mkstemp (filename);
++  if (fd < 0) {
++    GST_ERROR_OBJECT (pool, "opening temp file %s failed: %s", filename,
++        strerror (errno));
++
++    return FALSE;
++  }
++  if (ftruncate (fd, size) < 0) {
++    GST_ERROR_OBJECT (pool, "ftruncate failed: %s", strerror (errno));
++    close (fd);
++
++    return FALSE;
++  }
++
++  self->data = mmap (NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
++  if (self->data == MAP_FAILED) {
++    GST_ERROR_OBJECT (pool, "mmap failed: %s", strerror (errno));
++    close (fd);
++
++    return FALSE;
++  }
++  GST_DEBUG_OBJECT (self, "wl_shm_create_pool");
++  self->wl_pool = wl_shm_create_pool (self->display->shm, fd, size);
++  unlink (filename);
++  close (fd);
++
++  self->size = size;
++  self->used = 0;
++
++
++  return GST_BUFFER_POOL_CLASS (parent_class)->start (pool);
++}
++
++static gboolean
++gst_wayland_buffer_pool_stop (GstBufferPool * pool)
++{
++  GstWaylandBufferPool *self = GST_WAYLAND_BUFFER_POOL (pool);
++
++  GST_DEBUG_OBJECT (self, "Stopping wayland buffer pool");
++
++  munmap (self->data, self->size);
++  wl_shm_pool_destroy (self->wl_pool);
++
++  self->wl_pool = NULL;
++  self->size = 0;
++  self->used = 0;
++
++  /* all buffers are about to be destroyed;
++   * we should no longer do anything with them */
++  g_mutex_lock (&self->buffers_map_mutex);
++  g_hash_table_remove_all (self->buffers_map);
++  g_mutex_unlock (&self->buffers_map_mutex);
++
++
++  return GST_BUFFER_POOL_CLASS (parent_class)->stop (pool);
++}
++
++/* DMABUF buffer functions */
++static int
++get_format_bpp (int format)
++{
++  switch (format) {
++    case DRM_FORMAT_YUV420:
++    case DRM_FORMAT_NV12:
++      return 12;
++    case WL_SHM_FORMAT_XRGB8888:
++    case DRM_FORMAT_XRGB8888:
++    case WL_SHM_FORMAT_ARGB8888:
++    case DRM_FORMAT_ARGB8888:
++      return 32;
++    default:
++      GST_WARNING ("Unknown format: %d", format);
++      return 32;
++  }
++}
++
++static int
++create_dumb (int drm_fd, uint32_t width, uint32_t height, int format,
++    int *prime_fd, guint * stride)
++{
++  struct drm_mode_create_dumb create_arg;
++  gint ret;
++
++  *prime_fd = -1;
++  *stride = 0;
++
++
++  memset (&create_arg, 0, sizeof (create_arg));
++  create_arg.bpp = get_format_bpp (format);
++  create_arg.width = width;
++  create_arg.height = height;
++
++  ret = drmIoctl (drm_fd, DRM_IOCTL_MODE_CREATE_DUMB, &create_arg);
++
++  if (ret) {
++    GST_ERROR ("DRM_IOCTL_MODE_CREATE_DUMB failed %s ret =%d on fd %d",
++        strerror (errno), ret, drm_fd);
++
++    return ret;
++  }
++
++  *stride = create_arg.pitch;
++
++  ret = drmPrimeHandleToFD (drm_fd, create_arg.handle, DRM_CLOEXEC, prime_fd);
++  if (ret) {
++    struct drm_mode_destroy_dumb destroy_arg;
++
++    GST_WARNING ("Can't get fd from handle");
++
++    memset (&destroy_arg, 0, sizeof destroy_arg);
++    destroy_arg.handle = create_arg.handle;
++    drmIoctl (drm_fd, DRM_IOCTL_MODE_DESTROY_DUMB, &destroy_arg);
++  }
++
++
++  return ret;
++}
++
++static GstWlMeta *
++gst_buffer_add_wayland_meta (GstBuffer * buffer, GstWaylandBufferPool * self)
++{
++  GstWlMeta *meta;
++  gint offset;
++  void *data;
++  guint width, height, stride, dumb_stride;
++  gsize size;
++  int format;
++
++  width = GST_VIDEO_INFO_WIDTH (&self->info);
++  height = GST_VIDEO_INFO_HEIGHT (&self->info);
++  stride = GST_VIDEO_INFO_PLANE_STRIDE (&self->info, 0);
++  size = GST_VIDEO_INFO_SIZE (&self->info);
++
++  if (self->display->dmabuf && self->use_linux_dmabuf) {
++    format =
++        gst_video_format_to_wl_dmabuf_format (GST_VIDEO_INFO_FORMAT
++        (&self->info));
++    GST_DEBUG_OBJECT (self,
++        "Allocating buffer of size %" G_GSSIZE_FORMAT
++        " (%d x %d, stride %d), format : %s", size, width, height, stride,
++        gst_wl_dmabuf_format_to_string (format));
++  } else {
++    format =
++        gst_video_format_to_wl_shm_format (GST_VIDEO_INFO_FORMAT (&self->info));
++    GST_DEBUG_OBJECT (self,
++        "Allocating buffer of size %" G_GSSIZE_FORMAT
++        " (%d x %d, stride %d), format : %s", size, width, height, stride,
++        gst_wl_shm_format_to_string (format));
++  }
++
++  meta = (GstWlMeta *) gst_buffer_add_meta (buffer, GST_WL_META_INFO, NULL);
++  meta->pool = self;
++  meta->size = size;
++  meta->drm_fd = -1;
++  meta->used_by_compositor = FALSE;
++
++  gst_buffer_add_video_meta_full (buffer, GST_VIDEO_FRAME_FLAG_NONE,
++      GST_VIDEO_INFO_FORMAT (&self->info),
++      GST_VIDEO_INFO_WIDTH (&self->info),
++      GST_VIDEO_INFO_HEIGHT (&self->info),
++      GST_VIDEO_INFO_N_PLANES (&self->info), self->info.offset,
++      self->info.stride);
++
++  if (self->display->dmabuf && self->use_linux_dmabuf) {
++    int prime_fd, ret, buf_width, buf_height;
++
++    buf_width = (stride / (get_format_bpp (format) / 8));
++    buf_height = (size / buf_width) * 8 / get_format_bpp (format);
++    if ((buf_width * buf_height * get_format_bpp (format)) / 8 < size)
++      GST_ERROR_OBJECT (self, "Not allocating enough memory");
++
++    ret =
++        create_dumb (self->fd, width, buf_height, format, &prime_fd,
++        &dumb_stride);
++    if (ret || prime_fd == -1) {
++
++      return NULL;
++    }
++    GST_LOG_OBJECT (self, "drm buffer prime fd %d", prime_fd);
++
++    /* The wl_buffer will be created at the first render */
++    meta->wbuffer = NULL;
++
++    gst_buffer_append_memory (buffer,
++        gst_dmabuf_allocator_alloc (self->allocator, prime_fd, meta->size));
++
++    meta->drm_fd = self->fd;
++  } else {
++    /* try to reserve another memory block from the shm pool */
++    if (self->used + size > self->size) {
++
++      return NULL;
++    }
++    offset = self->used;
++    self->used += size;
++    data = ((gchar *) self->data) + offset;
++
++    meta->wbuffer = wl_shm_pool_create_buffer (self->wl_pool, offset,
++        width, height, stride, format);
++
++    meta->data = data;
++
++    /* add the allocated memory on the GstBuffer */
++    gst_buffer_append_memory (buffer,
++        gst_memory_new_wrapped (GST_MEMORY_FLAG_NO_SHARE, data,
++            size, 0, size, NULL, NULL));
++
++    /* configure listening to wl_buffer.release */
++    g_mutex_lock (&self->buffers_map_mutex);
++    g_hash_table_insert (self->buffers_map, meta->wbuffer, buffer);
++    g_mutex_unlock (&self->buffers_map_mutex);
++
++    wl_buffer_add_listener (meta->wbuffer, &buffer_listener, self);
++  }
++
++
++  return meta;
++}
++
++static GstFlowReturn
++gst_wayland_buffer_pool_alloc (GstBufferPool * pool, GstBuffer ** buffer,
++    GstBufferPoolAcquireParams * params)
++{
++  GstWaylandBufferPool *self = GST_WAYLAND_BUFFER_POOL_CAST (pool);
++  GstWlMeta *meta;
++
++  /* create buffer and its metadata object */
++  *buffer = gst_buffer_new ();
++
++  meta = gst_buffer_add_wayland_meta (*buffer, self);
++
++  if (meta == NULL) {
++    gst_buffer_unref (*buffer);
++    goto no_buffer;
++  }
++
++
++  return GST_FLOW_OK;
++
++  /* ERROR */
++no_buffer:
++  {
++    GST_WARNING_OBJECT (pool, "can't create buffer");
++
++    return GST_FLOW_ERROR;
++  }
++}
++
++GstBufferPool *
++gst_wayland_buffer_pool_new (GstWlDisplay * display)
++{
++  GstWaylandBufferPool *pool;
++  GstStructure *s;
++  GstVideoAlignment align;
++
++  g_return_val_if_fail (GST_IS_WL_DISPLAY (display), NULL);
++  pool = g_object_new (GST_TYPE_WAYLAND_BUFFER_POOL, NULL);
++  pool->display = g_object_ref (display);
++
++  pool->fd = -1;
++
++  s = gst_buffer_pool_get_config (GST_BUFFER_POOL_CAST (pool));
++  gst_buffer_pool_config_add_option (s, GST_BUFFER_POOL_OPTION_VIDEO_META);
++  gst_buffer_pool_config_add_option (s, GST_BUFFER_POOL_OPTION_VIDEO_ALIGNMENT);
++  /* reset alignment */
++  gst_video_alignment_reset (&align);
++  gst_buffer_pool_config_set_video_alignment (s, &align);
++  gst_buffer_pool_set_config (GST_BUFFER_POOL_CAST (pool), s);
++
++  return GST_BUFFER_POOL_CAST (pool);
++}
+diff --git a/ext/wayland/waylandpool.h b/ext/wayland/waylandpool.h
+new file mode 100644
+index 0000000..4afd683
+--- /dev/null
++++ b/ext/wayland/waylandpool.h
+@@ -0,0 +1,105 @@
++/* GStreamer Wayland buffer pool
++ * Copyright (C) 2012 Intel Corporation
++ * Copyright (C) 2012 Sreerenj Balachandran <sreerenj.balachandran@intel.com>
++ * Copyright (C) 2014 Collabora Ltd.
++ *
++ * This library is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU Library General Public
++ * License as published by the Free Software Foundation; either
++ * version 2 of the License, or (at your option) any later version.
++ *
++ * This library is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * Library General Public License for more details.
++ *
++ * You should have received a copy of the GNU Library General Public
++ * License along with this library; if not, write to the
++ * Free Software Foundation, Inc., 51 Franklin St, Fifth Floor,
++ * Boston, MA 02110-1301, USA.
++ */
++
++#ifndef __GST_WAYLAND_BUFFER_POOL_H__
++#define __GST_WAYLAND_BUFFER_POOL_H__
++
++#include <gst/video/video.h>
++#include <gst/video/gstvideometa.h>
++
++#include "wldisplay.h"
++#include "gstwaylandsink.h"
++
++G_BEGIN_DECLS
++#define GST_TYPE_WAYLAND_BUFFER_POOL      (gst_wayland_buffer_pool_get_type())
++#define GST_IS_WAYLAND_BUFFER_POOL(obj)   (G_TYPE_CHECK_INSTANCE_TYPE ((obj), GST_TYPE_WAYLAND_BUFFER_POOL))
++#define GST_WAYLAND_BUFFER_POOL(obj)      (G_TYPE_CHECK_INSTANCE_CAST ((obj), GST_TYPE_WAYLAND_BUFFER_POOL, GstWaylandBufferPool))
++#define GST_WAYLAND_BUFFER_POOL_CAST(obj) ((GstWaylandBufferPool*)(obj))
++typedef struct _GstWaylandBufferPool GstWaylandBufferPool;
++typedef struct _GstWaylandBufferPoolClass GstWaylandBufferPoolClass;
++
++/* buffer meta */
++typedef struct _GstWlMeta GstWlMeta;
++
++GType gst_wl_meta_api_get_type (void);
++#define GST_WL_META_API_TYPE  (gst_wl_meta_api_get_type())
++
++const GstMetaInfo *gst_wl_meta_get_info (void);
++#define GST_WL_META_INFO  (gst_wl_meta_get_info())
++
++#define gst_buffer_get_wl_meta(b) ((GstWlMeta*)gst_buffer_get_meta((b),GST_WL_META_API_TYPE))
++
++struct _GstWlMeta
++{
++  GstMeta meta;
++
++  GstWaylandBufferPool *pool;
++  struct wl_buffer *wbuffer;
++  gboolean used_by_compositor;
++
++  void *data;
++  size_t size;
++  int drm_fd;
++};
++
++/* buffer pool */
++struct _GstWaylandBufferPool
++{
++  GstBufferPool bufferpool;
++  GstWlDisplay *display;
++
++  GstAllocator *allocator;
++
++  /* external configuration */
++  GstVideoInfo info;
++
++  /* allocation data */
++  struct wl_shm_pool *wl_pool;
++  size_t size;
++  size_t used;
++  void *data;
++
++  gboolean use_linux_dmabuf;
++  gint fd;
++  GstCaps *caps;
++  guint width;
++  guint height;
++
++  GMutex buffers_map_mutex;
++  GHashTable *buffers_map;
++};
++
++struct _GstWaylandBufferPoolClass
++{
++  GstBufferPoolClass parent_class;
++};
++
++GType gst_wayland_buffer_pool_get_type (void);
++
++GstBufferPool *gst_wayland_buffer_pool_new (GstWlDisplay * display);
++
++void gst_wayland_compositor_acquire_buffer (GstWaylandBufferPool * self,
++    GstBuffer * buffer);
++void gst_wayland_compositor_release_all_buffers (GstWaylandBufferPool * self);
++
++gboolean gst_buffer_set_wl_buffer (GstBuffer * buf, GstBufferPool * bpool);
++G_END_DECLS
++#endif /*__GST_WAYLAND_BUFFER_POOL_H__*/
+diff --git a/ext/wayland/wldisplay.c b/ext/wayland/wldisplay.c
+index 39782bc..cb40f53 100644
+--- a/ext/wayland/wldisplay.c
++++ b/ext/wayland/wldisplay.c
+@@ -50,6 +50,9 @@ gst_wl_display_init (GstWlDisplay * self)
+   self->wl_fd_poll = gst_poll_new (TRUE);
+   self->buffers = g_hash_table_new (g_direct_hash, g_direct_equal);
+   g_mutex_init (&self->buffers_mutex);
++  /* Default DRM */
++  /* TODO : device name is hardcoded. It should come from protocol */
++  self->device_name = g_strdup ("/dev/dri/card0");
+ }
+ 
+ static void
+diff --git a/ext/wayland/wldisplay.h b/ext/wayland/wldisplay.h
+index 7c89212..c21ae64 100644
+--- a/ext/wayland/wldisplay.h
++++ b/ext/wayland/wldisplay.h
+@@ -27,15 +27,15 @@
+ #include "viewporter-client-protocol.h"
+ #include "linux-dmabuf-unstable-v1-client-protocol.h"
+ 
+-G_BEGIN_DECLS
++#include "gst/allocators/gstdmabuf.h"
+ 
++G_BEGIN_DECLS
+ #define GST_TYPE_WL_DISPLAY                  (gst_wl_display_get_type ())
+ #define GST_WL_DISPLAY(obj)                  (G_TYPE_CHECK_INSTANCE_CAST ((obj), GST_TYPE_WL_DISPLAY, GstWlDisplay))
+ #define GST_IS_WL_DISPLAY(obj)               (G_TYPE_CHECK_INSTANCE_TYPE ((obj), GST_TYPE_WL_DISPLAY))
+ #define GST_WL_DISPLAY_CLASS(klass)          (G_TYPE_CHECK_CLASS_CAST ((klass), GST_TYPE_WL_DISPLAY, GstWlDisplayClass))
+ #define GST_IS_WL_DISPLAY_CLASS(klass)       (G_TYPE_CHECK_CLASS_TYPE ((klass), GST_TYPE_WL_DISPLAY))
+ #define GST_WL_DISPLAY_GET_CLASS(obj)        (G_TYPE_INSTANCE_GET_CLASS ((obj), GST_TYPE_WL_DISPLAY, GstWlDisplayClass))
+-
+ typedef struct _GstWlDisplay GstWlDisplay;
+ typedef struct _GstWlDisplayClass GstWlDisplayClass;
+ 
+@@ -62,7 +62,7 @@ struct _GstWlDisplay
+   gboolean own_display;
+   GThread *thread;
+   GstPoll *wl_fd_poll;
+-
++  char *device_name;
+   GMutex buffers_mutex;
+   GHashTable *buffers;
+   gboolean shutting_down;
+@@ -76,7 +76,7 @@ struct _GstWlDisplayClass
+ GType gst_wl_display_get_type (void);
+ 
+ GstWlDisplay *gst_wl_display_new (const gchar * name, GError ** error);
+-GstWlDisplay *gst_wl_display_new_existing (struct wl_display * display,
++GstWlDisplay *gst_wl_display_new_existing (struct wl_display *display,
+     gboolean take_ownership, GError ** error);
+ 
+ /* see wlbuffer.c for explanation */
+@@ -89,5 +89,4 @@ gboolean gst_wl_display_check_format_for_dmabuf (GstWlDisplay * display,
+     GstVideoFormat format);
+ 
+ G_END_DECLS
+-
+ #endif /* __GST_WL_DISPLAY_H__ */
+-- 
+2.7.4
+

@@ -1,0 +1,30 @@
+From c110910b5077ff992c0c0ef1838d5fc91875b197 Mon Sep 17 00:00:00 2001
+From: Christophe Priouzeau <christophe.priouzeau@st.com>
+Date: Fri, 8 Jun 2018 10:45:27 +0200
+Subject: [PATCH 2/2] logind.conf: ignore the poweroff key
+
+For test usage, on stm32mp157c board,
+the poweroff key must be ignored due to the
+double functionality of the button: wape-up and
+poweroff.
+
+Signed-off-by: Christophe Priouzeau <christophe.priouzeau@st.com>
+---
+ src/login/logind.conf.in | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/src/login/logind.conf.in b/src/login/logind.conf.in
+index 6f720b7..85d3719 100644
+--- a/src/login/logind.conf.in
++++ b/src/login/logind.conf.in
+@@ -18,6 +18,7 @@
+ #KillOnlyUsers=
+ #KillExcludeUsers=root
+ #InhibitDelayMaxSec=5
++HandlePowerKey=ignore
+ #HandlePowerKey=poweroff
+ #HandleSuspendKey=suspend
+ #HandleHibernateKey=hibernate
+-- 
+2.7.4
+

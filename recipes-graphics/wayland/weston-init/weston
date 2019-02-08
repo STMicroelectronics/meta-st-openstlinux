@@ -1,0 +1,3 @@
+#OPTARGS="--log=/tmp/weston.log --use-pixman "
+#OPTARGS="--log=/tmp/weston.log "
+OPTARGS=

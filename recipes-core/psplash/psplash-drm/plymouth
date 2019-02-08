@@ -1,0 +1,55 @@
+#!/bin/sh
+
+while [[ $# > 1 ]]
+do
+    key="$1"
+    shift
+
+    case $key in
+        quit)
+        echo "QUIT" > /tmp/splash_fifo
+        ;;
+        update)
+        ;;
+        show-splash)
+        ;;
+        hide-splash)
+        ;;
+        *)
+            # unknown option
+        ;;
+    esac
+done
+
+#help)
+#    #This help message
+#debug)
+#    #Enable verbose debug logging
+#get-splash-plugin-path)
+#    #Get directory where splash plugins are installed
+#newroot)
+#    #Tell boot daemon that new root filesystem is mounted
+#quit)
+#    #Tell boot daemon to quit
+#ping)
+#    #Check of boot daemon is running
+#has-active-vt)
+#    #Check if boot daemon has an active vt
+#sysinit)
+#    #Tell boot daemon root filesystem is mounted read-write
+#show-splash)
+#    #Show splash screen
+#hide-splash)
+#    #Hide splash screen
+#ask-for-password)
+#    #Ask user for password
+#ignore-keystroke)
+#    #Remove sensitivity to a keystroke
+#update)
+#    #Tell boot daemon an update about boot progress
+#details)
+#    #Tell boot daemon there were errors during boot
+#wait)
+#    #Wait for boot daemon to quit
+
+

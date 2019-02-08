@@ -1,0 +1,9 @@
+Check GPU
+=========
+
+GPU can be deactivated by fuse or not present in some SOC
+
+So in case the GPU is not present, you must configure weston on pix-man by creating this file :
+/etc/default/weston with this content :
+
+OPTARGS=--use-pixman

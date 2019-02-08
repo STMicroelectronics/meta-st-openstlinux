@@ -1,0 +1,43 @@
+From cae18dad41f11683aa8c99d6e884b3d59a6e6739 Mon Sep 17 00:00:00 2001
+From: Mickael Reulier <mickael.reulier@st.com>
+Date: Wed, 22 Mar 2017 13:52:49 +0100
+Subject: [PATCH] linux-dmabuf: Add support for YUV Full color range
+
+Add new flag yuv_full_color_range to dmabuf protocol for
+YUV components color range.
+If set, components are in full color range.
+If not set, components are in limited color range.
+
+Change-Id: Id4589f050d83d00298a834c444b01a13365ae6f2
+Signed-off-by: Mickael Reulier <mickael.reulier@st.com>
+---
+ unstable/linux-dmabuf/linux-dmabuf-unstable-v1.xml | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/unstable/linux-dmabuf/linux-dmabuf-unstable-v1.xml b/unstable/linux-dmabuf/linux-dmabuf-unstable-v1.xml
+index 3b4861f..9f3df6e 100644
+--- a/unstable/linux-dmabuf/linux-dmabuf-unstable-v1.xml
++++ b/unstable/linux-dmabuf/linux-dmabuf-unstable-v1.xml
+@@ -185,6 +185,8 @@
+       <entry name="y_invert" value="1" summary="contents are y-inverted"/>
+       <entry name="interlaced" value="2" summary="content is interlaced"/>
+       <entry name="bottom_first" value="4" summary="bottom field first"/>
++      <entry name="yuv_full_color_range" value="8"
++           summary="For YUV buffers, components are in full color range"/>
+     </enum>
+ 
+     <request name="create">
+@@ -210,6 +212,10 @@
+         'bottom_first' is specified. It is undefined whether 'bottom_first'
+         is ignored if 'interlaced' is not set.
+ 
++        Flag 'yuv_full_color_range' specifies YUV components color range.
++        If set, components are in full color range.
++        If not set, components are in limited color range.
++
+         This protocol does not convey any information about field rate,
+         duration, or timing, other than the relative ordering between the
+         two fields in one buffer. A compositor may have to estimate the
+-- 
+1.9.1
+

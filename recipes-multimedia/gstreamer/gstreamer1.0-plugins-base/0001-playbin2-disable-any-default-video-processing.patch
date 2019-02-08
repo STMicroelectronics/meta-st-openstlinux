@@ -1,0 +1,32 @@
+From a698ef5806e50b614f49decb4eb2a2b4404f56e5 Mon Sep 17 00:00:00 2001
+From: Hugues Fruchet <hugues.fruchet@st.com>
+Date: Wed, 23 Jan 2019 14:18:28 +0100
+Subject: [PATCH 1/2] playbin2: disable any default video processing
+
+Do not enable by default software video processing
+to not degrade performances.
+
+Signed-off-by: Hugues Fruchet <hugues.fruchet@st.com>
+---
+ gst/playback/gstplaybin2.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/gst/playback/gstplaybin2.c b/gst/playback/gstplaybin2.c
+index a2e9ed4..4c0163e 100644
+--- a/gst/playback/gstplaybin2.c
++++ b/gst/playback/gstplaybin2.c
+@@ -499,9 +499,8 @@ struct _GstPlayBinClass
+ #define DEFAULT_URI               NULL
+ #define DEFAULT_SUBURI            NULL
+ #define DEFAULT_SOURCE            NULL
+-#define DEFAULT_FLAGS             GST_PLAY_FLAG_AUDIO | GST_PLAY_FLAG_VIDEO | GST_PLAY_FLAG_TEXT | \
+-                                  GST_PLAY_FLAG_SOFT_VOLUME | GST_PLAY_FLAG_DEINTERLACE | \
+-                                  GST_PLAY_FLAG_SOFT_COLORBALANCE
++#define DEFAULT_FLAGS             GST_PLAY_FLAG_AUDIO | GST_PLAY_FLAG_VIDEO | GST_PLAY_FLAG_SOFT_VOLUME
++
+ #define DEFAULT_N_VIDEO           0
+ #define DEFAULT_CURRENT_VIDEO     -1
+ #define DEFAULT_N_AUDIO           0
+-- 
+2.7.4
+

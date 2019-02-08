@@ -1,0 +1,40 @@
+From 1da2a6574798c77f76e55d6b38ea8ee95ed9a07f Mon Sep 17 00:00:00 2001
+From: Christophe Priouzeau <christophe.priouzeau@st.com>
+Date: Thu, 27 Oct 2016 14:14:21 +0200
+Subject: [PATCH] authorize pulse audio request via dbus
+
+---
+ src/bluetooth.conf | 17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
+
+diff --git a/src/bluetooth.conf b/src/bluetooth.conf
+index 10d2d36..67ac27d 100644
+--- a/src/bluetooth.conf
++++ b/src/bluetooth.conf
+@@ -24,6 +24,23 @@
+     <allow send_interface="org.freedesktop.DBus.Properties"/>
+   </policy>
+ 
++  <policy user="pulse">
++    <allow own="org.bluez"/>
++    <allow send_destination="org.bluez"/>
++    <allow send_interface="org.bluez.Agent1"/>
++    <allow send_interface="org.bluez.MediaEndpoint1"/>
++    <allow send_interface="org.bluez.MediaPlayer1"/>
++    <allow send_interface="org.bluez.ThermometerWatcher1"/>
++    <allow send_interface="org.bluez.AlertAgent1"/>
++    <allow send_interface="org.bluez.Profile1"/>
++    <allow send_interface="org.bluez.HeartRateWatcher1"/>
++    <allow send_interface="org.bluez.CyclingSpeedWatcher1"/>
++    <allow send_interface="org.bluez.GattCharacteristic1"/>
++    <allow send_interface="org.bluez.GattDescriptor1"/>
++    <allow send_interface="org.freedesktop.DBus.ObjectManager"/>
++    <allow send_interface="org.freedesktop.DBus.Properties"/>
++  </policy>
++
+   <policy at_console="true">
+     <allow send_destination="org.bluez"/>
+   </policy>
+-- 
+1.9.1
+

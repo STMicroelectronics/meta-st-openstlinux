@@ -1,0 +1,31 @@
+From 5f3444eda50b5f3938808f4e193cc916e3512240 Mon Sep 17 00:00:00 2001
+From: Hugues Fruchet <hugues.fruchet@st.com>
+Date: Mon, 26 Nov 2018 17:38:13 +0100
+Subject: [PATCH 3/9] waylandsink: fix error when mmapping dmabuf buffers
+
+Linux Kernel 4.10 DRM/KMS requires DRM_RDWR rights
+in addition to DRM_CLOEXEC (see drmPrimeHandleToFD())
+in order to mmap in RD/WR.
+
+Change-Id: I9c26642a47e6f71b56c0a4ad4714a5b85d814e5f
+Signed-off-by: Hugues Fruchet <hugues.fruchet@st.com>
+---
+ ext/wayland/waylandpool.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/ext/wayland/waylandpool.c b/ext/wayland/waylandpool.c
+index 70e40b4..9b20884 100644
+--- a/ext/wayland/waylandpool.c
++++ b/ext/wayland/waylandpool.c
+@@ -470,7 +470,7 @@ create_dumb (int drm_fd, uint32_t width, uint32_t height, int format,
+ 
+   *stride = create_arg.pitch;
+ 
+-  ret = drmPrimeHandleToFD (drm_fd, create_arg.handle, DRM_CLOEXEC, prime_fd);
++  ret = drmPrimeHandleToFD (drm_fd, create_arg.handle, DRM_CLOEXEC | DRM_RDWR, prime_fd);
+   if (ret) {
+     struct drm_mode_destroy_dumb destroy_arg;
+ 
+-- 
+2.7.4
+

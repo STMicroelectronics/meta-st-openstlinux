@@ -1,0 +1,26 @@
+From e382ebf2f085f89b38b385694e7664d058e350a1 Mon Sep 17 00:00:00 2001
+From: Hugues Fruchet <hugues.fruchet@st.com>
+Date: Wed, 21 Nov 2018 10:56:12 +0100
+Subject: [PATCH 1/9] waylandsink: add I420 to dmabuf supported formats
+
+Change-Id: Iccbb762232a1f0fddabe81fdcd22a0c5e4a2f8bc
+Signed-off-by: Hugues Fruchet <hugues.fruchet@st.com>
+---
+ ext/wayland/wlvideoformat.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/ext/wayland/wlvideoformat.c b/ext/wayland/wlvideoformat.c
+index 77cfac8..8e54839 100644
+--- a/ext/wayland/wlvideoformat.c
++++ b/ext/wayland/wlvideoformat.c
+@@ -110,6 +110,7 @@ static const wl_DmabufVideoFormat dmabuf_formats[] = {
+   {DRM_FORMAT_RGB565, GST_VIDEO_FORMAT_RGB16},
+   {DRM_FORMAT_YUYV, GST_VIDEO_FORMAT_YUY2},
+   {DRM_FORMAT_NV12, GST_VIDEO_FORMAT_NV12},
++  {DRM_FORMAT_YUV420, GST_VIDEO_FORMAT_I420},
+ };
+ 
+ enum wl_shm_format
+-- 
+2.7.4
+

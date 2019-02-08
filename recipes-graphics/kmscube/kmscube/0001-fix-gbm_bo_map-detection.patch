@@ -1,0 +1,30 @@
+From 9b4875dee576dbfe28a46881a8dc1eb16c39c4cd Mon Sep 17 00:00:00 2001
+From: Philippe Cornu <philippe.cornu@st.com>
+Date: Tue, 18 Dec 2018 15:15:46 +0100
+Subject: [PATCH] fix gbm_bo_map detection
+
+The HAVE_GBM_BO_MAP flag was not created as a #define macro
+for the source code.
+
+Signed-off-by: Philippe Cornu <philippe.cornu@st.com>
+---
+ configure.ac | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/configure.ac b/configure.ac
+index c7f621f..47b9beb 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -49,7 +49,8 @@ if test "x$HAVE_GST" = "xyes"; then
+ fi
+ AM_CONDITIONAL(ENABLE_GST, [test "x$HAVE_GST" = "xyes"])
+ 
+-AC_CHECK_LIB([gbm], [gbm_bo_map], [HAVE_GBM_BO_MAP=yes], [])
++AC_CHECK_LIB([gbm], [gbm_bo_map], [HAVE_GBM_BO_MAP=yes
++	     AC_DEFINE([HAVE_GBM_BO_MAP], 1)], [])
+ AM_CONDITIONAL(ENABLE_GBM_MAP, [test "x$HAVE_GBM_BO_MAP" = "xyes"])
+ 
+ AC_CONFIG_FILES([Makefile])
+-- 
+2.7.4
+

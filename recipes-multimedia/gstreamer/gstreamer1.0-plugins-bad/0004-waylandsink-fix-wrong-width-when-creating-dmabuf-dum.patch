@@ -1,0 +1,34 @@
+From 5c3f51a70a7897ec9b728b755ce3c18de771786e Mon Sep 17 00:00:00 2001
+From: Hugues Fruchet <hugues.fruchet@st.com>
+Date: Thu, 6 Dec 2018 18:08:15 +0100
+Subject: [PATCH 4/9] waylandsink: fix wrong width when creating dmabuf dumb
+ buffers
+
+Unaligned width is given in argument of create_dumb(), fix this.
+
+Change-Id: Ifc57aa24331f58f588aae480baa2099a47d5f31b
+Signed-off-by: Hugues Fruchet <hugues.fruchet@st.com>
+---
+ ext/wayland/waylandpool.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/ext/wayland/waylandpool.c b/ext/wayland/waylandpool.c
+index 9b20884..6e98143 100644
+--- a/ext/wayland/waylandpool.c
++++ b/ext/wayland/waylandpool.c
+@@ -537,10 +537,9 @@ gst_buffer_add_wayland_meta (GstBuffer * buffer, GstWaylandBufferPool * self)
+     buf_height = (size / buf_width) * 8 / get_format_bpp (format);
+     if ((buf_width * buf_height * get_format_bpp (format)) / 8 < size)
+       GST_ERROR_OBJECT (self, "Not allocating enough memory");
+-
+     ret =
+-        create_dumb (self->fd, width, buf_height, format, &prime_fd,
+-        &dumb_stride);
++        create_dumb (self->fd, buf_width, buf_height, format, &prime_fd,
++            &dumb_stride);
+     if (ret || prime_fd == -1) {
+ 
+       return NULL;
+-- 
+2.7.4
+

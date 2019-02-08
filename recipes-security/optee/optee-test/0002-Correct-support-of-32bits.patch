@@ -1,0 +1,31 @@
+From 9beccf8630197ffef624bcb4e2f4beaf7dd15e65 Mon Sep 17 00:00:00 2001
+From: Christophe Priouzeau <christophe.priouzeau@st.com>
+Date: Thu, 8 Nov 2018 18:49:53 +0100
+Subject: [PATCH 2/2] Correct support of 32bits
+
+Signed-off-by: Christophe Priouzeau <christophe.priouzeau@st.com>
+---
+ host/xtest/Makefile | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/host/xtest/Makefile b/host/xtest/Makefile
+index a25c311..a2fcf05 100644
+--- a/host/xtest/Makefile
++++ b/host/xtest/Makefile
+@@ -24,6 +24,13 @@ OBJCOPY		?= $(CROSS_COMPILE)objcopy
+ OBJDUMP		?= $(CROSS_COMPILE)objdump
+ READELF		?= $(CROSS_COMPILE)readelf
+ 
++ifeq ($(CFG_ARM32_core),y)
++COMPILE_NS_USER ?= 32
++else
++COMPILE_NS_USER ?= 64
++endif
++
++
+ # OpenSSL is used by GP tests series 8500 and Mbed TLS test 8103
+ ifneq ($(CFG_GP_PACKAGE_PATH)$(filter y,$(CFG_TA_MBEDTLS)),)
+ CFLAGS += -DOPENSSL_FOUND=1
+-- 
+2.7.4
+

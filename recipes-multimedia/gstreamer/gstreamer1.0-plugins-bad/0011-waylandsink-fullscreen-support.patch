@@ -1,0 +1,162 @@
+From f777c66dcc29e3d9d6b56c85fdefc0600333aa0d Mon Sep 17 00:00:00 2001
+From: Fabien Dessenne <fabien.dessenne@st.com>
+Date: Thu, 23 Feb 2017 11:48:13 +0100
+Subject: [PATCH 1/3] waylandsink: support fullscreen
+
+Add the fullscreen property that makes the sink displayed all across
+the output.
+
+https://bugzilla.gnome.org/show_bug.cgi?id=688190
+---
+ ext/wayland/gstwaylandsink.c | 32 ++++++++++++++++++++++++++++++--
+ ext/wayland/gstwaylandsink.h |  1 +
+ ext/wayland/wlwindow.c       | 17 +++++++++++++++--
+ ext/wayland/wlwindow.h       |  4 +++-
+ 4 files changed, 49 insertions(+), 5 deletions(-)
+
+diff --git a/ext/wayland/gstwaylandsink.c b/ext/wayland/gstwaylandsink.c
+index ff08194..158c9af 100644
+--- a/ext/wayland/gstwaylandsink.c
++++ b/ext/wayland/gstwaylandsink.c
+@@ -61,7 +61,8 @@ enum
+ enum
+ {
+   PROP_0,
+-  PROP_DISPLAY
++  PROP_DISPLAY,
++  PROP_FULLSCREEN
+ };
+ 
+ GST_DEBUG_CATEGORY (gstwayland_debug);
+@@ -202,6 +203,11 @@ gst_wayland_sink_class_init (GstWaylandSinkClass * klass)
+       g_param_spec_string ("display", "Wayland Display name", "Wayland "
+           "display name to connect to, if not supplied via the GstContext",
+           NULL, G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
++
++  g_object_class_install_property (gobject_class, PROP_FULLSCREEN,
++      g_param_spec_boolean ("fullscreen", "Fullscreen",
++          "Whether the surface should be made fullscreen ", FALSE,
++          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
+ }
+ 
+ static void
+@@ -212,6 +218,18 @@ gst_wayland_sink_init (GstWaylandSink * sink)
+ }
+ 
+ static void
++gst_wayland_sink_set_fullscreen (GstWaylandSink * sink, gboolean fullscreen)
++{
++  if (fullscreen == sink->fullscreen)
++    return;
++
++  g_mutex_lock (&sink->render_lock);
++  sink->fullscreen = fullscreen;
++  gst_wl_window_ensure_fullscreen (sink->window, fullscreen);
++  g_mutex_unlock (&sink->render_lock);
++}
++
++static void
+ gst_wayland_sink_get_property (GObject * object,
+     guint prop_id, GValue * value, GParamSpec * pspec)
+ {
+@@ -223,6 +241,11 @@ gst_wayland_sink_get_property (GObject * object,
+       g_value_set_string (value, sink->display_name);
+       GST_OBJECT_UNLOCK (sink);
+       break;
++    case PROP_FULLSCREEN:
++      GST_OBJECT_LOCK (sink);
++      g_value_set_boolean (value, sink->fullscreen);
++      GST_OBJECT_UNLOCK (sink);
++      break;
+     default:
+       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+       break;
+@@ -241,6 +264,11 @@ gst_wayland_sink_set_property (GObject * object,
+       sink->display_name = g_value_dup_string (value);
+       GST_OBJECT_UNLOCK (sink);
+       break;
++    case PROP_FULLSCREEN:
++      GST_OBJECT_LOCK (sink);
++      gst_wayland_sink_set_fullscreen (sink, g_value_get_boolean (value));
++      GST_OBJECT_UNLOCK (sink);
++      break;
+     default:
+       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+       break;
+@@ -659,7 +687,7 @@ gst_wayland_sink_show_frame (GstVideoSink * vsink, GstBuffer * buffer)
+     if (!sink->window) {
+       /* if we were not provided a window, create one ourselves */
+       sink->window = gst_wl_window_new_toplevel (sink->display,
+-          &sink->video_info, &sink->render_lock);
++          &sink->video_info, sink->fullscreen, &sink->render_lock);
+     }
+   }
+ 
+diff --git a/ext/wayland/gstwaylandsink.h b/ext/wayland/gstwaylandsink.h
+index 2704d00..be92fe7 100644
+--- a/ext/wayland/gstwaylandsink.h
++++ b/ext/wayland/gstwaylandsink.h
+@@ -60,6 +60,7 @@ struct _GstWaylandSink
+ 
+   gboolean video_info_changed;
+   GstVideoInfo video_info;
++  gboolean fullscreen;
+ 
+   gchar *display_name;
+ 
+diff --git a/ext/wayland/wlwindow.c b/ext/wayland/wlwindow.c
+index c64c77a..9ef8c32 100644
+--- a/ext/wayland/wlwindow.c
++++ b/ext/wayland/wlwindow.c
+@@ -150,9 +150,22 @@ gst_wl_window_new_internal (GstWlDisplay * display, GMutex * render_lock)
+   return window;
+ }
+ 
++void
++gst_wl_window_ensure_fullscreen (GstWlWindow * window, gboolean fullscreen)
++{
++  if (!window)
++    return;
++
++  if (fullscreen)
++    wl_shell_surface_set_fullscreen (window->shell_surface,
++        WL_SHELL_SURFACE_FULLSCREEN_METHOD_SCALE, 0, NULL);
++  else
++    wl_shell_surface_set_toplevel (window->shell_surface);
++}
++
+ GstWlWindow *
+ gst_wl_window_new_toplevel (GstWlDisplay * display, const GstVideoInfo * info,
+-    GMutex * render_lock)
++    gboolean fullscreen, GMutex * render_lock)
+ {
+   GstWlWindow *window;
+   gint width;
+@@ -166,7 +179,7 @@ gst_wl_window_new_toplevel (GstWlDisplay * display, const GstVideoInfo * info,
+   if (window->shell_surface) {
+     wl_shell_surface_add_listener (window->shell_surface,
+         &shell_surface_listener, window);
+-    wl_shell_surface_set_toplevel (window->shell_surface);
++    gst_wl_window_ensure_fullscreen (window, fullscreen);
+   } else {
+     GST_ERROR ("Unable to get wl_shell_surface");
+ 
+diff --git a/ext/wayland/wlwindow.h b/ext/wayland/wlwindow.h
+index e247b4e..10b49fd 100644
+--- a/ext/wayland/wlwindow.h
++++ b/ext/wayland/wlwindow.h
+@@ -74,8 +74,10 @@ struct _GstWlWindowClass
+ 
+ GType gst_wl_window_get_type (void);
+ 
++void gst_wl_window_ensure_fullscreen (GstWlWindow * window,
++        gboolean fullscreen);
+ GstWlWindow *gst_wl_window_new_toplevel (GstWlDisplay * display,
+-        const GstVideoInfo * info, GMutex * render_lock);
++        const GstVideoInfo * info, gboolean fullscreen, GMutex * render_lock);
+ GstWlWindow *gst_wl_window_new_in_surface (GstWlDisplay * display,
+         struct wl_surface * parent, GMutex * render_lock);
+ 
+-- 
+2.7.4
+

@@ -1,0 +1,35 @@
+From 0eb1e0643aac0f428985dc5e431bb3843963b1ad Mon Sep 17 00:00:00 2001
+From: Hugues Fruchet <hugues.fruchet@st.com>
+Date: Wed, 12 Dec 2018 18:30:58 +0100
+Subject: [PATCH 2/2] gstreamer1.0-libav: disable decoder direct rendering by
+ default
+
+DMA-buf 0-copy path and direct-rendering mode are not yet compatible
+because of stride and offset issues.
+Nevertheless performances are better than with direct-rendering enabled
+and virtual memory path.
+
+This fix is required to reach 30fps on display driver side
+with 30fps VGA video content.
+
+Signed-off-by: Hugues Fruchet <hugues.fruchet@st.com>
+---
+ ext/libav/gstavviddec.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/ext/libav/gstavviddec.c b/ext/libav/gstavviddec.c
+index d3830dd..40aa0a2 100644
+--- a/ext/libav/gstavviddec.c
++++ b/ext/libav/gstavviddec.c
+@@ -44,7 +44,7 @@ GST_DEBUG_CATEGORY_STATIC (GST_CAT_PERFORMANCE);
+ 
+ #define DEFAULT_LOWRES			0
+ #define DEFAULT_SKIPFRAME		0
+-#define DEFAULT_DIRECT_RENDERING	TRUE
++#define DEFAULT_DIRECT_RENDERING	FALSE
+ #define DEFAULT_DEBUG_MV		FALSE
+ #define DEFAULT_MAX_THREADS		0
+ #define DEFAULT_OUTPUT_CORRUPT		TRUE
+-- 
+2.7.4
+
