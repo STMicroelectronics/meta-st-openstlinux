@@ -1,0 +1,41 @@
+From cc7c42ec4aa53690ae15a2e2774717942836da8e Mon Sep 17 00:00:00 2001
+From: Hugues Fruchet <hugues.fruchet@st.com>
+Date: Mon, 11 Feb 2019 16:00:02 +0100
+Subject: [PATCH] waylandsink: set video alignment to 32 bytes
+
+Display subsystem requires at least 32 bytes alignment.
+
+Signed-off-by: Hugues Fruchet <hugues.fruchet@st.com>
+---
+ ext/wayland/waylandpool.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/ext/wayland/waylandpool.c b/ext/wayland/waylandpool.c
+index 17a94f1..e04a459 100644
+--- a/ext/wayland/waylandpool.c
++++ b/ext/wayland/waylandpool.c
+@@ -635,6 +635,7 @@ gst_wayland_buffer_pool_new (GstWlDisplay * display)
+   GstWaylandBufferPool *pool;
+   GstStructure *s;
+   GstVideoAlignment align;
++  guint i;
+ 
+   g_return_val_if_fail (GST_IS_WL_DISPLAY (display), NULL);
+   pool = g_object_new (GST_TYPE_WAYLAND_BUFFER_POOL, NULL);
+@@ -645,8 +646,12 @@ gst_wayland_buffer_pool_new (GstWlDisplay * display)
+   s = gst_buffer_pool_get_config (GST_BUFFER_POOL_CAST (pool));
+   gst_buffer_pool_config_add_option (s, GST_BUFFER_POOL_OPTION_VIDEO_META);
+   gst_buffer_pool_config_add_option (s, GST_BUFFER_POOL_OPTION_VIDEO_ALIGNMENT);
+-  /* reset alignment */
++
++  /* display subsystem requires at least 32 bytes alignment */
+   gst_video_alignment_reset (&align);
++  for (i = 0; i < GST_VIDEO_MAX_PLANES; i++)
++    align.stride_align[i] = 31;
++
+   gst_buffer_pool_config_set_video_alignment (s, &align);
+   gst_buffer_pool_set_config (GST_BUFFER_POOL_CAST (pool), s);
+ 
+-- 
+2.7.4
+
