@@ -28,7 +28,6 @@ kill_all() {
 quit() {
     kill_all
     killall ai_char_reco_launcher
-    echo stop > /sys/class/remoteproc/remoteproc0/state
 }
 
 case "$1" in
