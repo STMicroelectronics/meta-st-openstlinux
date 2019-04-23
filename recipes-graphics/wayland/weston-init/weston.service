@@ -6,9 +6,6 @@ After=pulsesaudio.service
 [Service]
 User=root
 EnvironmentFile=-/etc/default/weston
-Environment="XDG_RUNTIME_DIR=/run/user/root"
-ExecStartPre=/bin/mkdir -p /run/user/root
-ExecStartPre=/bin/chmod 0700 /run/user/root
 ExecStartPre=/sbin/check-gpu
 ExecStartPre=-/usr/bin/psplash-drm-quit
 ExecStart=/usr/bin/weston-start -v -e -- $OPTARGS
