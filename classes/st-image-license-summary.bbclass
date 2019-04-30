@@ -27,7 +27,6 @@ def license_create_summary(d):
     tab =  d.expand("${LICENSE_IMAGE_CONTENT_WITH_TAB}")
     ref_image_name =  d.expand("${IMAGE_LINK_NAME}")
     ref_image_name_full = d.expand("${IMAGE_NAME}")
-    console_latest = d.expand("${LOG_DIR}/cooker/${MACHINE}/console-latest.log")
     deploy_image_dir = d.expand("${DEPLOY_DIR_IMAGE}")
     temp_deploy_image_dir = deploy_image_dir #d.expand("${IMGDEPLOYDIR}")
     license_deploy_dir = d.expand("${DEPLOY_DIR}/licenses")
@@ -370,26 +369,10 @@ def license_create_summary(d):
         html.stopDiv()
 
     def generate_introduction_sheet(html):
-        general_MACHINE = None
-        general_DISTRO = None
-        general_DISTRO_VERSION = None
-        general_DISTRO_CODENAME = None
-        contents = None
-
-        contents = private_open(console_latest)
-
-        for line in contents:
-            r = re.compile("([^=]+)=\s*\"(.*)\"")
-            m = r.match(line)
-            if m:
-                if m.group(1).rstrip() == "MACHINE":
-                    general_MACHINE =  m.group(2)
-                elif m.group(1).rstrip() == "DISTRO":
-                    general_DISTRO = m.group(2)
-                elif m.group(1).rstrip() == "DISTRO_VERSION":
-                    general_DISTRO_VERSION = m.group(2)
-                elif m.group(1).rstrip() == "DISTRO_CODENAME":
-                    general_DISTRO_CODENAME = m.group(2)
+        general_MACHINE = d.getVar("MACHINE")
+        general_DISTRO = d.getVar("DISTRO")
+        general_DISTRO_VERSION = d.getVar("DISTRO_VERSION")
+        general_DISTRO_CODENAME = d.getVar("DISTRO_CODENAME")
 
         html.startDiv("introduction", "")
         html.addAnchor("introduction")
@@ -398,10 +381,7 @@ def license_create_summary(d):
         # Machine
         html.startRow()
         html.addColumnContent("MACHINE", html.bold)
-        if general_MACHINE:
-            html.addColumnContent(general_MACHINE)
-        else:
-            html.addColumnContent("")
+        html.addColumnContent(general_MACHINE)
         html.stopRow()
         # Image
         html.startRow()
@@ -411,26 +391,17 @@ def license_create_summary(d):
         # DISTRO
         html.startRow()
         html.addColumnContent("DISTRO", html.bold)
-        if general_MACHINE:
-            html.addColumnContent(general_DISTRO)
-        else:
-            html.addColumnContent("")
+        html.addColumnContent(general_DISTRO)
         html.stopRow()
         # DISTRO VERSION
         html.startRow()
         html.addColumnContent("VERSION", html.bold)
-        if general_MACHINE:
-            html.addColumnContent(general_DISTRO_VERSION)
-        else:
-            html.addColumnContent("")
+        html.addColumnContent(general_DISTRO_VERSION)
         html.stopRow()
         # DISTRO CODENAME
         html.startRow()
         html.addColumnContent("OE branch", html.bold)
-        if general_MACHINE:
-            html.addColumnContent(general_DISTRO_CODENAME)
-        else:
-            html.addColumnContent("")
+        html.addColumnContent(general_DISTRO_CODENAME)
         html.stopRow()
         html.stopTable()
 
