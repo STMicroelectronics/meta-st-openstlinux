@@ -22,7 +22,6 @@ POKY_NON_REMOVABLE += "${OEROOT}/layers/poky/meta-yocto"
 #--------------------------
 #
 BASELAYERS ?= " \
-    ${OEROOT}/layers/meta-openembedded/meta-oe \
     ${OEROOT}/layers/meta-openembedded/meta-gnome \
     ${OEROOT}/layers/meta-openembedded/meta-xfce \
     ${OEROOT}/layers/meta-openembedded/meta-initramfs \
@@ -31,7 +30,6 @@ BASELAYERS ?= " \
     ${OEROOT}/layers/meta-openembedded/meta-webserver \
     ${OEROOT}/layers/meta-openembedded/meta-filesystems \
     ${OEROOT}/layers/meta-openembedded/meta-perl \
-    ${OEROOT}/layers/meta-openembedded/meta-python \
 "
 
 BBLAYERS_NON_REMOVABLE ?= " \
