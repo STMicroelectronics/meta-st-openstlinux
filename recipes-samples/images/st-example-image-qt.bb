@@ -60,6 +60,18 @@ IMAGE_QT_MANDATORY_PART = " \
    "
 
 #
+# QT part examples
+#
+IMAGE_QT_EXAMPLES_PART = " \
+   qtbase-examples         \
+   qtdeclarative-examples  \
+   \
+   qtmultimedia-examples   \
+   \
+   qtscript-examples       \
+   "
+
+#
 # QT part add-ons
 #
 IMAGE_QT_OPTIONAL_PART = " \
@@ -95,19 +107,13 @@ IMAGE_QT_OPTIONAL_PART = " \
    "
 
 #
-# QT part examples
+# QT part optional examples
 #
-IMAGE_QT_EXAMPLES_PART = " \
+IMAGE_QT_EXAMPLES_OPTIONAL_PART = " \
    qtcanvas3d-examples \
-   qtbase-examples         \
-   qtdeclarative-examples  \
-   \
-   qtmultimedia-examples   \
-   \
-   qtwebkit-examples       \
    \
    qtquickcontrols-examples \
-   qtscript-examples       \
+   qtwebkit-examples       \
    \
    qtsensors-examples      \
    qtserialport-examples   \
@@ -151,6 +157,5 @@ CORE_IMAGE_EXTRA_INSTALL += " \
     ${IMAGE_MM_PART}            \
     \
     ${IMAGE_QT_MANDATORY_PART}  \
-    ${IMAGE_QT_OPTIONAL_PART}   \
     ${IMAGE_QT_EXAMPLES_PART}   \
     "
