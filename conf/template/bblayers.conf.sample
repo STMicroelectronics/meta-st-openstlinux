@@ -53,9 +53,7 @@ ADDONSLAYERS += "${@'${OEROOT}/layers/meta-qt5' if os.path.isfile('${OEROOT}/lay
 # Security layer
 ADDONSLAYERS += " \
     ${@'${OEROOT}/layers/meta-security \
-    ${OEROOT}/layers/meta-security/meta-tpm \
-    ${OEROOT}/layers/meta-openembedded/meta-perl \
-    ${OEROOT}/layers/meta-openembedded/meta-filesystems' \
+    ${OEROOT}/layers/meta-security/meta-tpm' \
     if os.path.isfile('${OEROOT}/layers/meta-security/conf/layer.conf') else ''} \
     "
 
