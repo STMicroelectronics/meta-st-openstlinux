@@ -15,10 +15,10 @@ OPENSTLINUX_RELEASE ??= "snapshot"
 
 DISTRO = "openstlinux"
 DISTRO_NAME = "ST OpenSTLinux (A Yocto Project Based Distro)"
-DISTRO_VERSION = "2.6-${@bb.utils.contains('OPENSTLINUX_RELEASE', 'snapshot', 'snapshot-${DATE}', '${OPENSTLINUX_RELEASE}', d)}"
+DISTRO_VERSION = "2.7-${@bb.utils.contains('OPENSTLINUX_RELEASE', 'snapshot', 'snapshot-${DATE}', '${OPENSTLINUX_RELEASE}', d)}"
 # Don't include the DATE variable in the sstate package signatures
 DISTRO_VERSION[vardepsexclude] = "DATE"
-DISTRO_CODENAME = "thud"
+DISTRO_CODENAME = "warrior"
 
 SDK_VENDOR = "-openstlinux_sdk"
 SDK_VERSION := "${@'${DISTRO_VERSION}'.replace('snapshot-${DATE}','snapshot')}"
@@ -80,13 +80,16 @@ DISTRO_FEATURES_append = " splashscreen "
 DISTRO_FEATURES_append = " wayland pam "
 
 # add support of X11
-DISTRO_FEATURES_append = " x11"
+DISTRO_FEATURES_append = " x11 "
 
 # add support of KDE (since OE thud version)
 DISTRO_FEATURES_append = " kde "
 
 # add support of systemd
-DISTRO_FEATURES_append = " systemd "
+DISTRO_FEATURES_append = " systemd polkit "
+
+# add support of efi
+DISTRO_FEATURES_append = " efi "
 
 # add support of tpm2
 #DISTRO_FEATURES_append = " tpm2 "
