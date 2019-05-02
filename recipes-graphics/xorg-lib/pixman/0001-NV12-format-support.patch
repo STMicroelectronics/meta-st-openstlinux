@@ -1,21 +1,20 @@
-
-From d5fb6dddf7d2748593b9b06a0a5fa1b4e258aafe Mon Sep 17 00:00:00 2001
-From: Fabien Dessenne <fabien.dessenne@st.com>
-Date: Fri, 5 Sep 2014 12:00:59 +0200
-Subject: [PATCH] NV12 format support
+From 8cb96d48a8f3fc49bd9e63255e41eb0976d82f8c Mon Sep 17 00:00:00 2001
+From: Christophe Priouzeau <christophe.priouzeau@st.com>
+Date: Tue, 23 Apr 2019 17:18:15 +0200
+Subject: [PATCH] NV12-format-support
 
 Signed-off-by: Fabien Dessenne <fabien.dessenne@st.com>
 ---
- pixman/pixman-access.c | 81 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++-
- pixman/pixman.c        |  3 ++-
- pixman/pixman.h        |  4 ++-
- 3 files changed, 85 insertions(+), 3 deletions(-)
+ pixman/pixman-access.c | 79 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ pixman/pixman.c        |  3 +-
+ pixman/pixman.h        |  5 +++-
+ 3 files changed, 85 insertions(+), 2 deletions(-)
 
 diff --git a/pixman/pixman-access.c b/pixman/pixman-access.c
-index 4f0642d..3da3fb3 100644
+index 8dfd35f..a462b27 100644
 --- a/pixman/pixman-access.c
 +++ b/pixman/pixman-access.c
-@@ -803,6 +803,46 @@ fetch_scanline_yv12 (bits_image_t   *image,
+@@ -845,6 +845,46 @@ fetch_scanline_yv12 (bits_image_t   *image,
      }
  }
  
@@ -38,31 +37,31 @@ index 4f0642d..3da3fb3 100644
 +
 +    for (i = 0; i < width; i++)
 +    {
-+	int16_t y, u, v;
-+	int32_t r, g, b;
++        int16_t y, u, v;
++        int32_t r, g, b;
 +
-+	y = *(y_line + x + i) - 16;
-+	u = *(uv_line + ((x + i) & ~1)) - 128;
-+	v = *(uv_line + ((x + i) & ~1) + 1) - 128;
++        y = *(y_line + x + i) - 16;
++        u = *(uv_line + ((x + i) & ~1)) - 128;
++        v = *(uv_line + ((x + i) & ~1) + 1) - 128;
 +
-+	/* R = 1.164(Y - 16) + 1.596(V - 128) */
-+	r = 0x012b27 * y + 0x019a2e * v;
-+	/* G = 1.164(Y - 16) - 0.813(V - 128) - 0.391(U - 128) */
-+	g = 0x012b27 * y - 0x00d0f2 * v - 0x00647e * u;
-+	/* B = 1.164(Y - 16) + 2.018(U - 128) */
-+	b = 0x012b27 * y + 0x0206a2 * u;
++        /* R = 1.164(Y - 16) + 1.596(V - 128) */
++        r = 0x012b27 * y + 0x019a2e * v;
++        /* G = 1.164(Y - 16) - 0.813(V - 128) - 0.391(U - 128) */
++        g = 0x012b27 * y - 0x00d0f2 * v - 0x00647e * u;
++        /* B = 1.164(Y - 16) + 2.018(U - 128) */
++        b = 0x012b27 * y + 0x0206a2 * u;
 +
-+	*buffer++ = 0xff000000 |
-+	    (r >= 0 ? r < 0x1000000 ? r         & 0xff0000 : 0xff0000 : 0) |
-+	    (g >= 0 ? g < 0x1000000 ? (g >> 8)  & 0x00ff00 : 0x00ff00 : 0) |
-+	    (b >= 0 ? b < 0x1000000 ? (b >> 16) & 0x0000ff : 0x0000ff : 0);
++        *buffer++ = 0xff000000 |
++            (r >= 0 ? r < 0x1000000 ? r         & 0xff0000 : 0xff0000 : 0) |
++            (g >= 0 ? g < 0x1000000 ? (g >> 8)  & 0x00ff00 : 0x00ff00 : 0) |
++            (b >= 0 ? b < 0x1000000 ? (b >> 16) & 0x0000ff : 0x0000ff : 0);
 +    }
 +}
 +
  /**************************** Pixel wise fetching *****************************/
  
- static argb_t
-@@ -960,6 +1000,40 @@ fetch_pixel_yv12 (bits_image_t *image,
+ #ifndef PIXMAN_FB_ACCESSORS
+@@ -1036,6 +1076,40 @@ fetch_pixel_yv12 (bits_image_t *image,
  	(b >= 0 ? b < 0x1000000 ? (b >> 16) & 0x0000ff : 0x0000ff : 0);
  }
  
@@ -95,20 +94,18 @@ index 4f0642d..3da3fb3 100644
 +    b = 0x012b27 * y + 0x0206a2 * u;
 +
 +    return 0xff000000 |
-+	(r >= 0 ? r < 0x1000000 ? r         & 0xff0000 : 0xff0000 : 0) |
-+	(g >= 0 ? g < 0x1000000 ? (g >> 8)  & 0x00ff00 : 0x00ff00 : 0) |
-+	(b >= 0 ? b < 0x1000000 ? (b >> 16) & 0x0000ff : 0x0000ff : 0);
++        (r >= 0 ? r < 0x1000000 ? r         & 0xff0000 : 0xff0000 : 0) |
++        (g >= 0 ? g < 0x1000000 ? (g >> 8)  & 0x00ff00 : 0x00ff00 : 0) |
++        (b >= 0 ? b < 0x1000000 ? (b >> 16) & 0x0000ff : 0x0000ff : 0);
 +}
 +
  /*********************************** Store ************************************/
  
- static void
-@@ -1382,7 +1456,12 @@ static const format_info_t accessors[] =
-       fetch_scanline_yv12, fetch_scanline_generic_float,
+ #ifndef PIXMAN_FB_ACCESSORS
+@@ -1509,6 +1583,11 @@ static const format_info_t accessors[] =
        fetch_pixel_yv12, fetch_pixel_generic_float,
        NULL, NULL },
--    
-+
+     
 +    { PIXMAN_nv12,
 +      fetch_scanline_nv12, fetch_scanline_generic_float,
 +      fetch_pixel_nv12, fetch_pixel_generic_float,
@@ -118,10 +115,10 @@ index 4f0642d..3da3fb3 100644
  };
  
 diff --git a/pixman/pixman.c b/pixman/pixman.c
-index 9555cea..4dc91bb 100644
+index c09b528..d8a2d24 100644
 --- a/pixman/pixman.c
 +++ b/pixman/pixman.c
-@@ -1072,6 +1072,7 @@ pixman_format_supported_source (pixman_format_code_t format)
+@@ -1070,6 +1070,7 @@ pixman_format_supported_source (pixman_format_code_t format)
      /* YUV formats */
      case PIXMAN_yuy2:
      case PIXMAN_yv12:
@@ -129,7 +126,7 @@ index 9555cea..4dc91bb 100644
  	return TRUE;
  
      default:
-@@ -1094,7 +1095,7 @@ PIXMAN_EXPORT pixman_bool_t
+@@ -1092,7 +1093,7 @@ PIXMAN_EXPORT pixman_bool_t
  pixman_format_supported_destination (pixman_format_code_t format)
  {
      /* YUV formats cannot be written to at the moment */
@@ -139,18 +136,19 @@ index 9555cea..4dc91bb 100644
  
      return pixman_format_supported_source (format);
 diff --git a/pixman/pixman.h b/pixman/pixman.h
-index 509ba5e..b6e3fb5 100644
+index d644589..e8fa8da 100644
 --- a/pixman/pixman.h
 +++ b/pixman/pixman.h
-@@ -678,6 +678,7 @@ struct pixman_indexed
- #define PIXMAN_TYPE_BGRA	8
+@@ -691,6 +691,8 @@ struct pixman_indexed
  #define PIXMAN_TYPE_RGBA	9
  #define PIXMAN_TYPE_ARGB_SRGB	10
-+#define PIXMAN_TYPE_NV12	11
+ #define PIXMAN_TYPE_RGBA_FLOAT	11
++#define PIXMAN_TYPE_NV12	12
++
  
  #define PIXMAN_FORMAT_COLOR(f)				\
  	(PIXMAN_FORMAT_TYPE(f) == PIXMAN_TYPE_ARGB ||	\
-@@ -753,7 +754,8 @@ typedef enum {
+@@ -772,7 +774,8 @@ typedef enum {
  
  /* YUV formats */
      PIXMAN_yuy2 =	 PIXMAN_FORMAT(16,PIXMAN_TYPE_YUY2,0,0,0,0),
@@ -161,4 +159,5 @@ index 509ba5e..b6e3fb5 100644
  
  /* Querying supported format values. */
 -- 
-1.9.1
+2.7.4
+
