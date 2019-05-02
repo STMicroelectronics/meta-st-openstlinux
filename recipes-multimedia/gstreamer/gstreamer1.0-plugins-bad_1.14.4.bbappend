@@ -12,6 +12,7 @@ SRC_URI_append = " file://0008-waylandsink-do-not-destroy-pool-twice.patch "
 SRC_URI_append = " file://0009-waylandsink-HACK-disable-frame-dropping-while-redraw.patch "
 SRC_URI_append = " file://0011-waylandsink-fullscreen-support.patch "
 SRC_URI_append = " file://0012-waylandsink-set-video-alignment-to-32-bytes.patch "
+SRC_URI_append = " file://0013-waylandsink-fallback-to-shm-if-display-does-not-supp.patch "
 
 PACKAGECONFIG_GL ?= "${@bb.utils.contains('DISTRO_FEATURES', 'opengl', 'gles2 egl', '', d)}"
 
