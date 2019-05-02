@@ -52,8 +52,11 @@ DEVICES=$(ls /sys/fs/ext4/)
 #${PARTED} ${DEVICE} resizepart ${PART_ENTRY_NUMBER} Yes 100%
 #${PARTPROBE}
 for device in ${DEVICES}; do
+    PART_TABLE_TYPE=$(udevadm info --query=property --name=/dev/${device} | grep '^ID_PART_TABLE_TYPE=' | cut -d'=' -f2)
     if [ -e /dev/${device} ]; then
-        ${RESIZE2FS} "/dev/${device}"
+        if [ "$PART_TABLE_TYPE" = "gpt" ]; then
+            ${RESIZE2FS} "/dev/${device}"
+        fi
     fi
 done
 
