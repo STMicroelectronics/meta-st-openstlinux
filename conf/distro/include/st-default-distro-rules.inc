@@ -34,12 +34,6 @@ CONNECTIVITY_CHECK_URIS ?= "https://www.example.com/"
 OELAYOUT_ABI = "12"
 
 #--------------------------
-# Package configuration
-#
-# Force the gpl functionnality usage for libav
-PACKAGECONFIG_pn-gstreamer1.0-libav = " gpl "
-
-#--------------------------
 # Add the manifest and the licenses file on image generated
 COPY_LIC_MANIFEST = "1"
 

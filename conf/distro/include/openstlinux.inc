@@ -22,12 +22,13 @@ OPENSTLINUX_RELEASE ??= "snapshot"
 
 DISTRO = "openstlinux"
 DISTRO_NAME = "ST OpenSTLinux (A Yocto Project Based Distro)"
-DISTRO_VERSION = "2.7-${@bb.utils.contains('OPENSTLINUX_RELEASE', 'snapshot', 'snapshot-${DATE}', '${OPENSTLINUX_RELEASE}', d)}"
+DISTRO_VERSION = "3.1-${@bb.utils.contains('OPENSTLINUX_RELEASE', 'snapshot', 'snapshot-${DATE}', '${OPENSTLINUX_RELEASE}', d)}"
 # Don't include the DATE variable in the sstate package signatures
 DISTRO_VERSION[vardepsexclude] = "DATE"
-DISTRO_CODENAME = "warrior"
+DISTRO_CODENAME = "dunfell"
 
-SDK_VENDOR = "-openstlinux_sdk"
+# Warning: SDK_VENDOR does not contains a valid OS/ARCH name like : linux, arm
+SDK_VENDOR = "-ostl_sdk"
 SDK_VERSION := "${@'${DISTRO_VERSION}'.replace('snapshot-${DATE}','snapshot')}"
 # Don't include the DATE variable in the sstate package signatures
 SDK_VERSION[vardepsexclude] = "DATE"
@@ -49,8 +50,6 @@ SDKPATH[vardepsexclude] = "DATE"
 LOCALCONF_VERSION = "1"
 LAYER_CONF_VERSION ?= "7"
 
-# TODO: is that really want we want?
-#IMAGE_LINGUAS = "en-us en-gb"
 IMAGE_LINGUAS = "en-us en-gb"
 
 # =========================================================================
@@ -87,7 +86,7 @@ DISTRO_FEATURES_append = " splashscreen "
 DISTRO_FEATURES_append = " wayland pam "
 
 # add support of X11
-DISTRO_FEATURES_append = " x11"
+DISTRO_FEATURES_append = " x11 "
 
 # add support of KDE (since OE thud version)
 DISTRO_FEATURES_append = " kde "
@@ -97,6 +96,9 @@ DISTRO_FEATURES_append = " systemd polkit "
 
 # add support of efi
 DISTRO_FEATURES_append = " efi "
+
+# add support of autoresize through InitRD
+DISTRO_FEATURES_append = " autoresize "
 
 # add support of tpm2
 #DISTRO_FEATURES_append = " tpm2 "
@@ -124,7 +126,7 @@ VIRTUAL-RUNTIME_initscripts = "systemd-compat-units"
 LICENSE_FLAGS_WHITELIST += " non-commercial commercial"
 
 # X11 addons
-IMAGE_INSTALL_append = " ${@bb.utils.contains('DISTRO_FEATURES', 'x11', 'xf86-video-modesetting', '', d)} "
+DISTRO_EXTRA_RDEPENDS_append = " ${@bb.utils.contains('DISTRO_FEATURES', 'x11', 'xf86-video-modesetting', '', d)} "
 
-# resize tools
-IMAGE_INSTALL_append = " resize-helper systemd-mount-partitions "
+# INITRD addons to resize file system
+DISTRO_EXTRA_RRECOMMENDS_append = " ${@bb.utils.contains('COMBINED_FEATURES', 'autoresize', '${AUTORESIZE}', '', d)} "
