@@ -267,7 +267,7 @@ PACKAGE_CLASSES = "package_deb"
 #ST_ARCHIVER_ENABLE = "1"
 
 # Setup environment for builds binary reproducibility
-INHERIT += "reproducible_build_openstlinux"
+INHERIT += "reproducible_build"
 
 # =========================================================================
 # Configure STM32MP default version to github
