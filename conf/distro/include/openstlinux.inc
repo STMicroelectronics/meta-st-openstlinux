@@ -27,7 +27,8 @@ DISTRO_VERSION = "2.6-${@bb.utils.contains('OPENSTLINUX_RELEASE', 'snapshot', 's
 DISTRO_VERSION[vardepsexclude] = "DATE"
 DISTRO_CODENAME = "thud"
 
-SDK_VENDOR = "-openstlinux_sdk"
+# Warning: SDK_VENDOR does not contains a valid OS/ARCH name like : linux, arm
+SDK_VENDOR = "-ostl_sdk"
 SDK_VERSION := "${@'${DISTRO_VERSION}'.replace('snapshot-${DATE}','snapshot')}"
 # Don't include the DATE variable in the sstate package signatures
 SDK_VERSION[vardepsexclude] = "DATE"
@@ -49,8 +50,6 @@ SDKPATH[vardepsexclude] = "DATE"
 LOCALCONF_VERSION = "1"
 LAYER_CONF_VERSION ?= "7"
 
-# TODO: is that really want we want?
-#IMAGE_LINGUAS = "en-us en-gb"
 IMAGE_LINGUAS = "en-us en-gb"
 
 # =========================================================================
