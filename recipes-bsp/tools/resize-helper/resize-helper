@@ -60,3 +60,4 @@ for device in ${DEVICES}; do
     fi
 done
 
+echo "RESIZE-HELPER FINISH" > /dev/kmsg
