@@ -10,6 +10,13 @@
 #      DISTRO_EXTRA_RRECOMMENDS [optional]
 #      TCLIBC [required if creating from scratch]
 
+# =========================================================================
+# Enable uninative support
+# =========================================================================
+require conf/distro/include/no-static-libs.inc
+require conf/distro/include/yocto-uninative.inc
+INHERIT += "uninative"
+
 # Init OPENSTLINUX_RELEASE flag to snapshot
 OPENSTLINUX_RELEASE ??= "snapshot"
 

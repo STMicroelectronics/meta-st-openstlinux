@@ -267,7 +267,14 @@ PACKAGE_CLASSES = "package_deb"
 #ST_ARCHIVER_ENABLE = "1"
 
 # Setup environment for builds binary reproducibility
-INHERIT += "reproducible_build_openstlinux"
+INHERIT += "reproducible_build"
+
+# Setup eSDK
+SDK_EXT_TYPE="minimal"
+SDK_INCLUDE_TOOLCHAIN="1"
+
+# Enable PR server to avoid version-going-backward issue
+PRSERV_HOST = "localhost:0"
 
 # =========================================================================
 # Configure STM32MP default version to github
