@@ -8,7 +8,7 @@ Subject: [PATCH 2/4] Correct X11 dependency
  1 file changed, 2 insertions(+)
 
 diff --git a/contrib/test/Makefile.am b/contrib/test/Makefile.am
-index 4641e21..90c8605 100644
+index dac07f3..f64500b 100644
 --- a/contrib/test/Makefile.am
 +++ b/contrib/test/Makefile.am
 @@ -12,9 +12,11 @@ if HAVE_X11
@@ -21,8 +21,8 @@ index 4641e21..90c8605 100644
  endif
 +endif
  
- driver_test_SOURCES = driver-test.c
- driver_test_LDADD = ../../utils/libv4l2util/libv4l2util.la
+ if HAVE_SDL
+ noinst_PROGRAMS += sdlcam
 -- 
-2.7.4
+2.19.1
 
