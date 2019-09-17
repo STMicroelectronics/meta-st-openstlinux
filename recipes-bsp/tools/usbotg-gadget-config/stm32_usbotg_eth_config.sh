@@ -17,6 +17,16 @@ PRODUCT_ID="0x0104"
 IP="192.168.7.2"
 NETMASK="255.255.255.0"
 
+#MAC address for ethernet-over-USB can be defined here
+MAC_HOST_CUST=""
+MAC_DEV_CUST=""
+
+get_mac_address_from_serial_number(){
+    sha1sum /proc/device-tree/serial-number \
+    | fold -1 \
+    | sed -n '1{h;d};2{y/1235679abdef/000444888ccc/;H;d};13{g;s/\n//g;p;q};s/^/:/;N;H;d'
+}
+
 do_start() {
     if [ ! -d ${configfs} ]; then
         modprobe libcomposite
@@ -45,7 +55,7 @@ do_start() {
     echo "0x0100" > "${d}/bcdDevice"
 
     mkdir -p "${d}/strings/0x409"
-    echo "0" > "${d}/strings/0x409/serialnumber"
+    tr -d '\0' < /proc/device-tree/serial-number > "${d}/strings/0x409/serialnumber"
     echo "STMicroelectronics" > "${d}/strings/0x409/manufacturer"
     echo "STM32MP1" > "${d}/strings/0x409/product"
 
@@ -56,16 +66,27 @@ do_start() {
     echo 250 > "${d}/configs/${c}/MaxPower"
     echo 0xC0 > "${d}/configs/${c}/bmAttributes" # self powered device
 
-    mkdir -p "${d}/functions/${func_eth}"
     # Windows extension to force RNDIS config
     mkdir -p "${d}/os_desc"
     echo "1" > "${d}/os_desc/use"
     echo "0xbc" > "${d}/os_desc/b_vendor_code"
     echo "MSFT100" > "${d}/os_desc/qw_sign"
 
+    mkdir -p "${d}/functions/${func_eth}"
     mkdir -p "${d}/functions/${func_eth}/os_desc/interface.rndis"
     echo "RNDIS" > "${d}/functions/${func_eth}/os_desc/interface.rndis/compatible_id"
     echo "5162001" > "${d}/functions/${func_eth}/os_desc/interface.rndis/sub_compatible_id"
+
+    if [ "$MAC_HOST_CUST" != "" ]; then
+        echo $MAC_HOST_CUST > "${d}/functions/${func_eth}/host_addr"
+    else
+        mac_host=$(get_mac_address_from_serial_number)
+        echo $mac_host > "${d}/functions/${func_eth}/host_addr"
+    fi
+    if [ "$MAC_DEV_CUST" != "" ]; then
+        echo $MAC_DEV_CUST > "${d}/functions/${func_eth}/dev_addr"
+    fi
+
 
     # Set up the rndis device only first
     ln -s "${d}/functions/${func_eth}" "${d}/configs/${c}"
@@ -75,12 +96,23 @@ do_start() {
 
     sleep 0.2
 
-    ifconfig usb0 $IP $NETMASK
-    ifconfig usb0 up
+    interfacename=$(cat ${d}/functions/${func_eth}/ifname 2> /dev/null)
+    if [ -z "${interfacename}" ];
+    then
+        interfacename=usb0
+    fi
+    # ifconfig ${interfacename} $IP netmask $NETMASK
+    ifconfig ${interfacename} up
 }
 
 do_stop() {
-    ifconfig usb0 down
+    interfacename=$(cat ${d}/functions/${func_eth}/ifname 2> /dev/null)
+    if [ -z "${interfacename}" ];
+    then
+        echo "Nothing to do"
+        return
+    fi
+    ifconfig ${interfacename} down
 
     sleep 0.2
 
@@ -98,9 +130,11 @@ do_stop() {
 
 case $1 in
     start)
+        echo "Start usb gadget"
         do_start $2
         ;;
     stop)
+        echo "Stop usb gadget"
         do_stop
         ;;
     *)
