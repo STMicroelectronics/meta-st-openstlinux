@@ -1,0 +1,227 @@
+From d38b05acc215e612cd80ffe22771e14327f4a332 Mon Sep 17 00:00:00 2001
+From: Antonio Borneo <antonio.borneo@st.com>
+Date: Wed, 20 Feb 2019 17:48:22 +0100
+Subject: [PATCH kmscube 2/2] add command-line selection of video mode
+
+Commit a0a4c0238026b24ac7ace5919132921160673ce2 upstream.
+
+The mode of type "DRM_MODE_TYPE_PREFERED" can be miss-configured,
+making kmscube not working.
+Plus, user could need to test the other available video modes at
+the connector.
+
+Add a command line flag to specify the video mode. If the mode is
+not present, print an informative message and fall-back to the
+default behaviour (preferred mode or highest resolution mode).
+
+Signed-off-by: Antonio Borneo <antonio.borneo@st.com>
+---
+ drm-atomic.c |  4 ++--
+ drm-common.c | 38 ++++++++++++++++++++++++++++----------
+ drm-common.h |  6 +++---
+ drm-legacy.c |  4 ++--
+ kmscube.c    | 30 +++++++++++++++++++++++++-----
+ 5 files changed, 60 insertions(+), 22 deletions(-)
+
+diff --git a/drm-atomic.c b/drm-atomic.c
+index 82531d3..5a5022f 100644
+--- a/drm-atomic.c
++++ b/drm-atomic.c
+@@ -337,12 +337,12 @@ static int get_plane_id(void)
+ 	return ret;
+ }
+ 
+-const struct drm * init_drm_atomic(const char *device)
++const struct drm * init_drm_atomic(const char *device, const char *mode_str, unsigned int vrefresh)
+ {
+ 	uint32_t plane_id;
+ 	int ret;
+ 
+-	ret = init_drm(&drm, device);
++	ret = init_drm(&drm, device, mode_str, vrefresh);
+ 	if (ret)
+ 		return NULL;
+ 
+diff --git a/drm-common.c b/drm-common.c
+index 136fe69..b75a754 100644
+--- a/drm-common.c
++++ b/drm-common.c
+@@ -160,7 +160,7 @@ static uint32_t find_crtc_for_connector(const struct drm *drm, const drmModeRes
+ 	return -1;
+ }
+ 
+-int init_drm(struct drm *drm, const char *device)
++int init_drm(struct drm *drm, const char *device, const char *mode_str, unsigned int vrefresh)
+ {
+ 	drmModeRes *resources;
+ 	drmModeConnector *connector = NULL;
+@@ -199,18 +199,36 @@ int init_drm(struct drm *drm, const char *device)
+ 		return -1;
+ 	}
+ 
+-	/* find preferred mode or the highest resolution mode: */
+-	for (i = 0, area = 0; i < connector->count_modes; i++) {
+-		drmModeModeInfo *current_mode = &connector->modes[i];
++	/* find user requested mode: */
++	if (mode_str[0] != '\0') {
++		for (i = 0; i < connector->count_modes; i++) {
++			drmModeModeInfo *current_mode = &connector->modes[i];
+ 
+-		if (current_mode->type & DRM_MODE_TYPE_PREFERRED) {
+-			drm->mode = current_mode;
++			if (strcmp(current_mode->name, mode_str) == 0) {
++				if (vrefresh == 0 || current_mode->vrefresh == vrefresh) {
++					drm->mode = current_mode;
++					break;
++				}
++			}
+ 		}
++		if (!drm->mode)
++			printf("requested mode not found, using default mode!\n");
++	}
+ 
+-		int current_area = current_mode->hdisplay * current_mode->vdisplay;
+-		if (current_area > area) {
+-			drm->mode = current_mode;
+-			area = current_area;
++	/* find preferred mode or the highest resolution mode: */
++	if (!drm->mode) {
++		for (i = 0, area = 0; i < connector->count_modes; i++) {
++			drmModeModeInfo *current_mode = &connector->modes[i];
++
++			if (current_mode->type & DRM_MODE_TYPE_PREFERRED) {
++				drm->mode = current_mode;
++			}
++
++			int current_area = current_mode->hdisplay * current_mode->vdisplay;
++			if (current_area > area) {
++				drm->mode = current_mode;
++				area = current_area;
++			}
+ 		}
+ 	}
+ 
+diff --git a/drm-common.h b/drm-common.h
+index 53af2cf..c4eb886 100644
+--- a/drm-common.h
++++ b/drm-common.h
+@@ -73,8 +73,8 @@ struct drm_fb {
+ 
+ struct drm_fb * drm_fb_get_from_bo(struct gbm_bo *bo);
+ 
+-int init_drm(struct drm *drm, const char *device);
+-const struct drm * init_drm_legacy(const char *device);
+-const struct drm * init_drm_atomic(const char *device);
++int init_drm(struct drm *drm, const char *device, const char *mode_str, unsigned int vrefresh);
++const struct drm * init_drm_legacy(const char *device, const char *mode_str, unsigned int vrefresh);
++const struct drm * init_drm_atomic(const char *device, const char *mode_str, unsigned int vrefresh);
+ 
+ #endif /* _DRM_COMMON_H */
+diff --git a/drm-legacy.c b/drm-legacy.c
+index fd98a38..56a0fed 100644
+--- a/drm-legacy.c
++++ b/drm-legacy.c
+@@ -122,11 +122,11 @@ static int legacy_run(const struct gbm *gbm, const struct egl *egl)
+ 	return 0;
+ }
+ 
+-const struct drm * init_drm_legacy(const char *device)
++const struct drm * init_drm_legacy(const char *device, const char *mode_str, unsigned int vrefresh)
+ {
+ 	int ret;
+ 
+-	ret = init_drm(&drm, device);
++	ret = init_drm(&drm, device, mode_str, vrefresh);
+ 	if (ret)
+ 		return NULL;
+ 
+diff --git a/kmscube.c b/kmscube.c
+index 6275109..c81bac3 100644
+--- a/kmscube.c
++++ b/kmscube.c
+@@ -43,7 +43,7 @@ static const struct egl *egl;
+ static const struct gbm *gbm;
+ static const struct drm *drm;
+ 
+-static const char *shortopts = "AD:M:m:V:";
++static const char *shortopts = "AD:M:m:V:v:";
+ 
+ static const struct option longopts[] = {
+ 	{"atomic", no_argument,       0, 'A'},
+@@ -52,12 +52,13 @@ static const struct option longopts[] = {
+ 	{"modifier", required_argument, 0, 'm'},
+ 	{"samples",  required_argument, 0, 's'},
+ 	{"video",  required_argument, 0, 'V'},
++	{"vmode",  required_argument, 0, 'v'},
+ 	{0, 0, 0, 0}
+ };
+ 
+ static void usage(const char *name)
+ {
+-	printf("Usage: %s [-ADMmV]\n"
++	printf("Usage: %s [-ADMmVv]\n"
+ 			"\n"
+ 			"options:\n"
+ 			"    -A, --atomic             use atomic modesetting and fencing\n"
+@@ -69,7 +70,9 @@ static void usage(const char *name)
+ 			"        nv12-1img -  yuv textured (single nv12 texture)\n"
+ 			"    -m, --modifier=MODIFIER  hardcode the selected modifier\n"
+ 			"    -s, --samples=N          use MSAA\n"
+-			"    -V, --video=FILE         video textured cube\n",
++			"    -V, --video=FILE         video textured cube\n"
++			"    -v, --vmode=VMODE        specify the video mode in the format\n"
++			"                             <mode>[-<vrefresh>]\n",
+ 			name);
+ }
+ 
+@@ -77,11 +80,15 @@ int main(int argc, char *argv[])
+ {
+ 	const char *device = "/dev/dri/card0";
+ 	const char *video = NULL;
++	char mode_str[DRM_DISPLAY_MODE_LEN] = "";
++	char *p;
+ 	enum mode mode = SMOOTH;
+ 	uint64_t modifier = DRM_FORMAT_MOD_LINEAR;
+ 	int samples = 0;
+ 	int atomic = 0;
+ 	int opt;
++	unsigned int len;
++	unsigned int vrefresh = 0;
+ 
+ #ifdef HAVE_GST
+ 	gst_init(&argc, &argv);
+@@ -121,6 +128,19 @@ int main(int argc, char *argv[])
+ 			mode = VIDEO;
+ 			video = optarg;
+ 			break;
++		case 'v':
++			p = strchr(optarg, '-');
++			if (p == NULL) {
++				len = strlen(optarg);
++			} else {
++				vrefresh = strtoul(p + 1, NULL, 0);
++				len = p - optarg;
++			}
++			if (len > sizeof(mode_str) - 1)
++				len = sizeof(mode_str) - 1;
++			strncpy(mode_str, optarg, len);
++			mode_str[len] = '\0';
++			break;
+ 		default:
+ 			usage(argv[0]);
+ 			return -1;
+@@ -128,9 +148,9 @@ int main(int argc, char *argv[])
+ 	}
+ 
+ 	if (atomic)
+-		drm = init_drm_atomic(device);
++		drm = init_drm_atomic(device, mode_str, vrefresh);
+ 	else
+-		drm = init_drm_legacy(device);
++		drm = init_drm_legacy(device, mode_str, vrefresh);
+ 	if (!drm) {
+ 		printf("failed to initialize %s DRM\n", atomic ? "atomic" : "legacy");
+ 		return -1;
+-- 
+2.22.0
+
