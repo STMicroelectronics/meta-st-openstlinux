@@ -2,7 +2,7 @@
 
 video() {
     echo "Launch video"
-    gst-launch-1.0 playbin uri=file:///usr/local/demo/media/Teaser-STM32MP1.webm video-sink="waylandsink" &
+    gst-launch-1.0 playbin uri=file:///usr/local/demo/media/Teaser-STM32MP1.webm video-sink="waylandsink sync=false" audio-sink="fakesink" &
 }
 
 audio() {
@@ -17,7 +17,8 @@ picture() {
 
 camera() {
     echo "Launch preview camera"
-    gst-launch-1.0 v4l2src ! "video/x-raw, format=YUY2, width=320, height=240, framerate=(fraction)30/1" ! waylandsink &
+    v4l2-ctl --set-parm=20
+    gst-launch-1.0 v4l2src ! "video/x-raw, format=YUY2, width=320, height=240" ! waylandsink &
 }
 
 kill_all() {
