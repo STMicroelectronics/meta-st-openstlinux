@@ -1,4 +1,12 @@
 #!/usr/bin/python3
+
+# Copyright (c) 2019 STMicroelectronics. All rights reserved.
+#
+# This software component is licensed by ST under BSD 3-Clause license,
+# the "License"; You may not use this file except in compliance with the
+# License. You may obtain a copy of the License at:
+#                        opensource.org/licenses/BSD-3-Clause
+
 # to debug this script:
 #      python3 -m pdb ./demo_launcher.py
 #
@@ -18,8 +26,11 @@ import os
 import socket
 import fcntl
 import struct
+import string
+import random
 from collections import deque
 from time import sleep, time
+import threading
 
 from bin.bluetooth_panel import BluetoothWindow
 
@@ -45,6 +56,7 @@ SIMULATE_SCREEN_SIZE_WIDTH  = 800
 SIMULATE_SCREEN_SIZE_HEIGHT = 480
 
 ICON_SIZE_BIG = 180
+ICON_SIZE_MEDIUM = 160
 ICON_SIZE_SMALL = 128
 
 WIFI_HOTSPOT_IP="192.168.72.1"
@@ -52,129 +64,26 @@ WIFI_HOTSPOT_IP="192.168.72.1"
 WIFI_DEFAULT_SSID="STDemoNetwork"
 WIFI_DEFAULT_PASSWD="stm32mp1"
 
-# -------------------------------------------------------------------
-# -------------------------------------------------------------------
-# prerequisite:
-# gstreamer1.0-plugins-base: for gir file
-# gstreamer1.0-plugins-bad-gtk: for sink compliant with wayland
-try:
-    HAVE_VIDEO_SINK = 1
-    gi.require_version('Gst', '1.0')
-    gi.require_version('GstVideo', '1.0')
-    from gi.repository import Gst
-except ImportError:
-    print("[DEBUG]: No gst/gstvideo detected")
-    HAVE_VIDEO_SINK = None
-if HAVE_VIDEO_SINK:
-    try:
-        Gst.init(None)
-        Gst.init_check(None)
-    except Exception as exc:
-        pass
+def popenAndCall(onExit, *popenArgs, **popenKWArgs):
+    """
+    Runs a subprocess.Popen, and then calls the function onExit when the
+    subprocess completes.
 
-# Gstreamer videotestsrc widget
-class GstVideoTestSrcWidget(Gtk.Box):
-    def __init__(self):
-        super().__init__()
-        self.connect('realize', self._on_realize)
-        self._bin = Gst.parse_bin_from_description('videotestsrc', True)
+    Use it exactly the way you'd normally use subprocess.Popen, except include a
+    callable to execute as the first argument. onExit is a callable object, and
+    *popenArgs and **popenKWArgs are simply passed up to subprocess.Popen.
+    """
+    def runInThread(onExit, popenArgs, popenKWArgs):
+        process = subprocess.Popen(*popenArgs, **popenKWArgs)
+        process.wait()
+        onExit()
+        return
 
-    def _on_realize(self, widget):
-        self.pipeline = Gst.Pipeline()
-        factory = self.pipeline.get_factory()
-        gtksink = factory.make('gtksink')
-        self.pipeline.add(gtksink)
-        self.pipeline.add(self._bin)
-        self._bin.link(gtksink)
-        self.pack_start(gtksink.props.widget, True, True, 0)
-        gtksink.props.widget.show()
-        self.pipeline.set_state(Gst.State.PLAYING)
-    def set_file(self, filename):
-        ''' '''
-        return True
-    def start(self):
-        print("[DEBUG] [MIR] ask to start")
-        self.pipeline.set_state(Gst.State.PLAYING)
-    def stop(self):
-        print("[DEBUG] [MIR] ask to stop")
-        self.pipeline.set_state(Gst.State.NULL)
-    def pause(self):
-        print("[DEBUG] [MIR] ask to pause")
-        self.pipeline.set_state(Gst.State.PAUSED)
+    thread = threading.Thread(target=runInThread,
+                              args=(onExit, popenArgs, popenKWArgs))
+    thread.start()
 
-class GstCameraSrcWidget(Gtk.Box):
-    def __init__(self):
-        super().__init__()
-        self.connect('realize', self._on_realize)
-        self._bin = Gst.parse_bin_from_description('v4l2src io-mode=4 ! video/x-raw,width=640,height=480 ! queue ', True)
-
-    def _on_realize(self, widget):
-        self.pipeline = Gst.Pipeline()
-        factory = self.pipeline.get_factory()
-        gtksink = factory.make('waylandsink')
-        self.pipeline.add(gtksink)
-        self.pipeline.add(self._bin)
-        self._bin.link(gtksink)
-        #self.pack_start(gtksink.props.widget, True, True, 0)
-        #gtksink.props.widget.show()
-        self.pipeline.set_state(Gst.State.PLAYING)
-    def set_file(self, filename):
-        ''' '''
-        return True
-    def start(self):
-        print("[DEBUG] [Camera] ask to start")
-        self.pipeline.set_state(Gst.State.PLAYING)
-    def stop(self):
-        print("[DEBUG] [Camera] ask to stop")
-        self.pipeline.set_state(Gst.State.NULL)
-    def pause(self):
-        print("[DEBUG] [Camera] ask to pause")
-        self.pipeline.set_state(Gst.State.PAUSED)
-
-# Gstreamer video playback file widget
-class GstVideoWidget(Gtk.Box):
-    def __init__(self):
-        super().__init__()
-        self.connect('realize', self._on_realize)
-
-        self.pipeline = Gst.Pipeline()
-        self.player = Gst.ElementFactory.make("playbin", "player")
-        self.gtksink = Gst.ElementFactory.make("waylandsink", "waylandsink")
-        self.bus = self.pipeline.get_bus()
-        self.bus.add_signal_watch()
-        self.bus.connect("message::eos", self.on_eos)
-
-    def _on_realize(self, widget):
-        print("[DEBUG] [Video] _on_realize")
-        self.pipeline.add(self.player)
-        self.player.set_property("video-sink", self.gtksink)
-
-        #self.pack_start(self.gtksink.props.widget, True, True, 0)
-        #self.gtksink.props.widget.show()
-        self.start()
-
-    def set_file(self, filename):
-        if os.path.isfile(filename):
-            filepath = os.path.realpath(filename)
-            self.player.set_property("uri", "file://%s" % filepath)
-            print("VIDEO: set filename %s" % filepath)
-            #self.start()
-    def start(self):
-        print("[DEBUG] [Video] ask to start")
-        self.pipeline.set_state(Gst.State.PLAYING)
-    def stop(self):
-        print("[DEBUG] [Video] ask to stop")
-        self.pipeline.set_state(Gst.State.NULL)
-    def pause(self):
-        print("[DEBUG] [Video] ask to pause")
-        self.pipeline.set_state(Gst.State.PAUSED)
-    def on_eos(self, bus, message):
-        print("EOS")
-        self.pipeline.set_state(Gst.State.NULL)
-        self.pipeline.set_state(Gst.State.PLAYING)
-    def _closewindow(self, widget):
-        self.stop()
-        Gtk.main_quit()
+    return thread # returns immediately after the thread starts
 
 # Back video view
 class BackVideoWindow(Gtk.Dialog):
@@ -185,7 +94,6 @@ class BackVideoWindow(Gtk.Dialog):
         self.set_decorated(False)
         rgba = Gdk.RGBA(0.31, 0.32, 0.31, 0.8)
         self.override_background_color(0,rgba)
-
         self.show_all()
 
 # video Window
@@ -201,43 +109,37 @@ class GstVideoWindow(Gtk.Dialog):
         self.previous_click_time=0
         self.stream_is_paused=0
 
-        #~ mainvbox = self.get_content_area()
-        #~ self.video_widget = GstVideoWidget()
-        #~ self.filename = "%s/media/ST2297_visionv3.webm" % DEMO_PATH
-        #~ self.set_video_filename("%s/media/ST2297_visionv3.webm" % DEMO_PATH)
-        #~ self.video_widget.set_halign(Gtk.Align.CENTER)
-        #~ self.video_widget.set_valign(Gtk.Align.CENTER)
-        #~ mainvbox.pack_start(self.video_widget, True, True, 0)
-
-        cmd = ["%s/bin/launch_video.sh" % DEMO_PATH]
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-
         self.connect("button-press-event", self.on_video_press_event)
+
+        self.process_pipe_read, self.process_pipe_write =  os.pipe()
+        cmd = ["%s/bin/launch_video.sh" % DEMO_PATH]
+        thread = popenAndCall(self.video_on_exit, cmd, stdin=self.process_pipe_read, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+
+    def video_on_exit(self):
+        if self:
+            self.destroy()
 
     def on_video_press_event(self, widget, event):
         self.click_time = time()
-        print(self.click_time - self.previous_click_time)
+        #print(self.click_time - self.previous_click_time)
         # TODO : a fake click is observed, workaround hereafter
         if (self.click_time - self.previous_click_time) < 0.01:
             self.previous_click_time = self.click_time
         elif (self.click_time - self.previous_click_time) < 0.3:
-            print ("GstVideoWindow double click")
-            #~ self.video_widget.stop()
-            cmd = ["%s/bin/stop_video.sh" % DEMO_PATH]
-            proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+            #print ("GstVideoWindow double click")
+            os.write(self.process_pipe_write, b"q")
+            os.close(self.process_pipe_write)
+            #cmd = ["%s/bin/stop_video.sh" % DEMO_PATH]
+            #proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
             self.destroy()
         else:
-            print ("GstVideoWindow simple click")
+            #print ("GstVideoWindow simple click")
             self.previous_click_time = self.click_time
+            os.write(self.process_pipe_write, b"p")
             if (self.stream_is_paused == 1):
-                #~ self.video_widget.start()
                 self.stream_is_paused = 0
             else:
-                #~ self.video_widget.pause()
                 self.stream_is_paused = 1
-
-    #~ def set_video_filename(self, filename):
-        #~ self.video_widget.set_file(filename)
 
 # Camera Window
 class GstCameraWindow(Gtk.Dialog):
@@ -251,14 +153,15 @@ class GstCameraWindow(Gtk.Dialog):
 
         self.previous_click_time=0
         self.stream_is_paused=0
-        mainvbox = self.get_content_area()
 
-        self.camera_widget = GstCameraSrcWidget ()
-
-        self.camera_widget.set_halign(Gtk.Align.CENTER)
-        self.camera_widget.set_valign(Gtk.Align.CENTER)
-        mainvbox.pack_start(self.camera_widget, True, True, 0)
         self.connect("button-press-event", self.on_camera_press_event)
+        self.process_pipe_read, self.process_pipe_write =  os.pipe()
+        cmd = ["%s/bin/launch_camera.sh" % DEMO_PATH]
+        self.proc = popenAndCall(self.camera_on_exit, cmd, stdin =self.process_pipe_read, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+
+    def camera_on_exit(self):
+        if self:
+            self.destroy()
 
     def on_camera_press_event(self, widget, event):
         self.click_time = time()
@@ -267,12 +170,11 @@ class GstCameraWindow(Gtk.Dialog):
         if (self.click_time - self.previous_click_time) < 0.01:
             self.previous_click_time = self.click_time
         elif (self.click_time - self.previous_click_time) < 0.3:
-            print ("GstVideoWindow double click")
             self.camera_widget.stop()
             self.destroy()
         else:
-            print ("GstVideoWindow simple click")
             self.previous_click_time = self.click_time
+            os.write(self.process_pipe_write, b"p")
             if (self.stream_is_paused == 1):
                 self.camera_widget.start()
                 self.stream_is_paused = 0
@@ -300,7 +202,7 @@ class InfoWindow(Gtk.Dialog):
         page_info.add(title)
 
         label1 = Gtk.Label()
-        label1.set_markup("<span font='15' color='#FFFFFFFF'>\n\nTo get control of video playback and camera preview,\n  firstly tap outside of the video\nSimple tap: pause/resume the camera preview\nDouble tap: exit from demos\n\nAI demo: draw character on touchscreen to launch action</span>")
+        label1.set_markup("<span font='15' color='#FFFFFFFF'>\n\nTo get control of video playback and camera preview,\nSimple tap: pause/resume\nDouble tap: exit from demos\n\nAI demo: draw character on touchscreen to launch action</span>")
         label1.set_justify(Gtk.Justification.LEFT)
         page_info.add(label1)
 
@@ -352,10 +254,6 @@ class WifiWindow(Gtk.Dialog):
         self.label_ip_wlan0.set_xalign (0.0)
         self.label_hotspot = Gtk.Label()
         self.label_hotspot.set_xalign (0.0)
-        self.label_ip_wlan_ssid = Gtk.Label()
-        self.label_ip_wlan_ssid.set_xalign (0.0)
-        self.label_ip_wlan_passwd = Gtk.Label()
-        self.label_ip_wlan_passwd.set_xalign (0.0)
 
         self.previous_click_time=0
         self.wifi_ssid=WIFI_DEFAULT_SSID
@@ -368,15 +266,9 @@ class WifiWindow(Gtk.Dialog):
         self.info_grid.attach(self.label_eth, 0, 1, 1, 1)
         self.info_grid.attach(self.label_ip_eth0, 0, 2, 1, 1)
 
-
-        print ("wifi_credential creation")
-        self.wifi_credential = _load_image_wlan_eventBox(self, "%s/pictures/qr-code_wifi_access.png" % DEMO_PATH, "ssid: STDemoNetwork", "passwd: stm32mp1", -1, ICON_SIZE_SMALL)
-        self.netdata_url = _load_image_wlan_eventBox(self, "%s/pictures/qr-code_netdata_url.png" % DEMO_PATH, "url: http://192.168.72.1:19999", "", -1, ICON_SIZE_SMALL)
-
         if self.is_wifi_available():
             print ("wlan0 is available")
             self.hotspot_switch = Gtk.Switch()
-            self.get_wifi_config()
 
             # set wlan switch state on first execution
             ip_wlan0 = get_ip_address('wlan0')
@@ -409,7 +301,7 @@ class WifiWindow(Gtk.Dialog):
     def get_wifi_config(self):
         filepath = "/etc/default/hostapd"
         if os.path.isfile(filepath):
-            file = open(filepath,"r")
+            file = open(filepath, "r")
             i=0
             for line in file:
                 if "HOSTAPD_SSID" in line:
@@ -428,6 +320,19 @@ class WifiWindow(Gtk.Dialog):
         else:
             print("[Wifi: use default configuration: ssid=%s, passwd=%s]\n" %(self.wifi_ssid, self.wifi_passwd))
 
+    def set_random_wifi_config(self):
+        self.wifi_ssid="ST-" + id_generator()
+        #self.wifi_passwd=id_generator(6, string.ascii_lowercase)
+        self.set_wifi_config(self.wifi_ssid, self.wifi_passwd)
+
+    def set_wifi_config(self, ssid, password):
+        filepath = "/etc/default/hostapd"
+        file = open(filepath, "w")
+        print ("[Wifi: set hostapd config: ssid=%s, passwd=%s]" %(ssid, password))
+        file.write('HOSTAPD_SSID=%s\nHOSTAPD_PASSWD=%s\n' %(ssid, password))
+        file.close()
+
+
     def refresh_network_page(self):
         print("[Refresh network page]\n")
 
@@ -443,33 +348,29 @@ class WifiWindow(Gtk.Dialog):
             ip_wlan0 = get_ip_address('wlan0')
             if ip_wlan0 == "NA":
                 hotspot_status = "<span font='15' color='#FF0000FF'>  Wifi not started</span>"
-                if self.wifi_ssid == WIFI_DEFAULT_SSID:
-                    self.info_grid.remove_row(6)
-                else:
-                    self.label_ip_wlan_ssid.set_markup('')
-                    self.label_ip_wlan_passwd.set_markup('')
-                    self.label_ip_wlan0.set_markup('')
+                self.info_grid.remove_row(6)
             elif ip_wlan0 == WIFI_HOTSPOT_IP:
+                self.get_wifi_config()
                 hotspot_status = "<span font='15' color='#00AA00FF'>  Wifi hotspot started</span>"
-                if self.wifi_ssid == WIFI_DEFAULT_SSID:
-                    self.info_grid.attach(self.wifi_credential, 0, 6, 1, 1)
-                    self.info_grid.attach(self.netdata_url, 1, 6, 1, 1)
-                else:
-                    self.label_ip_wlan_ssid.set_markup("<span font='15' color='#FFFFFFFF'>  Wifi SSID : %s</span>" % self.wifi_ssid)
-                    self.label_ip_wlan_passwd.set_markup("<span font='15' color='#FFFFFFFF'>  Wifi password : %s</span>" % self.wifi_passwd)
-                    self.label_ip_wlan0.set_markup("<span font='15' color='#FFFFFFFF'>  http://%s:19999</span>" % ip_wlan0)
-                    self.info_grid.attach(self.label_ip_wlan_ssid, 0, 6, 1, 1)
-                    self.info_grid.attach(self.label_ip_wlan_passwd, 0, 7, 1, 1)
-                    self.info_grid.attach(self.label_ip_wlan0, 0, 8, 1, 1)
+
+                wifi_qrcode_cmd = "WIFI:S:%s;T:WPA;P:%s;;" %(self.wifi_ssid, self.wifi_passwd)
+                cmd = ["%s/bin/build_qrcode.sh" % DEMO_PATH, "-o %s/pictures/qr-code_wifi_access.png" % DEMO_PATH, wifi_qrcode_cmd]
+                proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+                url_qrcode_cmd = "http://%s:19999" % ip_wlan0
+                cmd2 = ["%s/bin/build_qrcode.sh" % DEMO_PATH, "-o %s/pictures/qr-code_netdata_url.png" % DEMO_PATH, url_qrcode_cmd]
+                proc = subprocess.Popen(cmd2, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                result = proc.stdout.read().decode('utf-8')
+
+                self.wifi_credential = _load_image_wlan_eventBox(self, "%s/pictures/qr-code_wifi_access.png" % DEMO_PATH, "ssid: %s" % self.wifi_ssid, "passwd: %s" % self.wifi_passwd, -1, ICON_SIZE_MEDIUM)
+                self.netdata_url = _load_image_wlan_eventBox(self, "%s/pictures/qr-code_netdata_url.png" % DEMO_PATH, "url: http://%s:19999" % ip_wlan0, "", -1, ICON_SIZE_MEDIUM)
+                self.info_grid.attach(self.wifi_credential, 0, 6, 1, 1)
+                self.info_grid.attach(self.netdata_url, 1, 6, 1, 1)
+
                 self.show_all()
             else:
                 hotspot_status = "<span font='15' color='#FF0000FF'>Wifi started but not configured as hotspot</span>"
-                if self.wifi_ssid == WIFI_DEFAULT_SSID:
-                    self.info_grid.remove_row(6)
-                else:
-                    self.label_ip_wlan_ssid.set_markup('')
-                    self.label_ip_wlan_passwd.set_markup('')
-                    self.label_ip_wlan0.set_markup('')
+                self.info_grid.remove_row(6)
 
                 self.label_ip_wlan0.set_markup("<span font='15' color='#FFFFFFFF'>NetData over Wifi: http://%s:19999</span>" % ip_wlan0)
                 self.info_grid.attach(self.label_ip_wlan0, 0, 6, 1, 1)
@@ -482,19 +383,20 @@ class WifiWindow(Gtk.Dialog):
 
     def on_page_press_event(self, widget, event):
         self.click_time = time()
-        print(self.click_time - self.previous_click_time)
+        #print(self.click_time - self.previous_click_time)
         # TODO : a fake click is observed, workaround hereafter
         if (self.click_time - self.previous_click_time) < 0.01:
             self.previous_click_time = self.click_time
         elif (self.click_time - self.previous_click_time) < 0.3:
-            print ("double click")
+            print ("double click : exit")
             self.destroy()
         else:
-            print ("simple click")
+            #print ("simple click")
             self.previous_click_time = self.click_time
 
     def on_switch_activated(self, switch, gparam):
         if switch.get_active():
+            self.set_random_wifi_config()
             wifi_hotspot_start()
         else:
             wifi_hotspot_stop()
@@ -686,11 +588,14 @@ class MainUIWindow(Gtk.Window):
             self.screen_height = self.get_screen().get_height()
 
         if self.screen_width == 720:
-            self.icon_size = ICON_SIZE_BIG
             self.board_name = "Evaluation board"
         else:
-            self.icon_size = ICON_SIZE_SMALL
             self.board_name = "Discovery kit"
+
+        if min(self.screen_width, self.screen_height) >= 720:
+            self.icon_size = ICON_SIZE_BIG
+        else:
+            self.icon_size = ICON_SIZE_SMALL
 
         self.set_default_size(self.screen_width, self.screen_height)
         print("[DEBUG] screen size: %dx%d" % (self.screen_width, self.screen_height))
@@ -815,7 +720,7 @@ class MainUIWindow(Gtk.Window):
             if device.name == "EP0110M09":
                 touchscreen = True
                 break
-            if device.name == "generic ft5x06 (11)":
+            if device.name.startswith("generic ft5x06"):
                 touchscreen = True
                 break
             if device.name == "Goodix Capacitive TouchScreen":
@@ -933,6 +838,9 @@ class MainUIWindow(Gtk.Window):
         self.add(overlay)
 
         self.show_all()
+
+def id_generator(size=6, chars=string.ascii_lowercase + string.digits):
+    return "".join(random.choice(chars) for _ in range(size))
 
 
 lock_handle = None

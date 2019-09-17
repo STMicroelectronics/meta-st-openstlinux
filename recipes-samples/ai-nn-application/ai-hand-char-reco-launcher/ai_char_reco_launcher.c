@@ -23,8 +23,9 @@
 
 /* the supported touch screen */
 #define EVENT_DEVICE_NAME_1        "EP0110M09"
-#define EVENT_DEVICE_NAME_2        "generic ft5x06 (11)"
+#define EVENT_DEVICE_NAME_2        "generic ft5x06"
 #define EVENT_DEVICE_NAME_3        "Goodix Capacitive TouchScreen"
+#define EVENT_DEVICE_NAME_4        "BYZHYYZHY By ZH851 Touchscreen"
 
 #define EVENT_TYPE_ABS             EV_ABS
 #define EVENT_TYPE_KEY             EV_KEY
@@ -410,6 +411,7 @@ static void *read_touch_event_thread(void *arg)
 	int fd;
 	char event_dev_file[128];
 	char event_dev_name[256] = "Unknown";
+	int touch_rotate = 0;
 	int n = 0;
 	int i = 0;
 
@@ -421,28 +423,48 @@ static void *read_touch_event_thread(void *arg)
 	}
 
 	n = sprintf(event_dev_file, "/dev/input/event");
+	/* Hack: pre loop to detect specific touchscreen */
 	while (i < 20) {
 		/* Parse all input event untill we found the right one */
 		sprintf(event_dev_file + n, "%d", i);
 		fd = open(event_dev_file, O_RDONLY);
 		if (fd != -1) {
 			ioctl(fd, EVIOCGNAME(sizeof(event_dev_name)), event_dev_name);
-			if ((strcmp(event_dev_name, EVENT_DEVICE_NAME_1) == 0) ||
-			    (strcmp(event_dev_name, EVENT_DEVICE_NAME_2) == 0)) {
-				displayWidth = DISPLAY_DISCO_WIDTH;
-				displayHeight = DISPLAY_DISCO_HEIGHT;
-				break;
-			} else if (strcmp(event_dev_name, EVENT_DEVICE_NAME_3) == 0) {
+			if (strcmp(event_dev_name, EVENT_DEVICE_NAME_4) == 0) {
 				displayWidth = DISPLAY_EVAL_WIDTH;
 				displayHeight = DISPLAY_EVAL_HEIGHT;
 				break;
 			}
 		}
 		i++;
+	}
+	if (i == 20) {
+		i = 0;
+		while (i < 20) {
+			/* Parse all input event untill we found the right one */
+			sprintf(event_dev_file + n, "%d", i);
+			fd = open(event_dev_file, O_RDONLY);
+			if (fd != -1) {
+				ioctl(fd, EVIOCGNAME(sizeof(event_dev_name)), event_dev_name);
+				if ((strcmp(event_dev_name, EVENT_DEVICE_NAME_1) == 0) ||
+				    (strncmp(event_dev_name, EVENT_DEVICE_NAME_2, strlen(EVENT_DEVICE_NAME_2)) == 0)) {
+					displayWidth = DISPLAY_DISCO_WIDTH;
+					displayHeight = DISPLAY_DISCO_HEIGHT;
+					touch_rotate = 1;
+					break;
+				} else if (strcmp(event_dev_name, EVENT_DEVICE_NAME_3) == 0) {
+					displayWidth = DISPLAY_EVAL_WIDTH;
+					displayHeight = DISPLAY_EVAL_HEIGHT;
+					touch_rotate = 1;
+					break;
+				}
+			}
+			i++;
 
-		if (i == 20) {
-			printf("no touch event device found\n");
-			exit(0);
+			if (i == 20) {
+				printf("no touch event device found\n");
+				exit(0);
+			}
 		}
 	}
 
@@ -499,20 +521,36 @@ static void *read_touch_event_thread(void *arg)
 
 		if (ev.type == EVENT_TYPE_ABS && (ev.code == EVENT_CODE_X
 					      || ev.code == EVENT_CODE_Y)) {
-			/*  The UI is rotated take it into account */
-			if (ev.code == EVENT_CODE_X)
-				draw_touch_coordinate[touch_idx].y = ev.value;
-			if (ev.code == EVENT_CODE_Y)
-				draw_touch_coordinate[touch_idx].x = displayWidth - ev.value;
+			if (touch_rotate) {
+				/*  The UI is rotated take it into account */
+				if (ev.code == EVENT_CODE_X)
+					draw_touch_coordinate[touch_idx].y = ev.value;
+				if (ev.code == EVENT_CODE_Y)
+					draw_touch_coordinate[touch_idx].x = displayWidth - ev.value;
+			} else {
+				if (ev.code == EVENT_CODE_X)
+					draw_touch_coordinate[touch_idx].x = ev.value;
+				if (ev.code == EVENT_CODE_Y)
+					draw_touch_coordinate[touch_idx].y = ev.value;
+				if ((draw_touch_coordinate[touch_idx].x == 0) ||
+				    (draw_touch_coordinate[touch_idx].y == 0)) {
+					draw_touch_coordinate[touch_idx].x = -1;
+					draw_touch_coordinate[touch_idx].y = -1;
+				}
+			}
 
 			if ((draw_touch_coordinate[touch_idx].x != -1) &&
 			    (draw_touch_coordinate[touch_idx].y != -1))
 				touch_idx++;
 
 			if (touch_idx >= TOUCH_COORDINATE_DEPTH) {
-				touch_idx = 0;
 				printf("touch event overflow\n");
+				memset(&draw_touch_coordinate, -1, sizeof(draw_touch_coordinate));
+				draw_touch_coordinate[0].x = LINE_BREAK;
+				draw_touch_coordinate[0].y = LINE_BREAK;
+				touch_idx = 1;
 			}
+			gtk_widget_queue_draw(window);
 		}
 		pthread_mutex_unlock(&lock);
 	}
@@ -652,6 +690,8 @@ gboolean draw_callback(GtkWidget *widget, cairo_t *cr, gpointer data)
 	char character[16];
 	bool line_break = false;
 
+	cairo_save(cr);
+
 	sprintf(character, "%c", (char)ai_result_state.character);
 
 	/* draw the background */
@@ -681,8 +721,8 @@ gboolean draw_callback(GtkWidget *widget, cairo_t *cr, gpointer data)
 	cairo_move_to (cr, 20, 105);
 	cairo_show_text (cr, character);
 
-	/* draw the hand writen character */
-	cairo_set_source_rgb (cr,  212, 0, 122);
+	/* draw the hand writen character as an icon */
+	cairo_set_source_rgb (cr,  1, 1, 1);
 	cairo_set_line_width (cr, 4);
 	cairo_translate (cr, 10, 115);
 	for (int i = 0; i < TOUCH_COORDINATE_DEPTH ; i++) {
@@ -764,6 +804,39 @@ gboolean draw_callback(GtkWidget *widget, cairo_t *cr, gpointer data)
 		cairo_set_source_rgb (cr, 1, 1, 1);
 	cairo_move_to (cr, 20, 285);
 	cairo_show_text (cr, "Q = Quit");
+
+	cairo_restore(cr);
+
+	/* draw the hand writen character in live */
+	cairo_set_source_rgb (cr,  1, 1, 1);
+	cairo_set_line_width (cr, 4);
+	for (int i = 0; i < TOUCH_COORDINATE_DEPTH ; i++) {
+		if ((draw_touch_coordinate[i].x != -1) &&
+		    (draw_touch_coordinate[i].y != -1)) {
+			if ((draw_touch_coordinate[i].x == LINE_BREAK) ||
+			    (draw_touch_coordinate[i].y == LINE_BREAK)) {
+				line_break = true;
+				//printf("line_break detected\n");
+				continue;
+			}
+			//printf("draw {%d, %d}\n",
+			//       (int)(draw_touch_coordinate[i].x),
+			//       (int)(draw_touch_coordinate[i].y));
+			if (line_break) {
+				cairo_move_to (cr,
+					       (int)(draw_touch_coordinate[i].x),
+					       (int)(draw_touch_coordinate[i].y));
+			} else {
+				cairo_line_to (cr,
+					       (int)(draw_touch_coordinate[i].x),
+					       (int)(draw_touch_coordinate[i].y));
+			}
+			line_break = false;
+		} else {
+			break;
+		}
+	}
+	cairo_stroke_preserve(cr);
 
 	return FALSE;
 }
