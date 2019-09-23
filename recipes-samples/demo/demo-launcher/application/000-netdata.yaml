@@ -1,0 +1,14 @@
+Application:
+    Name: netdata
+    Description: perf monitor
+    Icon: application/netdata/pictures/netdata-icon-192x192.png
+    Type: python
+    Board:
+        List: all
+    Python:
+        Module: application.netdata.netdata
+    Action:
+        button_release_event: python_start
+        button_press_event: highlight_eventBox
+
+

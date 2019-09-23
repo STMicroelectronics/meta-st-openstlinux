@@ -1,0 +1,181 @@
+Summary:
+=======
+1. Purpose
+2. Yaml description for each application
+3. File tree
+4. Example of application description
+
+1. Purpose:
+-----------
+Propose a generic way to descibe an application and easily add it on the
+demo_launcher.
+To permit a better and dynamic management of application, each application are
+described on a yaml file.
+
+2. Yaml description for each application:
+-----------------------------------------
+Format:
+Application:
+    Name: <name of application>
+    Description: <description of application>
+    Icon: <icon of application>
+    Type: <script|python>
+    Board:
+        <List|NotList>: <all|list of chip>
+    Script:
+        Exist:
+            <File|Command>: <file or command to verify>
+            Msg_false: <Message to display if <File|Command> are not true
+        Start: <script or application to launch application>
+        Stop: <script or application to stop application>
+    Python:
+        Exist:
+            <File|Command>: <file or command to verify>
+            Msg_false: <Message to display if <File|Command> are not true
+        Module: <Python module name to load>
+    Action:
+        button_release_event: <python_start|script_management>
+        button_press_event: highlight_eventBox
+
+Explaination:
+- Name: name of application displayed on demo_launcher
+- Description: description of application displayed on demo_launcher
+- Icon: icon of application displayed on demo_launcher
+- Board: define which board the application are compatible
+    List: list of chip/soc the application are compatible
+    NotList: List of chip/soc the application are NOT compatible
+- Type: Type of script to launch the application,
+        type available:
+            * "script": shell script or application (without parameters) to execute
+            * "python": python script to load for launching application
+        This two type have a specific declaration available: Script, Python
+- Script: it'a s section for describe the script (shell or application) to
+  launch the application.
+  This section have several sub section:
+    Exist: verify some requirement before to launch start command
+    Start: command to start the application
+    Stop: command to stop the application
+
+    Exist section:
+        File: <verify presence of specific file>
+        Command: <command to execute, if return are Ok then we can launch start command>
+
+- Python: it'a s section for describe the python script to load for accessing
+  to application functionality. The python script must have the function
+  "create_subdialogwindow(<parent window>)"
+  This section have several sub section:
+    Exist: verify some requirement before to launch start command
+    Module: Python module name to load, it's corresponding to path and scirpt
+    name.
+       ex.:
+            path = application/netdata/netdata.py
+            module name = application.netdata.netdata
+        Tips: you need to add an empty file name "__init__.py" on each sub
+        directory to permit to launch the python module
+
+    Exist section:
+        File: <verify presence of specific file>
+        Command: <command to execute, if return are Ok then we can launch start command>
+
+
+3. File Tree:
+------------
+application/
+├── 000-netdata.yaml
+├── 010-camera.yaml
+├── 020-video.yaml
+├── 030-3d_cube.yaml
+├── 040-m4_ai.yaml
+├── 060-bluetooth_audio_output.yaml
+├── 3d_cube
+│   ├── bin
+│   │   └── launch_cube_3D.sh
+│   └── pictures
+│       └── ST153_cube_purple.png
+├── bluetooth
+│   ├── bluetooth_audio.py
+│   ├── __init__.py
+│   ├── pictures
+│   │   └── ST11012_bluetooth_speaker_light_green.png
+│   └── wrap_blctl.py
+├── camera
+│   ├── bin
+│   │   ├── launch_camera_preview.sh
+│   │   └── stop_camera.sh
+│   ├── pictures
+│   │   └── ST1077_webcam_dark_blue.png
+│   └── shaders
+│       └── edge_InvertLuma.fs
+├── __init__.py
+├── m4_ai
+│   ├── bin
+│   │   └── launch_AI.sh
+│   └── pictures
+│       └── ST7079_AI_neural_pink.png
+├── netdata
+│   ├── bin
+│   │   └── build_qrcode.sh
+│   ├── __init__.py
+│   ├── netdata.py
+│   └── pictures
+│       └── netdata-icon-192x192.png
+└── video
+    ├── bin
+    │   └── launch_video.sh
+    └── pictures
+        └── Video_playback_logo.pn
+4. Example of application:
+-----------------------
+Example 1:
+Application:
+    Name: 3D Pict
+    Description: GPU with picture
+    Icon: application/3d_cube/pictures/ST153_cube_purple.png
+    Board:
+        NotList: stm32mp151
+    Type: script
+    Script:
+        Exist:
+            File: /dev/galcore
+            Msg_false: No GPU capabilities to run 3D GPU demo
+        Start: application/3d_cube/bin/launch_cube_3D.sh
+    Action:
+        button_release_event: script_management
+        button_press_event: highlight_eventBox
+
+Example 2:
+Application:
+    Name: Camera
+    Description: shader
+    Icon: application/camera/pictures/ST1077_webcam_dark_blue.png
+    Board:
+        List: all
+    Type: script
+    Script:
+        Exist:
+            File: /dev/video0
+            Msg_false: Webcam is not connected,
+                    /dev/video0 doesn't exist
+        Start: application/camera/bin/launch_camera_shader.sh
+        Stop: application/camera/bin/stop_camera.sh
+    Action:
+        button_release_event: script_management
+        button_press_event: highlight_eventBox
+
+Example 3:
+Application:
+    Name: Bluetooth
+    Description: speaker
+    Icon: application/bluetooth/pictures/ST11012_bluetooth_speaker_light_green.png
+    Type: python
+    Board:
+        List: stm32mp157 stm32mp153
+    Python:
+        Exist:
+            Command: hciconfig hci0 up
+            Msg_false: Please connect a bluetooth controller on the board
+        Module: application.bluetooth.bluetooth_audio
+    Action:
+        button_release_event: python_start
+        button_press_event: highlight_eventBox
+

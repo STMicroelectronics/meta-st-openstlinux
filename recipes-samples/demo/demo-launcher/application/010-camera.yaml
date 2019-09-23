@@ -1,0 +1,19 @@
+Application:
+    Name: Camera
+    Description: preview
+    Icon: application/camera/pictures/ST1077_webcam_dark_blue.png
+    Board:
+        List: all
+    Type: script
+    Script:
+        Exist:
+            File: /dev/video0
+            Msg_false: Webcam is not connected,
+                    /dev/video0 doesn't exist
+        Start: application/camera/bin/launch_camera_preview.sh
+        Stop: application/camera/bin/stop_camera.sh
+    Action:
+        button_release_event: script_management
+        button_press_event: highlight_eventBox
+
+

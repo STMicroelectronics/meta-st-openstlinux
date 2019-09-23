@@ -1,0 +1,17 @@
+Application:
+    Name: Bluetooth
+    Description: speaker
+    Icon: application/bluetooth/pictures/ST11012_bluetooth_speaker_light_green.png
+    Type: python
+    Board:
+        List: all
+    Python:
+        Exist:
+            Command: hciconfig hci0 up
+            Msg_false: Please connect a bluetooth controller on the board
+        Module: application.bluetooth.bluetooth_audio
+    Action:
+        button_release_event: python_start
+        button_press_event: highlight_eventBox
+
+

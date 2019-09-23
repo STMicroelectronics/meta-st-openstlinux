@@ -1,5 +1,4 @@
 #!/usr/bin/python3
-
 # Copyright (c) 2019 STMicroelectronics. All rights reserved.
 #
 # This software component is licensed by ST under BSD 3-Clause license,
@@ -7,10 +6,12 @@
 # License. You may obtain a copy of the License at:
 #                        opensource.org/licenses/BSD-3-Clause
 
+
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, GLib
+from gi.repository import Gtk
 from gi.repository import Gdk
+from gi.repository import GLib
 
 import re
 import os
@@ -18,7 +19,14 @@ import subprocess
 import pexpect
 from time import sleep, time
 
-from bin.wrap_blctl import wrapper_blctl as Bluetoothctl
+from application.bluetooth.wrap_blctl import wrapper_blctl as Bluetoothctl
+
+# -------------------------------------------------------------------
+# -------------------------------------------------------------------
+SUBMODULE_PATH = "application/bluetooth"
+DEMO_PATH = "/usr/local/demo"
+# -------------------------------------------------------------------
+# -------------------------------------------------------------------
 
 SCAN_DURATION_IN_S  = 15
 
@@ -39,7 +47,6 @@ regexps_devinfo = [
    re.compile(r"Connected:(?P<Connected>.+)$"),
    re.compile(r"Paired:(?P<Paired>.+)$"),
 ]
-
 ########################################
 #pactl (pulseaudio controller) wrapper
 ########################################
@@ -56,8 +63,6 @@ re_prop_stream = [
    re.compile(r"Sink:\s+(?P<Sink>.+)$"),
    re.compile(r"media\.name\s=\s(?P<Name>.+)$")
 ]
-
-
 # id_str : ident of the stream, id_sink : ident of the sink
 def audiosink_set(id_str, id_sink):
     print("audiosink_set ")
@@ -134,7 +139,7 @@ def status_playback(self):
     if mess_bt == "":
         mess_bt = "Device not connected"
 
-    self.label_audio.set_markup("<span font='20' color='#FFFFFFFF'>%s</span>" % mess_bt)
+    self.label_audio.set_markup("<span font='20' color='#000000'>%s</span>" % mess_bt)
     self.label_audio.set_justify(Gtk.Justification.LEFT)
     self.label_audio.set_line_wrap(True)
     return [stream_ident, sink_ident]
@@ -229,15 +234,39 @@ def device_audio(bl, macadr):
                 return True
     return False
 
+# -------------------------------------------------------------------
+# -------------------------------------------------------------------
+def gtk_style():
+        css = b"""
+
+.widget .grid .label {
+    background-color: rgba (31%, 32%, 32%, 0.9);
+}
+.textview {
+    color: gray;
+}
+.label {
+    color: black;
+}
+.switch {
+    min-height: 44px;
+}
+        """
+        style_provider = Gtk.CssProvider()
+        style_provider.load_from_data(css)
+
+        Gtk.StyleContext.add_provider_for_screen(
+            Gdk.Screen.get_default(),
+            style_provider,
+            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
 class BluetoothWindow(Gtk.Dialog):
-    def __init__(self, parent, pipeline):
-        Gtk.Dialog.__init__(self, "bluetooth", parent, 0)
+    def __init__(self, parent):
+        Gtk.Dialog.__init__(self, "Wifi", parent, 0)
         self.maximize()
         self.set_decorated(False)
-        rgba = Gdk.RGBA(0.31, 0.32, 0.31, 0.8)
-        self.override_background_color(0,rgba)
 
+        gtk_style()
         self.screen_width = self.get_screen().get_width()
         self.screen_height = self.get_screen().get_height()
         if self.screen_width >= 720:
@@ -260,7 +289,7 @@ class BluetoothWindow(Gtk.Dialog):
         self.page_bluetooth.set_border_width(30)
 
         self.title = Gtk.Label()
-        self.title.set_markup("<span font='30' color='#FFFFFFFF'>Connect bluetooth headset</span>")
+        self.title.set_markup("<span font='30' color='#00000000'>Connect bluetooth headset</span>")
         self.page_bluetooth.add(self.title)
 
         self.ButtonBox = Gtk.HBox(homogeneous=True)
@@ -319,7 +348,8 @@ class BluetoothWindow(Gtk.Dialog):
         mainvbox.pack_start(self.page_bluetooth, False, True, 3)
         self.show_all()
 
-        # Bluetooth already anabled by demo_launcher.py
+        # enable bluetooth
+        os.system('hciconfig hci0 up')
         #self.bluetooth_state = os.system('hciconfig hci0 up')
         self.bl = Bluetoothctl()
 
@@ -443,14 +473,14 @@ class BluetoothWindow(Gtk.Dialog):
                         self.connect_process(device)
                 else:
                     print("[WARNING] A BT device is already connected :\ndisconnect it before connecting a new device\n")
-                    self.display_message("<span font='15' color='#FFFFFFFF'>A BT device is already connected :\nPlease disconnect it before connecting a new device\n</span>")
+                    self.display_message("<span font='15' color='#000000'>A BT device is already connected :\nPlease disconnect it before connecting a new device\n</span>")
             else:
                 connect_res=self.bl.blctl_disconnect(device['mac_address'])
                 self.lb_button_connect.set_markup("<span font='20' color='#88888888'>connect</span>")
                 self.update_display()
         else:
             print("[WARNING] Select the BT device to connect\n")
-            self.display_message("<span font='15' color='#FFFFFFFF'>Please select a device in the list\n</span>")
+            self.display_message("<span font='15' color='#000000'>Please select a device in the list\n</span>")
 
     def on_selection_scan_clicked(self, widget):
         if self.lb_button_scan.get_text() == "start scan":
@@ -465,3 +495,27 @@ class BluetoothWindow(Gtk.Dialog):
             list_devices(self, True)
         self.dev_selected.update({'mac_address':'', 'name':''})
         self.audio_bt_sink = status_playback(self)
+
+# -------------------------------------------------------------------
+# -------------------------------------------------------------------
+def create_subdialogwindow(parent):
+    _window = BluetoothWindow(parent)
+    _window.show_all()
+    response = _window.run()
+    _window.destroy()
+
+
+# -------------------------------------------------
+# -------------------------------------------------
+#               test submodule
+class TestUIWindow(Gtk.Window):
+    def __init__(self):
+        Gtk.Window.__init__(self, title="Test Launcher")
+        create_subdialogwindow(self)
+        self.show_all()
+
+if __name__ == "__main__":
+    win = TestUIWindow()
+    win.connect("delete-event", Gtk.main_quit)
+    win.show_all()
+

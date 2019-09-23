@@ -1,0 +1,15 @@
+Application:
+    Name: Video
+    Description: playback
+    Icon: application/video/pictures/Video_playback_logo.png
+    Type: script
+    Board:
+        List: all
+    Script:
+        Start: application/video/bin/launch_video.sh
+        Stop: application/video/bin/stop_video.sh
+    Action:
+        button_release_event: script_start
+        button_press_event: highlight_eventBox
+
+
