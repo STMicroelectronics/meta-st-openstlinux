@@ -1,0 +1,12 @@
+[Unit]
+Description=Userfs cleanup package
+After=systemd-logind.service
+
+[Service]
+Type=oneshot
+ExecStart=-@sbindir@/userfs-cleanup-package.sh start
+ExecStartPost=/bin/systemctl --no-reload disable userfs-cleanup-package.service
+WatchdogSec=30
+
+[Install]
+WantedBy=multi-user.target
