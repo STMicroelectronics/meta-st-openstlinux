@@ -1,53 +1,39 @@
-DESCRIPTION = "Frameworks components"
+SUMMARY = "Framework tools components (core,kernel,network,audio,ui,python2,python3)"
 LICENSE = "MIT"
 LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/MIT;md5=0835ade698e0bcf8506ecda2f7b4f302"
 
-PACKAGE_ARCH = "${TUNE_PKGARCH}"
+PACKAGE_ARCH = "${MACHINE_ARCH}"
 
 inherit packagegroup
 
-PACKAGES = "\
-    packagegroup-framework-tools-core-base \
-    packagegroup-framework-tools-kernel-base \
-    packagegroup-framework-tools-network-base \
-    packagegroup-framework-tools-audio-base \
-    packagegroup-framework-tools-ui-base \
-    packagegroup-framework-tools-python2-base \
-    packagegroup-framework-tools-python3-base \
-    \
-    packagegroup-framework-tools-core \
-    packagegroup-framework-tools-kernel \
-    packagegroup-framework-tools-network \
-    packagegroup-framework-tools-audio \
-    packagegroup-framework-tools-ui \
-    packagegroup-framework-tools-python2 \
-    packagegroup-framework-tools-python3 \
-    \
-    packagegroup-framework-tools-core-extra \
-    packagegroup-framework-tools-kernel-extra \
-    packagegroup-framework-tools-network-extra \
-    packagegroup-framework-tools-audio-extra \
-    packagegroup-framework-tools-ui-extra \
-    packagegroup-framework-tools-python2-extra \
-    packagegroup-framework-tools-python3-extra \
-    "
-
 PROVIDES = "${PACKAGES}"
+PACKAGES = "\
+            packagegroup-framework-tools            \
+            packagegroup-framework-tools-core       \
+            packagegroup-framework-tools-kernel     \
+            packagegroup-framework-tools-network    \
+            packagegroup-framework-tools-audio      \
+            packagegroup-framework-tools-ui         \
+            packagegroup-framework-tools-python2    \
+            packagegroup-framework-tools-python3    \
+            "
 
-RDEPENDS_packagegroup-framework-tools-core-base = "\
-    ckermit         \
-    coreutils       \
-    libiio-iiod     \
-    libiio-tests    \
-    lrzsz           \
-    lsb             \
-    libgpiod        \
-    ${@bb.utils.contains('DISTRO_FEATURES', 'usbgadget', 'usbotg-gadget-config', '', d)} \
+# Manage to provide all framework tools packages with overall one
+RDEPENDS_packagegroup-framework-tools = "\
+    packagegroup-framework-tools-core       \
+    packagegroup-framework-tools-kernel     \
+    packagegroup-framework-tools-network    \
+    packagegroup-framework-tools-audio      \
+    packagegroup-framework-tools-ui         \
+    packagegroup-framework-tools-python2    \
+    packagegroup-framework-tools-python3    \
     "
+
+SUMMARY_packagegroup-framework-tools-core = "Framework tools components for core"
 RDEPENDS_packagegroup-framework-tools-core = "\
     grep            \
     util-linux      \
-    util-linux-lscpu \
+    util-linux-lscpu\
     procps          \
     kbd             \
     file            \
@@ -62,27 +48,8 @@ RDEPENDS_packagegroup-framework-tools-core = "\
     lsb-openstlinux \
     rng-tools       \
     "
-RDEPENDS_packagegroup-framework-tools-core-extra = "\
-    tslib-calibrate \
-    pointercal      \
-    \
-    acl             \
-    bzip2           \
-    cronie          \
-    ltrace          \
-    "
 
-RDEPENDS_packagegroup-framework-tools-kernel-base = "\
-    can-utils       \
-    i2c-tools       \
-    strace          \
-    usbutils        \
-    \
-    evtest          \
-    memtester       \
-    mtd-utils       \
-    v4l-utils       \
-    "
+SUMMARY_packagegroup-framework-tools-kernel = "Framework tools components for kernel"
 RDEPENDS_packagegroup-framework-tools-kernel = "\
     pciutils        \
     cpufrequtils    \
@@ -92,100 +59,46 @@ RDEPENDS_packagegroup-framework-tools-kernel = "\
     blktool         \
     mtd-utils-ubifs \
     "
-RDEPENDS_packagegroup-framework-tools-kernel-extra = "\
-    powertop        \
-    fio             \
-    \
-    lmbench         \
-    nbench-byte     \
-    iozone3         \
-    bonnie++        \
-    bonnie-scripts  \
-    ltp             \
-    elfutils        \
-    formfactor      \
-    \
-    lirc \
-    "
 
-RDEPENDS_packagegroup-framework-tools-network-base = "\
-    ethtool         \
-    iproute2        \
-    "
+SUMMARY_packagegroup-framework-tools-network = "Framework tools components for network"
 RDEPENDS_packagegroup-framework-tools-network = "\
     tcpdump         \
     packagegroup-core-full-cmdline-extended \
-    ${@bb.utils.contains('DISTRO_FEATURES', 'wifi', 'iw', '', d)}              \
-    ${@bb.utils.contains('DISTRO_FEATURES', 'wifi', 'wpa-supplicant', '', d)}  \
-    ${@bb.utils.contains('DISTRO_FEATURES', 'wifi', 'hostapd', '', d)}         \
-    ${@bb.utils.contains('DISTRO_FEATURES', 'wifi', 'wireless-regdb-static', '', d)}         \
+    ${@bb.utils.contains('DISTRO_FEATURES', 'wifi', 'iw', '', d)}                       \
+    ${@bb.utils.contains('DISTRO_FEATURES', 'wifi', 'wpa-supplicant', '', d)}           \
+    ${@bb.utils.contains('DISTRO_FEATURES', 'wifi', 'hostapd', '', d)}                  \
+    ${@bb.utils.contains('DISTRO_FEATURES', 'wifi', 'wireless-regdb-static', '', d)}    \
     openssh-sftp    \
-    ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'dhcp-client', '', d)} \
-    curl \
-    "
-RDEPENDS_packagegroup-framework-tools-network-extra = "\
-    iperf3          \
-    netperf         \
-    bridge-utils    \
-    vlan            \
-    libnl           \
-    connman         \
-    connman-client  \
-    net-snmp        \
-    \
-    neard           \
+    ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'dhcp-client', '', d)}                       \
+    ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'systemd-networkd-configuration', '', d)}    \
+    curl            \
     "
 
-RDEPENDS_packagegroup-framework-tools-audio-base = "\
-    ${@bb.utils.contains('DISTRO_FEATURES', 'alsa', 'libasound alsa-conf', '', d)} \
-    ${@bb.utils.contains('DISTRO_FEATURES', 'alsa', 'alsa-utils', '', d)} \
-    ${@bb.utils.contains('DISTRO_FEATURES', 'alsa', 'alsa-plugins', '', d)} \
-    "
+SUMMARY_packagegroup-framework-tools-audio = "Framework tools components for audio"
 RDEPENDS_packagegroup-framework-tools-audio = "\
-    ${@bb.utils.contains('DISTRO_FEATURES', 'pulseaudio', 'pulseaudio', '', d)} \
-    ${@bb.utils.contains('DISTRO_FEATURES', 'pulseaudio', 'pulseaudio-server', '', d)} \
-    ${@bb.utils.contains('DISTRO_FEATURES', 'pulseaudio', 'pulseaudio-misc', '', d)} \
+    ${@bb.utils.contains('DISTRO_FEATURES', 'pulseaudio', 'pulseaudio', '', d)}                     \
+    ${@bb.utils.contains('DISTRO_FEATURES', 'pulseaudio', 'pulseaudio-server', '', d)}              \
+    ${@bb.utils.contains('DISTRO_FEATURES', 'pulseaudio', 'pulseaudio-misc', '', d)}                \
     ${@bb.utils.contains('DISTRO_FEATURES', 'pulseaudio', 'pulseaudio-module-combine-sink', '', d)} \
     ${@bb.utils.contains('DISTRO_FEATURES', 'pulseaudio bluetooth', 'pulseaudio-module-bluetooth-discover', '', d)} \
-    ${@bb.utils.contains('DISTRO_FEATURES', 'pulseaudio bluetooth', 'pulseaudio-module-bluetooth-policy', '', d)} \
-    ${@bb.utils.contains('DISTRO_FEATURES', 'pulseaudio bluetooth', 'pulseaudio-module-bluez5-device', '', d)} \
-    ${@bb.utils.contains('DISTRO_FEATURES', 'pulseaudio bluetooth', 'pulseaudio-module-bluez5-discover', '', d)} \
-    "
-RDEPENDS_packagegroup-framework-tools-audio-extra = "\
-    ${@bb.utils.contains('DISTRO_FEATURES', 'alsa', 'alsa-utils-aplay', '', d)} \
+    ${@bb.utils.contains('DISTRO_FEATURES', 'pulseaudio bluetooth', 'pulseaudio-module-bluetooth-policy', '', d)}   \
+    ${@bb.utils.contains('DISTRO_FEATURES', 'pulseaudio bluetooth', 'pulseaudio-module-bluez5-device', '', d)}      \
+    ${@bb.utils.contains('DISTRO_FEATURES', 'pulseaudio bluetooth', 'pulseaudio-module-bluez5-discover', '', d)}    \
     "
 
-RDEPENDS_packagegroup-framework-tools-ui-base = "\
-    "
+SUMMARY_packagegroup-framework-tools-ui = "Framework tools components for ui"
 RDEPENDS_packagegroup-framework-tools-ui = "\
     ${@bb.utils.contains('DISTRO_FEATURES', 'x11', 'xvinfo', '', d)}    \
     ${@bb.utils.contains('DISTRO_FEATURES', 'gplv3', 'glmark2', '', d)} \
     ${@bb.utils.contains('DISTRO_FEATURES', 'gplv3', 'netdata', '', d)} \
     ${@bb.utils.contains('DISTRO_FEATURES', 'gplv3', 'lmsensors-libsensors lmsensors-sensors', '', d)} \
     "
-RDEPENDS_packagegroup-framework-tools-ui-extra = "\
-    ${@bb.utils.contains('DISTRO_FEATURES', 'x11', 'x11perf', '', d)}   \
-    ${@bb.utils.contains('DISTRO_FEATURES', 'x11', 'gtkperf', '', d)}   \
-    "
 
-RDEPENDS_packagegroup-framework-tools-python2-base = "\
-    "
+SUMMARY_packagegroup-framework-tools-python2 = "Framework tools components for python2"
 RDEPENDS_packagegroup-framework-tools-python2 = "\
-      \
-    "
-RDEPENDS_packagegroup-framework-tools-python2-extra = "\
-    python-lxml         \
-    python-modules      \
-    python-nose         \
-    python-pip          \
-    python-pkgutil      \
-    python-pytest       \
-    python-setuptools   \
-    python-unittest     \
     "
 
-RDEPENDS_packagegroup-framework-tools-python3-base = "\
-    "
+SUMMARY_packagegroup-framework-tools-python3 = "Framework tools components for python3"
 RDEPENDS_packagegroup-framework-tools-python3 = "\
     python3-datetime    \
     python3-dateutil    \
@@ -207,8 +120,3 @@ RDEPENDS_packagegroup-framework-tools-python3 = "\
     python3-pexpect     \
     python3-evdev       \
     "
-RDEPENDS_packagegroup-framework-tools-python3-extra = "\
-    python3-pip         \
-    python3-pytest      \
-    "
-
