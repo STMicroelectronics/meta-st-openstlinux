@@ -52,49 +52,52 @@ found_devices() {
     local _device="unknown"
     local _option=" "
     case $_type in
-    nand)
-        for f in ubi0_0 ubi0_1 ubi0_2 ubi0_3;
-        do
-            if [ -r /sys/class/ubi/$f ];
-            then
-                cat /sys/class/ubi/$f/name | grep -sq $_search
-                if [ $? -eq 0 ];
+        nand)
+            local ubi_volumes=$(ls -1 -d /sys/class/ubi/ubi0_*)
+            for f in $ubi_volumes;
+            do
+                if [ -r $f/name ];
                 then
-                    _device="/dev/$f"
-                    _option="-t ubifs"
-                    break;
+                    cat $f/name | grep -sq "^${_search}"
+                    if [ "$?" -eq 0 ];
+                    then
+                        _device="/dev/$(basename $f)"
+                        _option="-t ubifs"
+                        break;
+                    fi
                 fi
-            fi
-        done
-        ;;
-    sdmmc)
-        for f in 1 2 3 4 5 6 7 8 9 10;
-        do
-            if [ -r /sys/block/mmcblk0/mmcblk0p$f/uevent ];
-            then
-                cat /sys/block/mmcblk0/mmcblk0p$f/uevent | grep PARTNAME | sed "s/PARTNAME=//" | grep -sq $_search
-                if [ $? -eq 0 ];
+            done
+            ;;
+        sdmmc)
+            local sdmmc_parts=$(ls -1 -d /sys/block/mmcblk0/mmcblk0p*)
+            for f in $sdmmc_parts;
+            do
+                if [ -r $f/uevent ];
                 then
-                    _device="/dev/mmcblk0p$f"
-                    break;
+                    cat $f/uevent | grep PARTNAME | sed "s/PARTNAME=//" | grep -sq "^${_search}"
+                    if [ "$?" -eq 0 ];
+                    then
+                        _device="/dev/$(basename $f)"
+                        break;
+                    fi
                 fi
-            fi
-        done
-        ;;
-    mmc)
-        for f in 1 2 3 4 5 6 7 8 9 10;
-        do
-            if [ -r /sys/block/mmcblk1/mmcblk1p$f/uevent ];
-            then
-                cat /sys/block/mmcblk1/mmcblk1p$f/uevent | grep PARTNAME | sed "s/PARTNAME=//" | grep -sq $_search
-                if [ $? -eq 0 ];
+            done
+            ;;
+        mmc)
+            local mmc_parts=$(ls -1 -d /sys/block/mmcblk1/mmcblk1p*)
+            for f in $mmc_parts;
+            do
+                if [ -r $f/uevent ];
                 then
-                    _device="/dev/mmcblk1p$f"
-                    break;
+                    cat $f/uevent | grep PARTNAME | sed "s/PARTNAME=//" | grep -sq "^${_search}"
+                    if [ "$?" -eq 0 ];
+                    then
+                        _device="/dev/$(basename $f)"
+                        break;
+                    fi
                 fi
-            fi
-        done
-        ;;
+            done
+            ;;
     esac
     eval $__resultvar="'$_device'"
     eval $__resultopt="'$_option'"
