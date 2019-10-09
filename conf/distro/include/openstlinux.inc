@@ -10,6 +10,13 @@
 #      DISTRO_EXTRA_RRECOMMENDS [optional]
 #      TCLIBC [required if creating from scratch]
 
+# =========================================================================
+# Enable uninative support
+# =========================================================================
+require conf/distro/include/no-static-libs.inc
+require conf/distro/include/yocto-uninative.inc
+INHERIT += "uninative"
+
 # Init OPENSTLINUX_RELEASE flag to snapshot
 OPENSTLINUX_RELEASE ??= "snapshot"
 
@@ -80,7 +87,7 @@ DISTRO_FEATURES_append = " splashscreen "
 DISTRO_FEATURES_append = " wayland pam "
 
 # add support of X11
-DISTRO_FEATURES_append = " x11 "
+DISTRO_FEATURES_append = " x11"
 
 # add support of KDE (since OE thud version)
 DISTRO_FEATURES_append = " kde "
