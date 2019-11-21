@@ -47,6 +47,7 @@ RDEPENDS_packagegroup-framework-tools-core = "\
     gptfdisk        \
     lsb-openstlinux \
     rng-tools       \
+    apt-openstlinux \
     "
 
 SUMMARY_packagegroup-framework-tools-kernel = "Framework tools components for kernel"

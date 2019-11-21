@@ -1,0 +1,2 @@
+DPkg::Pre-Invoke {"echo ; fold -sw $(stty size | sed 's,.* ,,' ) /etc/apt/disclaimer ; echo ; ";};
+APT::Update::Pre-Invoke {"echo ; fold -sw $(stty size | sed 's,.* ,,' ) /etc/apt/disclaimer ; echo ;";};
