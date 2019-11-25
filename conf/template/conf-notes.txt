@@ -7,7 +7,7 @@ Available images for OpenSTLinux layers are:
       - Supported images:
           st-image-core         -   OpenSTLinux core image
       - Proposed images as example only:
-          st-example-image-qt   -   ST example of image based on QT framework   (require 'openstlinux-eglfs' distro)
+          st-example-image-qt   -   ST example of image based on Qt framework   (require 'openstlinux-eglfs' distro)
           st-example-image-x11  -   ST example of image based on X11            (require 'openstlinux-x11' distro)
           st-example-image-xfce -   ST example of image based on XFCE framework (require 'openstlinux-x11' distro)
           and more images are available on meta-st-openstlinux/recipes-samples/images.
