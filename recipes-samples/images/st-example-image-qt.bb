@@ -1,4 +1,4 @@
-SUMMARY = "ST example of image based on QT framework."
+SUMMARY = "ST example of image based on Qt framework."
 LICENSE = "Proprietary"
 
 include recipes-st/images/st-image.inc
