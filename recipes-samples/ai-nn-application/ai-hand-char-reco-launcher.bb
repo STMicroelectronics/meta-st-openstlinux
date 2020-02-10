@@ -3,7 +3,8 @@ DESCRIPTION = "Hand writing character recognition launcher based on HCR Neural N
 LICENSE = "GPLv2 & BSD-3-Clause"
 LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/MIT;md5=0835ade698e0bcf8506ecda2f7b4f302"
 
-DEPENDS = "gtk+3 m4projects-stm32mp1"
+DEPENDS = "gtk+3 "
+DEPENDS_append_stm32mpcommon += " m4projects-stm32mp1 "
 
 inherit pkgconfig
 
