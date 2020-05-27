@@ -10,7 +10,7 @@ OpenSTLinux layer provides severals distro:
 * **openstlinux-weston**:
 Distribution with Wayland/Weston graphic backend usage.
 * **openstlinux-eglfs**:
-Distribution dedicated to QT usage. With this distribution, QT uses the eglfs graphic backend.
+Distribution dedicated to Qt usage. With this distribution, Qt uses the eglfs graphic backend.
 * **openstlinux-x11**:
 Distribution dedicated to X11 framework usage.
 
@@ -23,7 +23,7 @@ Image with Wayland/weston UI (if **openstlinux-weston** distro are used).  This 
 
 OpenSTLinux provides also some image **as example** to show how to enable some specific framework:
 * **st-example-image-qt** (with **openstlinux-eglfs** distro):
-Image which demonstrates an example of QT usage
+Image which demonstrates an example of Qt usage
 * **st-example-image-x11** (with **openstlinux-x11** distro):
 Image which demonstrates an example of Basic X11 usage.
 * **st-example-image-xfce.bb** (with **openstlinux-x11** distro):
