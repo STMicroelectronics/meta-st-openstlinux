@@ -1,0 +1,11 @@
+[Match]
+Name=eth* en*
+KernelCommandLine=nfsroot
+
+[Network]
+DHCP=yes
+
+[DHCP]
+RouteMetric=10
+ClientIdentifier=mac
+CriticalConnection=true

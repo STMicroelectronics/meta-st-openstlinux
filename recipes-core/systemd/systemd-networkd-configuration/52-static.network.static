@@ -7,7 +7,6 @@ Address=192.168.72.2/24
 Gateway=192.168.72.254
 
 # to enable static IP on eth0:
-# $> cp 50-wired.network 50-wired.network.notused
-# $> cp 50-wired.network.static 50-wired.network
+# $> cp 80-wired.network 80-wired.network.notused
 # $> cp 52-static.network.static 52-static.network
 # $> systemctl restart systemd-networkd.service
