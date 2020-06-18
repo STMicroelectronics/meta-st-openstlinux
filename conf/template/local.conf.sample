@@ -254,6 +254,9 @@ RM_OLD_IMAGE = "1"
 INHERIT += "buildhistory"
 BUILDHISTORY_COMMIT = "1"
 
+# create gcnano link (some links are remove by image genaration)
+INHERIT += "image-gcnano-link"
+
 # Clean up working directory after build
 INHERIT += "rm_work"
 
