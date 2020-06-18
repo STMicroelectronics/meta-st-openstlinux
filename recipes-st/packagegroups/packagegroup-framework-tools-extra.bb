@@ -1,4 +1,4 @@
-SUMMARY = "Framework tools extra components (core,kernel,network,audio,ui,python2,python3)"
+SUMMARY = "Framework tools extra components (core,kernel,network,audio,ui,python3)"
 LICENSE = "MIT"
 LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/MIT;md5=0835ade698e0bcf8506ecda2f7b4f302"
 
@@ -14,7 +14,6 @@ PACKAGES = "\
             packagegroup-framework-tools-extra-network  \
             packagegroup-framework-tools-extra-audio    \
             packagegroup-framework-tools-extra-ui       \
-            packagegroup-framework-tools-extra-python2  \
             packagegroup-framework-tools-extra-python3  \
             "
 
@@ -25,7 +24,6 @@ RDEPENDS_packagegroup-framework-tools-extra = "\
     packagegroup-framework-tools-extra-network  \
     packagegroup-framework-tools-extra-audio    \
     packagegroup-framework-tools-extra-ui       \
-    packagegroup-framework-tools-extra-python2  \
     packagegroup-framework-tools-extra-python3  \
     "
 
@@ -78,25 +76,14 @@ RDEPENDS_packagegroup-framework-tools-extra-audio = "\
 
 SUMMARY_packagegroup-framework-tools-extra-ui = "Framework tools extra components for ui"
 RDEPENDS_packagegroup-framework-tools-extra-ui = "\
-    ${@bb.utils.contains('DISTRO_FEATURES', 'x11', 'xvideo-tests', '', d)}  \
     ${@bb.utils.contains('DISTRO_FEATURES', 'x11', 'x11perf', '', d)}       \
     ${@bb.utils.contains('DISTRO_FEATURES', 'x11', 'gtkperf', '', d)}       \
-    "
-
-SUMMARY_packagegroup-framework-tools-extra-python2 = "Framework tools extra components for python2"
-RDEPENDS_packagegroup-framework-tools-extra-python2 = "\
-    python-lxml         \
-    python-modules      \
-    python-nose         \
-    python-pip          \
-    python-pkgutil      \
-    python-pytest       \
-    python-setuptools   \
-    python-unittest     \
     "
 
 SUMMARY_packagegroup-framework-tools-extra-python3 = "Framework tools extra components for python3"
 RDEPENDS_packagegroup-framework-tools-extra-python3 = "\
     python3-pip         \
     python3-pytest      \
+    python3-lxml        \
+    python3-setuptools  \
     "
