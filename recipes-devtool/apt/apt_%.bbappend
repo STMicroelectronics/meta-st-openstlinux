@@ -1,0 +1,2 @@
+RDEPENDS_${PN} += " gnupg "
+
