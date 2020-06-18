@@ -29,6 +29,13 @@ Address=192.168.72.1/24
 DHCPServer=yes
 IPForward=ipv4
 IPMasquerade=yes
+
+[DHCP]
+CriticalConnection=true
+UseTimezone=false
+
+[DHCPServer]
+EmitTimezone=no
 EOF
 # hotapd configuration
 cat > /etc/hostapd.conf << EOF
