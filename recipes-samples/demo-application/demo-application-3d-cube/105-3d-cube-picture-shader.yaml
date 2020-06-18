@@ -1,0 +1,16 @@
+Application:
+    Name: 3D Pict
+    Description: GPU shader
+    Icon: application/3d-cube-extra/pictures/ST153_cube_purple.png
+    Board: all
+    Type: script
+    Script:
+        Exist:
+            File: /dev/galcore
+            Msg_false: No GPU capabilities to run 3D GPU demo
+        Start: application/3d-cube-extra/bin/launch_cube_3D_1_picture_shader.sh
+    Action:
+        button_release_event: script_management
+        button_press_event: highlight_eventBox
+
+
