@@ -1,0 +1,40 @@
+From 09f8f75a1b25fc32255795d4eb5fdfb9a34a6035 Mon Sep 17 00:00:00 2001
+From: Christophe Priouzeau <christophe.priouzeau@st.com>
+Date: Tue, 18 Feb 2020 13:33:21 +0100
+Subject: [PATCH 15/15] waylandsink add waylandpool on meson build
+
+Signed-off-by: Christophe Priouzeau <christophe.priouzeau@st.com>
+---
+ ext/wayland/meson.build | 3 ++-
+ pkgconfig/meson.build   | 1 +
+ 2 files changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/ext/wayland/meson.build b/ext/wayland/meson.build
+index 3c377ee..59be74e 100644
+--- a/ext/wayland/meson.build
++++ b/ext/wayland/meson.build
+@@ -5,7 +5,8 @@ wl_sources = [
+     'wldisplay.c',
+     'wlwindow.c',
+     'wlvideoformat.c',
+-    'wllinuxdmabuf.c'
++    'wllinuxdmabuf.c',
++    'waylandpool.c'
+ ]
+ 
+ libdrm_dep = dependency('libdrm', version: '>= 2.4.55', required:get_option('wayland'))
+diff --git a/pkgconfig/meson.build b/pkgconfig/meson.build
+index 7ddfafb..e2c0320 100644
+--- a/pkgconfig/meson.build
++++ b/pkgconfig/meson.build
+@@ -29,6 +29,7 @@ pkg_libs = [
+   'player',
+   'plugins-bad',
+   'sctp',
++  'wayland',
+   'webrtc',
+ ]
+ 
+-- 
+2.17.1
+

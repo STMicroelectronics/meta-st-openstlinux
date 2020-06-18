@@ -1,7 +1,7 @@
-From e5afa4352f69e66d9d27fd47ca6a8f759fa909ca Mon Sep 17 00:00:00 2001
+From a61a22ee2fd31af4ee047e341496056139e58db4 Mon Sep 17 00:00:00 2001
 From: Hugues Fruchet <hugues.fruchet@st.com>
 Date: Mon, 10 Dec 2018 17:36:27 +0100
-Subject: [PATCH 8/9] waylandsink: do not destroy pool twice
+Subject: [PATCH 08/14] waylandsink: do not destroy pool twice
 
 Fix segfault in wayland client due to pool
 destroy being called with null pool...

@@ -1,8 +1,8 @@
-From aac3df4ad2fb84a0bb60e419e5943cd068f102a8 Mon Sep 17 00:00:00 2001
+From 11fd91354c5c76b3424b1ff6c204775def3ddda7 Mon Sep 17 00:00:00 2001
 From: Hugues Fruchet <hugues.fruchet@st.com>
 Date: Wed, 12 Dec 2018 12:04:03 +0100
-Subject: [PATCH 9/9] waylandsink: HACK: disable frame dropping while redraw is
- pending
+Subject: [PATCH 09/14] waylandsink: HACK: disable frame dropping while redraw
+ is pending
 
 This workaround is needed to reach 30fps video playback.
 
@@ -24,10 +24,10 @@ Signed-off-by: Hugues Fruchet <hugues.fruchet@st.com>
  1 file changed, 19 insertions(+)
 
 diff --git a/ext/wayland/gstwaylandsink.c b/ext/wayland/gstwaylandsink.c
-index 2e1e34f..08018e6 100644
+index a6bd697..739dd44 100644
 --- a/ext/wayland/gstwaylandsink.c
 +++ b/ext/wayland/gstwaylandsink.c
-@@ -726,9 +726,28 @@ render_last_buffer (GstWaylandSink * sink, gboolean redraw)
+@@ -754,9 +754,28 @@ render_last_buffer (GstWaylandSink * sink, gboolean redraw)
    wlbuffer = gst_buffer_get_wl_buffer (sink->last_buffer);
    surface = gst_wl_window_get_wl_surface (sink->window);
  

@@ -1,7 +1,7 @@
-From 1fc674883519ef3f8b60897c4e7aabba8aefdcbb Mon Sep 17 00:00:00 2001
+From 54c3dfa96da62576da8ebb56dd57a66f8b5bfd2c Mon Sep 17 00:00:00 2001
 From: Christophe Priouzeau <christophe.priouzeau@st.com>
 Date: Mon, 21 May 2018 14:26:47 +0200
-Subject: [PATCH] waylandimagesink: Uprank to secondary
+Subject: [PATCH 10/14] waylandsink: Uprank to secondary
 
 Signed-off-by: Christophe Priouzeau <christophe.priouzeau@st.com>
 ---
@@ -9,10 +9,10 @@ Signed-off-by: Christophe Priouzeau <christophe.priouzeau@st.com>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/ext/wayland/gstwaylandsink.c b/ext/wayland/gstwaylandsink.c
-index 84f67e9..0682f94 100644
+index 739dd44..dff8724 100644
 --- a/ext/wayland/gstwaylandsink.c
 +++ b/ext/wayland/gstwaylandsink.c
-@@ -1002,7 +1002,7 @@ plugin_init (GstPlugin * plugin)
+@@ -1167,7 +1167,7 @@ plugin_init (GstPlugin * plugin)
  
    gst_wl_shm_allocator_register ();
  

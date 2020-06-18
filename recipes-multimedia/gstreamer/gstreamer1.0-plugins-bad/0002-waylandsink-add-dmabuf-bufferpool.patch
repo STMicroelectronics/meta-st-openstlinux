@@ -1,7 +1,7 @@
-From 85c7cad1c3ffda5fbf09c47a604024966d304850 Mon Sep 17 00:00:00 2001
-From: Stephane Danieau <stephane.danieau@st.com>
-Date: Tue, 13 Mar 2018 15:20:22 +0100
-Subject: [PATCH 2/9] waylandsink: add dmabuf bufferpool
+From 10f7ad7be4d05a1a8dd294303cdde2f0cd7b5897 Mon Sep 17 00:00:00 2001
+From: Pierre-Yves MORDRET <pierre-yves.mordret@st.com>
+Date: Thu, 5 Sep 2019 16:19:22 +0200
+Subject: [PATCH 02/14] waylandsink: add dmabuf bufferpool
 
 Add support of DMA-buf allocated buffers through use of
 drm/kms kernel driver ioctl DRM_IOCTL_MODE_CREATE_DUMB.
@@ -22,10 +22,10 @@ Signed-off-by: Hugues Fruchet <hugues.fruchet@st.com>
  create mode 100644 ext/wayland/waylandpool.h
 
 diff --git a/ext/wayland/Makefile.am b/ext/wayland/Makefile.am
-index 387f84f..7633464 100644
+index 95bb97e..824d86d 100644
 --- a/ext/wayland/Makefile.am
 +++ b/ext/wayland/Makefile.am
-@@ -8,6 +8,7 @@ BUILT_SOURCES = \
+@@ -12,6 +12,7 @@ BUILT_SOURCES = \
  
  libgstwaylandsink_la_SOURCES =  \
  	gstwaylandsink.c \
@@ -34,7 +34,7 @@ index 387f84f..7633464 100644
  	wlbuffer.c \
  	wldisplay.c \
 diff --git a/ext/wayland/gstwaylandsink.c b/ext/wayland/gstwaylandsink.c
-index 5b8cc9e..be8c50c 100644
+index 78dd294..d431bd2 100644
 --- a/ext/wayland/gstwaylandsink.c
 +++ b/ext/wayland/gstwaylandsink.c
 @@ -46,6 +46,7 @@
@@ -45,7 +45,7 @@ index 5b8cc9e..be8c50c 100644
  
  #include <gst/wayland/wayland.h>
  #include <gst/video/videooverlay.h>
-@@ -512,6 +513,36 @@ gst_wayland_create_pool (GstWaylandSink * sink, GstCaps * caps)
+@@ -540,6 +541,36 @@ gst_wayland_create_pool (GstWaylandSink * sink, GstCaps * caps)
    return pool;
  }
  
@@ -82,7 +82,7 @@ index 5b8cc9e..be8c50c 100644
  static gboolean
  gst_wayland_sink_set_caps (GstBaseSink * bsink, GstCaps * caps)
  {
-@@ -530,15 +561,9 @@ gst_wayland_sink_set_caps (GstBaseSink * bsink, GstCaps * caps)
+@@ -558,15 +589,9 @@ gst_wayland_sink_set_caps (GstBaseSink * bsink, GstCaps * caps)
    format = GST_VIDEO_INFO_FORMAT (&sink->video_info);
    sink->video_info_changed = TRUE;
  
@@ -98,7 +98,7 @@ index 5b8cc9e..be8c50c 100644
    if (use_dmabuf) {
      if (!gst_wl_display_check_format_for_dmabuf (sink->display, format))
        goto unsupported_format;
-@@ -546,6 +571,14 @@ gst_wayland_sink_set_caps (GstBaseSink * bsink, GstCaps * caps)
+@@ -574,6 +599,14 @@ gst_wayland_sink_set_caps (GstBaseSink * bsink, GstCaps * caps)
      goto unsupported_format;
    }
  
@@ -113,7 +113,7 @@ index 5b8cc9e..be8c50c 100644
    sink->use_dmabuf = use_dmabuf;
  
    return TRUE;
-@@ -565,7 +598,7 @@ unsupported_format:
+@@ -593,7 +626,7 @@ unsupported_format:
  }
  
  static gboolean
@@ -122,7 +122,7 @@ index 5b8cc9e..be8c50c 100644
  {
    GstWaylandSink *sink = GST_WAYLAND_SINK (bsink);
    GstCaps *caps;
-@@ -590,6 +623,67 @@ gst_wayland_sink_propose_allocation (GstBaseSink * bsink, GstQuery * query)
+@@ -618,6 +651,67 @@ gst_wayland_sink_propose_allocation (GstBaseSink * bsink, GstQuery * query)
    return TRUE;
  }
  
@@ -948,7 +948,7 @@ index 0000000..4afd683
 +G_END_DECLS
 +#endif /*__GST_WAYLAND_BUFFER_POOL_H__*/
 diff --git a/ext/wayland/wldisplay.c b/ext/wayland/wldisplay.c
-index 39782bc..cb40f53 100644
+index 9400095..56ff412 100644
 --- a/ext/wayland/wldisplay.c
 +++ b/ext/wayland/wldisplay.c
 @@ -50,6 +50,9 @@ gst_wl_display_init (GstWlDisplay * self)
@@ -962,12 +962,12 @@ index 39782bc..cb40f53 100644
  
  static void
 diff --git a/ext/wayland/wldisplay.h b/ext/wayland/wldisplay.h
-index 7c89212..c21ae64 100644
+index 4ecc0d6..45c37d7 100644
 --- a/ext/wayland/wldisplay.h
 +++ b/ext/wayland/wldisplay.h
-@@ -27,15 +27,15 @@
- #include "viewporter-client-protocol.h"
+@@ -29,15 +29,15 @@
  #include "linux-dmabuf-unstable-v1-client-protocol.h"
+ #include "fullscreen-shell-unstable-v1-client-protocol.h"
  
 -G_BEGIN_DECLS
 +#include "gst/allocators/gstdmabuf.h"
@@ -983,7 +983,7 @@ index 7c89212..c21ae64 100644
  typedef struct _GstWlDisplay GstWlDisplay;
  typedef struct _GstWlDisplayClass GstWlDisplayClass;
  
-@@ -62,7 +62,7 @@ struct _GstWlDisplay
+@@ -67,7 +67,7 @@ struct _GstWlDisplay
    gboolean own_display;
    GThread *thread;
    GstPoll *wl_fd_poll;
@@ -992,7 +992,7 @@ index 7c89212..c21ae64 100644
    GMutex buffers_mutex;
    GHashTable *buffers;
    gboolean shutting_down;
-@@ -76,7 +76,7 @@ struct _GstWlDisplayClass
+@@ -81,7 +81,7 @@ struct _GstWlDisplayClass
  GType gst_wl_display_get_type (void);
  
  GstWlDisplay *gst_wl_display_new (const gchar * name, GError ** error);
@@ -1001,7 +1001,7 @@ index 7c89212..c21ae64 100644
      gboolean take_ownership, GError ** error);
  
  /* see wlbuffer.c for explanation */
-@@ -89,5 +89,4 @@ gboolean gst_wl_display_check_format_for_dmabuf (GstWlDisplay * display,
+@@ -94,5 +94,4 @@ gboolean gst_wl_display_check_format_for_dmabuf (GstWlDisplay * display,
      GstVideoFormat format);
  
  G_END_DECLS

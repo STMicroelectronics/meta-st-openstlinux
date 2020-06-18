@@ -1,7 +1,7 @@
-From f7ef7d2eded6e2d2565feb256e2595869576c24b Mon Sep 17 00:00:00 2001
+From 6ab672e15d68a5848f3645392ec24536d3f17b62 Mon Sep 17 00:00:00 2001
 From: Hugues Fruchet <hugues.fruchet@st.com>
 Date: Thu, 6 Dec 2018 18:09:20 +0100
-Subject: [PATCH 7/9] waylandsink: always select dmabuf buffer pool
+Subject: [PATCH 07/14] waylandsink: always select dmabuf buffer pool
 
 Force usage of dmabuf buffer pool by default, ie
 even if video/x-raw(memory:DMABuf) is not set in caps.
@@ -16,10 +16,10 @@ Signed-off-by: Hugues Fruchet <hugues.fruchet@st.com>
  1 file changed, 10 insertions(+), 2 deletions(-)
 
 diff --git a/ext/wayland/gstwaylandsink.c b/ext/wayland/gstwaylandsink.c
-index 48898f7..2e1e34f 100644
+index 9355e0b..a6bd697 100644
 --- a/ext/wayland/gstwaylandsink.c
 +++ b/ext/wayland/gstwaylandsink.c
-@@ -565,9 +565,17 @@ gst_wayland_sink_set_caps (GstBaseSink * bsink, GstCaps * caps)
+@@ -593,9 +593,17 @@ gst_wayland_sink_set_caps (GstBaseSink * bsink, GstCaps * caps)
    format = GST_VIDEO_INFO_FORMAT (&sink->video_info);
    sink->video_info_changed = TRUE;
  

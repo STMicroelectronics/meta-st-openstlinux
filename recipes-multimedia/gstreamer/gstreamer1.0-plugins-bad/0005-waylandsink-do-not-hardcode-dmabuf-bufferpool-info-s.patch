@@ -1,7 +1,8 @@
-From e9d01965fa0decd29cdcf810b2b2228a79935fd0 Mon Sep 17 00:00:00 2001
+From 42a69fd2a4916a6a3f3130c36bda88d8d41c8741 Mon Sep 17 00:00:00 2001
 From: Hugues Fruchet <hugues.fruchet@st.com>
 Date: Wed, 12 Dec 2018 11:39:33 +0100
-Subject: [PATCH 5/9] waylandsink: do not hardcode dmabuf bufferpool info size
+Subject: [PATCH 05/14] waylandsink: do not hardcode dmabuf bufferpool info
+ size
 
 Read pool config to get the maximum number of buffers
 for info size pool allocation.

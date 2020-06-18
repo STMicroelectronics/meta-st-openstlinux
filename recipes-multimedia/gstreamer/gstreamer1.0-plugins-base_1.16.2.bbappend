@@ -7,16 +7,12 @@ PACKAGECONFIG ?= " \
     ${GSTREAMER_ORC} \
     ${PACKAGECONFIG_GL} \
     ${@bb.utils.filter('DISTRO_FEATURES', 'alsa x11', d)} \
-    gio-unix-2.0 jpeg ogg pango png theora vorbis zlib \
+    jpeg ogg pango png theora vorbis \
     ${@bb.utils.contains('DISTRO_FEATURES', 'wayland', 'wayland egl', '', d)} \
     encoding \
 "
 
-PACKAGECONFIG[encoding]    = "--enable-encoding,--disable-encoding,"
-
-EXTRA_OECONF += " \
-    --enable-examples \
-"
+PACKAGECONFIG[encoding]    = "-Dencoding=enabled,-Dencoding=disabled,"
 
 #enable hardware convert/scale in playbin (gstsubtitleoverlay.c, gstplaysinkvideoconvert.c, gstplaysink.c) & gstencodebin (gstencodebin.c)
 #disable software convert/scale/rate in gstencodebin (gstencodebin.c)
@@ -29,6 +25,3 @@ EXTRA_OECONF += " \
 
 #CACHED_CONFIGUREVARS += "${@bb.utils.contains('DISTRO_FEATURES', 'hwdecode', '${HW_TRANSFORM_CONFIG}', '', d)}"
 
-do_install_append() {
-    cp -f ${B}/tests/examples/encoding/.libs/encoding ${D}/${bindir}/
-}

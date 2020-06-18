@@ -1,8 +1,8 @@
-From 78240486a3c74c203b74c79ca9e39d98db7ead77 Mon Sep 17 00:00:00 2001
+From a92efae5878f51843581b486812c152486a97dec Mon Sep 17 00:00:00 2001
 From: Hugues Fruchet <hugues.fruchet@st.com>
 Date: Thu, 6 Dec 2018 18:08:59 +0100
-Subject: [PATCH 6/9] waylandsink: increase max buffers to 32 to enable dmabuf
- with libav decoders
+Subject: [PATCH 06/14] waylandsink: increase max buffers to 32 to enable
+ dmabuf with libav decoders
 
 libav software decoders requires max buffers in pool config to be
 at least 32, otherwise this pool is rejected.
@@ -13,7 +13,7 @@ Change-Id: If1a54ee8c1a9f320fd91537e8e2082c4a7a78700
  1 file changed, 6 insertions(+), 2 deletions(-)
 
 diff --git a/ext/wayland/gstwaylandsink.c b/ext/wayland/gstwaylandsink.c
-index be8c50c..48898f7 100644
+index d431bd2..9355e0b 100644
 --- a/ext/wayland/gstwaylandsink.c
 +++ b/ext/wayland/gstwaylandsink.c
 @@ -51,6 +51,9 @@
@@ -26,7 +26,7 @@ index be8c50c..48898f7 100644
  /* signals */
  enum
  {
-@@ -529,8 +532,9 @@ gst_wayland_create_dmabuf_pool (GstWaylandSink * sink, GstCaps * caps)
+@@ -557,8 +560,9 @@ gst_wayland_create_dmabuf_pool (GstWaylandSink * sink, GstCaps * caps)
    }
  
    structure = gst_buffer_pool_get_config (pool);

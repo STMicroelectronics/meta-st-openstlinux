@@ -1,7 +1,7 @@
-From cc7c42ec4aa53690ae15a2e2774717942836da8e Mon Sep 17 00:00:00 2001
+From f2ab87c14f43ea0b5c8a55cb7f546d38a2459876 Mon Sep 17 00:00:00 2001
 From: Hugues Fruchet <hugues.fruchet@st.com>
 Date: Mon, 11 Feb 2019 16:00:02 +0100
-Subject: [PATCH] waylandsink: set video alignment to 32 bytes
+Subject: [PATCH 11/14] waylandsink: set video alignment to 32 bytes
 
 Display subsystem requires at least 32 bytes alignment.
 
