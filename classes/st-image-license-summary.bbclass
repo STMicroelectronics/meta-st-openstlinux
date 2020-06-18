@@ -1,53 +1,68 @@
-# for having tab on html file generated
-LICENSE_IMAGE_CONTENT_WITH_TAB ?= "1"
-
-# We can define one or more additional images built as additional partitions
-# to the default rootfs one (#IMAGE#) thought IMAGE_SUMMARY_LIST var with format
-#   IMAGE_SUMMARY_LIST = "<image_name_1>:<image_name_2>:#IMAGE#"
-IMAGE_SUMMARY_LIST ?= "#IMAGE#"
-
-# Configure on BSP side this var if you expect the summary to be generated
-ENABLE_IMAGE_LICENSE_SUMMARY ?= "0"
-
 inherit license_image
 
-python do_st_write_license_create_summary() {
-    if d.getVar('ENABLE_IMAGE_LICENSE_SUMMARY') == "1":
-        try:
-            license_deployed_manifest(d)
-        except:
-            bb.warn("Deploy of image license not ready")
-        license_create_summary(d)
-    else:
-        bb.warn("IMG LIC SUM: Please set ENABLE_IMAGE_LICENSE_SUMMARY to '1' to enable licence summary")
-}
+# To have tab on html file generated
+LICENSE_IMAGE_CONTENT_WITH_TAB ?= "1"
+
+# Configure on BSP side this var if you expect the summary to be generated
+ENABLE_IMAGE_LICENSE_SUMMARY ??= "0"
+
+# We can define one or more additional images built as additional partitions
+# to the default rootfs one (${IMAGE_BASENAME}:/) thought IMAGE_SUMMARY_LIST var
+# with format
+#   IMAGE_SUMMARY_LIST = "<image_name_1>:<image_mountpoint_1>;${IMAGE_BASENAME}:/;<image_name_2>:<image_mountpoint_2"
+IMAGE_SUMMARY_LIST ?= "${IMAGE_BASENAME}:/"
+
+LICENSE_SUMMARY_DEPLOYDIR ?= "${DEPLOY_DIR}/images/${MACHINE}"
+LICENSE_SUMMARY_DIR ?= "${WORKDIR}/license-summary/"
+LICENSE_SUMMARY_NAME ?= "${IMAGE_NAME}-license_content.html"
+LICENSE_SUMMARY_LINK_NAME ?= "${IMAGE_LINK_NAME}-license_content.html"
 
 def license_create_summary(d):
     import re
     tab =  d.expand("${LICENSE_IMAGE_CONTENT_WITH_TAB}")
     ref_image_name =  d.expand("${IMAGE_LINK_NAME}")
-    ref_image_name_full = d.expand("${IMAGE_NAME}")
     deploy_image_dir = d.expand("${DEPLOY_DIR_IMAGE}")
-    temp_deploy_image_dir = deploy_image_dir #d.expand("${IMGDEPLOYDIR}")
+    temp_deploy_image_dir = d.expand("${IMGDEPLOYDIR}")
     license_deploy_dir = d.expand("${DEPLOY_DIR}/licenses")
     pkgdata_dir = d.expand("${TMPDIR}/pkgdata/${MACHINE}")
 
+    license_summary_deploydir = d.getVar('LICENSE_SUMMARY_DIR')
+    license_summary_name = d.getVar('LICENSE_SUMMARY_NAME')
+    license_summary_link = d.getVar('LICENSE_SUMMARY_LINK_NAME')
+
     image_list_arrray = []
-    for img in d.getVar("IMAGE_SUMMARY_LIST").split(':'):
-        if img.startswith("#IMAGE#"):
-            for fi in os.listdir(temp_deploy_image_dir):
-                if fi.startswith(ref_image_name) and fi.endswith(".ext4"):
-                    r = re.compile("(.*)-(\d+)")
-                    mi = r.match(os.path.basename(fi))
-                    if mi:
-                        image_list_arrray.append([mi.group(1), mi.group(2), img ])
+    # Process IMAGE_SUMMARY_LIST to feed image_list_arrray
+    image_summary_list = (d.getVar('IMAGE_SUMMARY_LIST') or "").split(';')
+    for img in image_summary_list:
+        if img.strip() == "":
+            continue
+        img_name = img.split(':')[0].strip()
+        img_mount = img.split(':')[1].strip()
+        # Remove DISTRO from image name to avoid long name
+        img_name = re.sub(r'-%s$' % d.getVar('DISTRO'), '', img_name)
+        # Configure target folder to search for image file
+        if img_mount == '/':
+            target_deploydir = temp_deploy_image_dir
         else:
-            for fi in os.listdir(deploy_image_dir):
-                if fi.startswith(img) and fi.endswith(".ext4"):
-                    r = re.compile("(.*)-(\d+)")
-                    mi = r.match(os.path.basename(fi))
-                    if mi:
-                        image_list_arrray.append([mi.group(1), mi.group(2), img])
+            target_deploydir = deploy_image_dir
+        for fi in os.listdir(target_deploydir):
+            if fi.startswith(img_name) and fi.endswith(".ext4"):
+                r = re.compile("(.*)-(\d\d\d\d+)")
+                mi = r.match(os.path.basename(fi))
+                if mi:
+                    image_list_arrray.append([mi.group(1), mi.group(2), img_name, img_mount])
+    # Append any INITRD image to image_list_arrray
+    img_name = d.getVar('INITRD_IMAGE') or ""
+    if img_name:
+        img_ext = d.getVar('INITRAMFS_FSTYPES') or ""
+        img_mount = '/'
+        for fi in os.listdir(deploy_image_dir):
+            if fi.startswith(img_name) and fi.endswith(img_ext):
+                r = re.compile("(.*)-(\d\d\d\d+)")
+                mi = r.match(os.path.basename(fi))
+                if mi:
+                    image_list_arrray.append([mi.group(1), mi.group(2), img_name, img_mount])
+
     if tab.startswith("1"):
         with_tab = 1
     else:
@@ -79,6 +94,9 @@ def license_create_summary(d):
         border_format = "border: 1;"
         wrap_format = ""
         wrap_red_format = "background-color: #ff0000;"
+
+        blue = "background-color: #0000ff;"
+        green = "background-color: #00ff00;"
 
         opened_file = None
 
@@ -370,6 +388,8 @@ def license_create_summary(d):
 
     def generate_introduction_sheet(html):
         general_MACHINE = d.getVar("MACHINE")
+        # Make sure to remove any DISTRO append to IMAGE_BASENAME for short display
+        general_IMAGE = re.sub(r'-%s$' % d.getVar('DISTRO'), '', d.getVar("IMAGE_BASENAME"))
         general_DISTRO = d.getVar("DISTRO")
         general_DISTRO_VERSION = d.getVar("DISTRO_VERSION")
         general_DISTRO_CODENAME = d.getVar("DISTRO_CODENAME")
@@ -386,7 +406,7 @@ def license_create_summary(d):
         # Image
         html.startRow()
         html.addColumnContent("IMAGE", html.bold)
-        html.addColumnContent(ref_image_name)
+        html.addColumnContent(general_IMAGE)
         html.stopRow()
         # DISTRO
         html.startRow()
@@ -408,7 +428,7 @@ def license_create_summary(d):
         html.addNewLine()
         html.addNewLine()
 
-        license_file_to_read = os.path.join(temp_deploy_image_dir, "%s.license" % ref_image_name)
+        license_file_to_read = os.path.join(deploy_image_dir, "%s.license" % ref_image_name)
         contents = private_open(license_file_to_read)
 
         html.startTable()
@@ -442,13 +462,14 @@ def license_create_summary(d):
         for img in image_list_arrray:
             _image_prefix = img[0]
             _image_date = img[1]
-            _image_flag = img[2]
+            _image_name = img[2]
+            _image_mount_point = img[3]
 
-            if _image_flag.startswith("#IMAGE#"):
+            if _image_mount_point == '/':
                 html.startColumn("width: 30%; text-align: center;")
             else:
                 html.startColumn("width: 20%; text-align: center;")
-            html.addURLContent(_image_prefix, "#%s" % _image_prefix)
+            html.addURLContent(_image_name, "#%s" % _image_name)
         html.stopColumn()
         html.stopRow()
         html.stopTable()
@@ -462,7 +483,7 @@ def license_create_summary(d):
             _image_prefix = img[0]
             _image_date = img[1]
 
-            if img[2].startswith("#IMAGE#"):
+            if _image_prefix == ref_image_name:
                 _image_package = "image_license.manifest"
                 boot_file_to_read = license_deploy_dir + "/" + _image_prefix + "-" + _image_date + "/" + _image_package
 
@@ -504,7 +525,7 @@ def license_create_summary(d):
                         # Version
                         html.addColumnContent(boot_version, red)
                         # License
-                        html.addColumnContent( boot_license, red)
+                        html.addColumnContent(boot_license, red)
                         html.stopRow()
                     else:
                         html.startRow()
@@ -513,7 +534,7 @@ def license_create_summary(d):
                         # Version
                         html.addColumnContent(boot_version)
                         # License
-                        html.addColumnContent( boot_license)
+                        html.addColumnContent(boot_license)
                         html.stopRow()
                     boot_recipe = ""
                     boot_license = ""
@@ -525,12 +546,14 @@ def license_create_summary(d):
         for img in image_list_arrray:
             _image_prefix = img[0]
             _image_date = img[1]
+            _image_name = img[2]
+            _image_mount_point = img[3]
 
             html.addNewLine()
             html.addNewLine()
 
             html.addContent("List of packages present on image")
-            html.addAnchor(_image_prefix)
+            html.addAnchor(_image_name)
             html.startTable()
             html.startRow()
             html.addColumnHeaderContent("Image", html.bold)
@@ -560,6 +583,7 @@ def license_create_summary(d):
                 package_summary = None
                 package_file = pkgdata_dir + "/runtime-reverse/" + package_name
                 package_file_content = private_open(package_file)
+                file_info = None
                 r = re.compile("([^:]+):\s*(.*)")
                 for line in package_file_content:
                     m = r.match(line)
@@ -574,12 +598,18 @@ def license_create_summary(d):
                             package_description = m.group(2)
                         elif m.group(1).startswith("SUMMARY"):
                             package_summary = m.group(2)
+                        elif m.group(1).startswith("FILES_INFO"):
+                            file_info = m.group(2)
                 if findWholeWord("GPLv3")(package_license):
                     style = html.red
                     style_wrapped = html.wrap_red_format
                 else:
                     style = None
                     style_wrapped = None
+                # remove package which are dependency of installed package but
+                # not present on this mount point
+                if file_info.find(_image_mount_point) < 0:
+                    continue;
                 html.startRow(style)
                 if package_recipe:
                     html.addColumnContent(package_recipe, style)
@@ -604,6 +634,18 @@ def license_create_summary(d):
                         html.addColumnContent(package_description, style_wrapped)
                     else:
                         html.addColumnContent("", style)
+                # display file installed
+                #if file_info:
+                #    b = re.compile("{(.*)}")
+                #    b_info = b.match(file_info)
+                #    data_file = ""
+                #    for t in b_info.group(1).split(','):
+                #        if t.find(_image_mount_point) > -1:
+                #            data_file += t.split(':')[0].replace('\"', '') + " <br/>"
+                #    html.addColumnContent(data_file, style)
+                #else:
+                #   html.addColumnContent("", style)
+
                 html.stopRow()
                 package_license = None
                 package_parent = None
@@ -616,12 +658,10 @@ def license_create_summary(d):
 
         html.stopDiv()
 
-
-
-    summary_file = os.path.join(deploy_image_dir, "%s-license_content.html" % ref_image_name_full)
-    # bb.warn("file generated %s" % (summary_file))
+    # Create license summary file
+    license_summary_name_path = os.path.join(license_summary_deploydir, license_summary_name)
     html = HTMLSummaryfile()
-    html.openfile(summary_file)
+    html.openfile(license_summary_name_path)
     html.beginHtml()
     html.beginBody(with_tab)
 
@@ -636,13 +676,33 @@ def license_create_summary(d):
     html.endHtml()
     html.closefile()
 
-    # create link
-    curcwd = os.getcwd()
-    os.chdir(deploy_image_dir)
-    if os.path.exists("%s-license_content.html" % ref_image_name):
-        os.remove("%s-license_content.html" % ref_image_name)
-    os.symlink("%s-license_content.html" % ref_image_name_full, "%s-license_content.html" % ref_image_name)
-    os.chdir(curcwd)
+    # Create link
+    license_summary_link_path = os.path.join(license_summary_deploydir, license_summary_link)
+    if os.path.exists(license_summary_name_path):
+        bb.note("Creating symlink: %s -> %s" % (license_summary_link_path, license_summary_name))
+        if os.path.islink(license_summary_link_path):
+            os.remove(license_summary_link_path)
+        os.symlink(license_summary_name, license_summary_link_path)
+    else:
+        bb.note("Skipping symlink, source does not exist: %s -> %s" % (license_summary_link_path, license_summary_name))
 
+
+python do_st_write_license_create_summary() {
+    if d.getVar('ENABLE_IMAGE_LICENSE_SUMMARY') == "1":
+        license_create_summary(d)
+    else:
+        return
+}
 addtask st_write_license_create_summary before do_build after do_image_complete
-do_populate_lic_deploy[noexec] = "1"
+do_st_write_license_create_summary[recrdeptask] += "do_populate_lic_deploy"
+do_st_write_license_create_summary[dirs] = "${LICENSE_SUMMARY_DIR} ${IMGDEPLOYDIR}"
+
+SSTATETASKS += "do_st_write_license_create_summary"
+do_st_write_license_create_summary[cleandirs] = "${LICENSE_SUMMARY_DIR}"
+do_st_write_license_create_summary[sstate-inputdirs] = "${LICENSE_SUMMARY_DIR}"
+do_st_write_license_create_summary[sstate-outputdirs] = "${LICENSE_SUMMARY_DEPLOYDIR}/"
+
+python do_st_write_license_create_summary_setscene () {
+    sstate_setscene(d)
+}
+addtask do_st_write_license_create_summary_setscene
