@@ -7,7 +7,7 @@ SRC_URI_append = " file://charts.d.conf "
 SRC_URI_append = " file://dashboard_info.js "
 SRC_URI_append = " file://gpu.chart.py "
 
-
+RDEPENDS_${PN}_append = " python3-multiprocessing "
 
 do_install_append() {
     install -d ${D}${sysconfdir}/netdata

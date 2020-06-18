@@ -6,11 +6,12 @@
 import glob
 import os
 import re
+import time
 from subprocess import Popen, PIPE
 
-from base import SimpleService
+from bases.FrameworkServices.SimpleService import SimpleService
 
-update_every = 5
+update_every = 4
 priority = 90000
 
 ORDER = [
@@ -45,6 +46,8 @@ class Service(SimpleService):
         self.order = ORDER
         self.definitions = CHARTS
         self._orig_name = ""
+        self.sysfs_on = 0
+        self.sysfs_start = 0
 
     def check(self):
         return True
@@ -56,23 +59,18 @@ class Service(SimpleService):
             parts = line.split(' ')
             subline = " ".join(parts[1:]).replace(" ", "")
             subline = re.sub("ns", "", subline, flags=re.UNICODE)
-            if parts[0] == "Start:":
-                start = int(subline)
-            if parts[0] == "End:":
-                stop = int(subline)
+            subline = re.sub(",", "", subline, flags=re.UNICODE)
             if parts[0] == "On:":
                 on = int(subline)
-        data = float(on * 100 / (stop - start) )
-        return { 'usage': int(data)*100 }
+            if parts[0] == "Off:":
+                off = int(subline)
+            if parts[0] == "Idle:":
+                idle = int(subline)
+            if parts[0] == "Suspend:":
+                suspend = int(subline)
+        data = float( (on - self.sysfs_on) * 100 / (on + off + idle + suspend - self.sysfs_start) )
 
-    def create(self):
-        self.chart_name = "gpu"
-        status = SimpleService.create(self)
-        self.chart_name = self._orig_name
-        return status
+        self.sysfs_on = on
+        self.sysfs_start = on + off + idle + suspend
+        return { 'usage': int(data * 100) }
 
-    def update(self, interval):
-        self.chart_name = "gpu"
-        status = SimpleService.update(self, interval=interval)
-        self.chart_name = self._orig_name
-        return status
