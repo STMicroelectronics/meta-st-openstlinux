@@ -17,6 +17,7 @@ PACKAGES = "\
 RDEPENDS_packagegroup-framework-core = "\
     packagegroup-framework-core-display \
     packagegroup-framework-core-mm      \
+    infos-openstlinux \
     "
 
 SUMMARY_packagegroup-framework-core-display = "Framework core components for display"
