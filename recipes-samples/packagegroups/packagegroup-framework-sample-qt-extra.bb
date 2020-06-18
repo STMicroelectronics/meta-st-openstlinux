@@ -4,7 +4,7 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/MIT;md5=0835ad
 
 PACKAGE_ARCH = "${MACHINE_ARCH}"
 
-inherit packagegroup distro_features_check
+inherit packagegroup features_check
 
 REQUIRED_DISTRO_FEATURES = "opengl"
 
@@ -15,7 +15,6 @@ PACKAGES = "\
             "
 
 RDEPENDS_packagegroup-framework-sample-qt-extra = "\
-    qtcanvas3d                  \
     \
     qt3d                        \
     qt3d-qmlplugins             \
@@ -47,20 +46,6 @@ RDEPENDS_packagegroup-framework-sample-qt-extra = "\
 
 SUMMARY_packagegroup-framework-sample-qt-extra-examples = "Framework sample qt extra components for examples"
 RDEPENDS_packagegroup-framework-sample-qt-extra-examples = "\
-    qtcanvas3d-examples         \
-    \
-    qtquickcontrols-examples    \
-    qtwebkit-examples           \
-    \
-    qtsensors-examples          \
-    qtserialport-examples       \
-    \
-    qtcharts-examples           \
-    \
-    qt3d-examples               \
-    \
-    qtlocation-examples         \
-    \
     qt5nmapcarousedemo          \
     cinematicexperience         \
     qtsmarthome                 \

@@ -3,7 +3,7 @@ LICENSE = "Proprietary"
 
 include recipes-st/images/st-image.inc
 
-inherit core-image distro_features_check
+inherit core-image features_check
 
 # let's make sure we have a good image..
 CONFLICT_DISTRO_FEATURES = "x11 wayland"
@@ -29,6 +29,8 @@ ST_EXAMPLE_IMAGE = "1"
 # INSTALL addons
 #
 CORE_IMAGE_EXTRA_INSTALL += " \
+    resize-helper \
+    \
     packagegroup-framework-core-base    \
     packagegroup-framework-tools-base   \
     \
