@@ -1,0 +1,33 @@
+From 236830272c6da6527c360a5dcfb2ef418199e38d Mon Sep 17 00:00:00 2001
+From: Christophe Priouzeau <christophe.priouzeau@st.com>
+Date: Thu, 26 Sep 2019 16:35:58 +0200
+Subject: [PATCH] Disable Texturator
+
+Signed-off-by: Christophe Priouzeau <christophe.priouzeau@st.com>
+---
+ meson.build | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/meson.build b/meson.build
+index df9c315..ed51a6d 100644
+--- a/meson.build
++++ b/meson.build
+@@ -94,9 +94,9 @@ endif
+ executable('kmscube', sources, dependencies : dep_common, install : true)
+ 
+ 
+-executable('texturator', files(
+-	'common.c',
+-	'drm-legacy.c',
+-	'drm-common.c',
+-	'texturator.c',
+-), dependencies : dep_common, install : true)
++# executable('texturator', files(
++#         'common.c',
++#         'drm-legacy.c',
++#         'drm-common.c',
++#         'texturator.c',
++# ), dependencies : dep_common, install : true)
+-- 
+2.17.1
+
