@@ -116,7 +116,7 @@ class SplashScreen():
 # -------------------------------------------------------------------
 def _load_image_on_button(parent, filename, label_text, scale_w, scale_h):
     # Create box for xpm and label
-    box1 = Gtk.HBox(False, 0)
+    box1 = Gtk.HBox(homogeneous=False, spacing=0)
     box1.set_border_width(2)
     # Now on to the image stuff
     #image = Gtk.Image()
@@ -474,11 +474,11 @@ class MainUIWindow(Gtk.Window):
         create notebook page for displaying basic current
         sensor information: temperature, humidity, pressure
         '''
-        page_basic = Gtk.HBox(False, 0)
+        page_basic = Gtk.HBox(homogeneous=False, spacing=0)
         page_basic.set_border_width(10)
 
         # temperature
-        temp_box = Gtk.VBox(spacing=0)
+        temp_box = Gtk.VBox(homogeneous=False, spacing=0)
         temp_image = _load_image_constrained(self, "RS1069_climate_change_light_blue.png", -1, 100)
         self.temperature_basic_label = Gtk.Label('--.-- °C')
         temp_image.show()
@@ -486,7 +486,7 @@ class MainUIWindow(Gtk.Window):
         temp_box.pack_start(temp_image, True, False, 1)
         temp_box.add(self.temperature_basic_label)
         # humidity
-        humidity_box = Gtk.VBox(spacing=0)
+        humidity_box = Gtk.VBox(homogeneous=False, spacing=0)
         humidity_image = _load_image_constrained(self, "RS1902_humidity_light_blue.png", -1, 100)
         self.humidity_basic_label = Gtk.Label('--.-- °C')
         humidity_image.show()
@@ -495,7 +495,7 @@ class MainUIWindow(Gtk.Window):
         humidity_box.add(self.humidity_basic_label)
         # Pressure
         if WITH_PRESSURE:
-            pressure_box = Gtk.VBox(spacing=0)
+            pressure_box = Gtk.VBox(homogeneous=False, spacing=0)
             pressure_image = _load_image_constrained(self, "RS6355_FORCE_PRESSURE_light_blue.png", -1, 100)
             self.pressure_basic_label = Gtk.Label('--.-- °C')
             pressure_image.show()
@@ -554,11 +554,11 @@ class MainUIWindow(Gtk.Window):
             display the IMU: Inertial Measurement Unit
             Roll(X-axis), Pitch(Y-axis) and Yaw(Z-axis).
         '''
-        page_imu_all = Gtk.VBox(False, 0)
+        page_imu_all = Gtk.VBox(homogeneous=False, spacing=0)
         imu_frame = Gtk.Frame(label="IMU")
         orientation_frame = Gtk.Frame(label="Orientation")
 
-        page_imu = Gtk.VBox(False, 0)
+        page_imu = Gtk.VBox(homogeneous=False, spacing=0)
 
         #page_imu_all.add(page_imu)
         page_imu_all.add(imu_frame)
@@ -571,7 +571,7 @@ class MainUIWindow(Gtk.Window):
 
         page_imu.add(imu_label)
 
-        imu_h_box = Gtk.HBox(False, 0)
+        imu_h_box = Gtk.HBox(homogeneous=False, spacing=0)
         # picture which describe IMU
         picture_filename = "%s/RS10670_Aereo-lpr.jpg" % ICON_PICTURES_PATH
         image_imu = _load_image(self, "RS10670_Aereo-lpr.jpg")
@@ -605,7 +605,7 @@ class MainUIWindow(Gtk.Window):
 
     def _create_frame_with_image_and_label(self, title, img_file_name, label_text):
         frame = Gtk.Frame(label=title)
-        box   = Gtk.VBox(False, 0)
+        box   = Gtk.VBox(homogeneous=False, spacing=0)
         img   = _load_image(self, img_file_name)
         img   = _load_image_constrained(self, img_file_name, -1, 100)
         label = Gtk.Label()
@@ -682,7 +682,7 @@ class MainUIWindow(Gtk.Window):
 
     def create_notebook_page_exit(self):
         ''' notebook page for quitting application '''
-        page = Gtk.VBox(False, 0)
+        page = Gtk.VBox(homogeneous=False, spacing=0)
         page.set_border_width(10)
         ''' button '''
         lastbutton = Gtk.Button()

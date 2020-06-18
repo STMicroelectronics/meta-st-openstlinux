@@ -47,23 +47,20 @@ do
         echo "===      LSM6DSL          ==="
         echo "===    (accelerometer)    ==="
         echo "============================="
+        rscale=`cat $d/in_accel_scale`
+
         xraw=`cat $d/in_accel_x_raw`
-        xscale=`cat $d/in_accel_x_scale`
-
         yraw=`cat $d/in_accel_y_raw`
-        yscale=`cat $d/in_accel_y_scale`
-
         zraw=`cat $d/in_accel_z_raw`
-        zscale=`cat $d/in_accel_z_scale`
 
-        printf "Value read: X (raw/scale)  %d / %.06f \n" $xraw $xscale
-        printf "Value read: Y (raw/scale)  %d / %.06f \n" $yraw $yscale
-        printf "Value read: Z (raw/scale)  %d / %.06f \n" $zraw $zscale
+        printf "Value read: X (raw/scale)  %d / %.06f \n" $xraw $rscale
+        printf "Value read: Y (raw/scale)  %d / %.06f \n" $yraw $rscale
+        printf "Value read: Z (raw/scale)  %d / %.06f \n" $zraw $rscale
 
         factor=`echo "scale=2;256.0 / 9.81" | bc`
-        xval=`echo "scale=2;$xraw*$xscale*$factor" | bc`
-        yval=`echo "scale=2;$yraw*$yscale*$factor" | bc`
-        zval=`echo "scale=2;$zraw*$zscale*$factor" | bc`
+        xval=`echo "scale=2;$xraw*$rscale*$factor" | bc`
+        yval=`echo "scale=2;$yraw*$rscale*$factor" | bc`
+        zval=`echo "scale=2;$zraw*$rscale*$factor" | bc`
 
         printf "Accelerometer value: [ %.02f, %.02f, %.02f ]\n" $xval $yval $zval
     fi
@@ -75,23 +72,19 @@ do
         echo "===      LSM6DSL          ==="
         echo "===    (gyroscope)        ==="
         echo "============================="
+        rscale=`cat $d/in_anglvel_scale`
         xraw=`cat $d/in_anglvel_x_raw`
-        xscale=`cat $d/in_anglvel_x_scale`
-
         yraw=`cat $d/in_anglvel_y_raw`
-        yscale=`cat $d/in_anglvel_y_scale`
-
         zraw=`cat $d/in_anglvel_z_raw`
-        zscale=`cat $d/in_anglvel_z_scale`
 
-        printf "Value read: X (raw/scale)  %d / %.06f \n" $xraw $xscale
-        printf "Value read: Y (raw/scale)  %d / %.06f \n" $yraw $yscale
-        printf "Value read: Z (raw/scale)  %d / %.06f \n" $zraw $zscale
+        printf "Value read: X (raw/scale)  %d / %.06f \n" $xraw $rscale
+        printf "Value read: Y (raw/scale)  %d / %.06f \n" $yraw $rscale
+        printf "Value read: Z (raw/scale)  %d / %.06f \n" $zraw $rscale
 
         factor=`echo "scale=2;256.0 / 9.81" | bc`
-        xval=`echo "scale=2;$xraw*$xscale*$factor" | bc`
-        yval=`echo "scale=2;$yraw*$yscale*$factor" | bc`
-        zval=`echo "scale=2;$zraw*$zscale*$factor" | bc`
+        xval=`echo "scale=2;$xraw*$rscale*$factor" | bc`
+        yval=`echo "scale=2;$yraw*$rscale*$factor" | bc`
+        zval=`echo "scale=2;$zraw*$rscale*$factor" | bc`
 
         printf "Gyroscope value: [ %.02f, %.02f, %.02f ]\n" $xval $yval $zval
     fi

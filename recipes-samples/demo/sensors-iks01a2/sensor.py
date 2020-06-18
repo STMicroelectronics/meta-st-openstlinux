@@ -1,4 +1,3 @@
-
 #!/usr/bin/python3
 import gi
 gi.require_version('Gtk', '3.0')
@@ -98,87 +97,71 @@ class Sensors():
     def accelerometer_read(self):
         prefix_path = self.sensor_dictionnary['accelerometer']
         try:
+            with open(prefix_path + "in_accel_" + 'scale', 'r') as f:
+                rscale = float(f.read())
+        except Exception as exc:
+            print("[ERROR] read %s " % prefix_path + "in_accel_" + 'scale', exc)
+            rscale = 0.0
+
+        try:
             with open(prefix_path + "in_accel_" + 'x_raw', 'r') as f:
                 xraw = float(f.read())
         except Exception as exc:
             print("[ERROR] read %s " % prefix_path + "in_accel_" + 'x_raw', exc)
             xraw = 0.0
-        try:
-            with open(prefix_path + "in_accel_" + 'x_scale', 'r') as f:
-                xscale = float(f.read())
-        except Exception as exc:
-            print("[ERROR] read %s " % prefix_path + "in_accel_" + 'x_scale', exc)
-            xscale = 0.0
-        accel_x = int(xraw * xscale * 256.0 / 9.81)
+        accel_x = int(xraw * rscale * 256.0 / 9.81)
+
         try:
             with open(prefix_path + "in_accel_" + 'y_raw', 'r') as f:
                 yraw = float(f.read())
         except Exception as exc:
             print("[ERROR] read %s " % prefix_path + "in_accel_" + 'y_raw', exc)
             yraw = 0.0
-        try:
-            with open(prefix_path + "in_accel_" + 'y_scale', 'r') as f:
-                yscale = float(f.read())
-        except Exception as exc:
-            print("[ERROR] read %s " % prefix_path + "in_accel_" + 'y_scale', exc)
-            yscale = 0.0
-        accel_y = int(yraw * yscale * 256.0 / 9.81)
+        accel_y = int(yraw * rscale * 256.0 / 9.81)
+
         try:
             with open(prefix_path + "in_accel_" + 'z_raw', 'r') as f:
                 zraw = float(f.read())
         except Exception as exc:
             print("[ERROR] read %s " % prefix_path + "in_accel_" + 'z_raw', exc)
             zraw = 0.0
-        try:
-            with open(prefix_path + "in_accel_" + 'z_scale', 'r') as f:
-                zscale = float(f.read())
-        except Exception as exc:
-            print("[ERROR] read %s " % prefix_path + "in_accel_" + 'z_scale', exc)
-            zscale = 0.0
-        accel_z = int(zraw * zscale * 256.0 / 9.81)
+        accel_z = int(zraw * rscale * 256.0 / 9.81)
+
         return [ accel_x, accel_y, accel_z]
 
     def gyroscope_read(self):
         prefix_path = self.sensor_dictionnary['gyroscope']
+        try:
+            with open(prefix_path + "in_anglvel_" + 'scale', 'r') as f:
+                rscale = float(f.read())
+        except Exception as exc:
+            print("[ERROR] read %s " % prefix_path + "in_anglvel_" + 'scale', exc)
+            rscale = 0.0
+
         try:
             with open(prefix_path + "in_anglvel_" + 'x_raw', 'r') as f:
                 xraw = float(f.read())
         except Exception as exc:
             print("[ERROR] read %s " % prefix_path + "in_anglvel_" + 'x_raw', exc)
             xraw = 0.0
-        try:
-            with open(prefix_path + "in_anglvel_" + 'x_scale', 'r') as f:
-                xscale = float(f.read())
-        except Exception as exc:
-            print("[ERROR] read %s " % prefix_path + "in_anglvel_" + 'x_scale', exc)
-            xscale = 0.0
-        gyro_x = int(xraw * xscale * 256.0 / 9.81)
+        gyro_x = int(xraw * rscale * 256.0 / 9.81)
+
         try:
             with open(prefix_path + "in_anglvel_" + 'y_raw', 'r') as f:
                 yraw = float(f.read())
         except Exception as exc:
             print("[ERROR] read %s " % prefix_path + "in_anglvel_" + 'y_raw', exc)
             yraw = 0.0
-        try:
-            with open(prefix_path + "in_anglvel_" + 'y_scale', 'r') as f:
-                yscale = float(f.read())
-        except Exception as exc:
-            print("[ERROR] read %s " % prefix_path + "in_anglvel_" + 'y_scale', exc)
-            yscale = 0.0
-        gyro_y = int(yraw * yscale * 256.0 / 9.81)
+        gyro_y = int(yraw * rscale * 256.0 / 9.81)
+
         try:
             with open(prefix_path + "in_anglvel_" + 'z_raw', 'r') as f:
                 zraw = float(f.read())
         except Exception as exc:
             print("[ERROR] read %s " % prefix_path + "in_anglvel_" + 'z_raw', exc)
             zraw = 0.0
-        try:
-            with open(prefix_path + "in_anglvel_" + 'z_scale', 'r') as f:
-                zscale = float(f.read())
-        except Exception as exc:
-            print("[ERROR] read %s " % prefix_path + "in_anglvel_" + 'z_scale', exc)
-            zscale = 0.0
-        gyro_z = int(zraw * zscale * 256.0 / 9.81)
+        gyro_z = int(zraw * rscale * 256.0 / 9.81)
+
         return [ gyro_x, gyro_y, gyro_z]
 
 # -------------------------------------------------------------------
@@ -200,14 +183,14 @@ class MainUIWindow(Gtk.Window):
         self.sensors = Sensors()
         self.sensors.found_all_sensor_path()
 
-        sensor_box = Gtk.VBox(spacing=0)
+        sensor_box = Gtk.VBox(homogeneous=False, spacing=0)
 
         # temperature
         temp_label = Gtk.Label()
         temp_label.set_markup("<span font_desc='LiberationSans 25'>Temperature</span>")
         self.temp_value_label = Gtk.Label()
         self.temp_value_label.set_markup("<span font_desc='LiberationSans 25'>--.-- °C</span>")
-        temp_box = Gtk.HBox(False, 0)
+        temp_box = Gtk.HBox(homogeneous=False, spacing=0)
         temp_box.add(temp_label)
         temp_box.add(self.temp_value_label)
         sensor_box.add(temp_box)
@@ -217,7 +200,7 @@ class MainUIWindow(Gtk.Window):
         humidity_label.set_markup("<span font_desc='LiberationSans 25'>Humidity</span>")
         self.humidity_value_label = Gtk.Label()
         self.humidity_value_label.set_markup("<span font_desc='LiberationSans 25'>--.-- %c</span>" % '%')
-        humidity_box = Gtk.HBox(False, 0)
+        humidity_box = Gtk.HBox(homogeneous=False, spacing=0)
         humidity_box.add(humidity_label)
         humidity_box.add(self.humidity_value_label)
         sensor_box.add(humidity_box)
@@ -227,7 +210,7 @@ class MainUIWindow(Gtk.Window):
         accel_label.set_markup("<span font_desc='LiberationSans 25'>Accelerometer</span>")
         self.accel_value_label = Gtk.Label()
         self.accel_value_label.set_markup("<span font_desc='LiberationSans 25'> [ --.--, --.--, --.--]</span>")
-        accel_box = Gtk.HBox(False, 0)
+        accel_box = Gtk.HBox(homogeneous=False, spacing=0)
         accel_box.add(accel_label)
         accel_box.add(self.accel_value_label)
         sensor_box.add(accel_box)
@@ -237,7 +220,7 @@ class MainUIWindow(Gtk.Window):
         gyro_label.set_markup("<span font_desc='LiberationSans 25'>Gyroscope</span>")
         self.gyro_value_label = Gtk.Label()
         self.gyro_value_label.set_markup("<span font_desc='LiberationSans 25'> [ --.--, --.--, --.--]</span>")
-        gyro_box = Gtk.HBox(False, 0)
+        gyro_box = Gtk.HBox(homogeneous=False, spacing=0)
         gyro_box.add(gyro_label)
         gyro_box.add(self.gyro_value_label)
         sensor_box.add(gyro_box)
@@ -246,17 +229,14 @@ class MainUIWindow(Gtk.Window):
 
         # Add a timer callback to update
         # this takes 2 args: (how often to update in millisec, the method to run)
-        self.timer = GObject.timeout_add(TIME_UPATE, self.update_ui, None)
-        self.timer_enable = True
+        GLib.timeout_add(TIME_UPATE, self.update_ui)
 
 
     def destroy(self, widget, data=None):
         Gtk.main_quit()
 
 
-    def update_ui(self, user_data):
-        if False == self.timer_enable:
-            return False;
+    def update_ui(self):
         # temperature
         temp = self.sensors.temperature_read()
         self.temp_value_label.set_markup("<span font_desc='LiberationSans 25'>%.02f °C</span>" % temp)
