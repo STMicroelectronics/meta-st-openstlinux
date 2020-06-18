@@ -1,0 +1,14 @@
+Application:
+    Name: Artificial
+    Description: Intelligence
+    Icon: application/m4_ai/pictures/ST7079_AI_neural_pink.png
+    Type: script
+    Board:
+        List: all
+    Script:
+        Start: application/m4_ai/bin/launch_AI.sh
+    Action:
+        button_release_event: script_start
+        button_press_event: highlight_eventBox
+
+

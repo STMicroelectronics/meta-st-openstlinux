@@ -7,7 +7,7 @@ video() {
 
 audio() {
     echo "Launch audio"
-    gst-launch-1.0 playbin uri=file:///usr/local/demo/media/ST12266_269_full_technology-freaks_0160.wav &
+    gst-launch-1.0 playbin uri=file:///usr/local/demo/media/ST12266_269_full_technology-freaks_0160.ogg &
 }
 
 picture() {
