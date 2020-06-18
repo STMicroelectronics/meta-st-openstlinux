@@ -1,0 +1,45 @@
+USB IP:
+------
+REF:
+https://developer.ridgerun.com/wiki/index.php?title=How_to_setup_and_use_USB/IP
+
+
+Server configuration:
+---------------------
+The package usbip provide the tools and service to enable a serveur for usbip.
+
+To enable it on server:
+ $> systemctl enable usbip
+ $> systemctl start usbip
+
+
+Client configuration and way of working (Linux ubuntu PC):
+----------------------------------------------------------
+Pre-requisite on ubuntu:
+  sudo apt-get install sysfsutils libwrap0-dev libglib2.0-dev libtool automake autoconf pkg-config linux-tools-generic
+
+Download ids file and install it:
+  wget http://www.linux-usb.org/usb.ids
+  sudo mkdir -p /usr/share/hwdata/
+  sudo cp usb.ids /usr/share/hwdata/
+
+Setup:
+ sudo modprobe usbip-core
+ sudo modprobe vhci-hcd
+Can be automaticaly load at runtime by putting it on module load:
+  echo "usbip-core" > /etc/modules-load.d/usbip.conf
+  echo "vhci-hcd" >> /etc/modules-load.d/usbip.conf
+
+List usb remote available on specific server:
+  sudo usbip list -r <server IP>
+
+attach an USB:
+  sudo usbip attach -r <server IP> -b <USB ID>
+Detach
+ sudo usbip port
+ sudo usbip detach -p 00
+
+NOTE: if "usbip attach" return an error like:
+"usbip: info: no exportable devices found on 10.48.0.144"
+That meanin there is no usb device plugged on server.
+
