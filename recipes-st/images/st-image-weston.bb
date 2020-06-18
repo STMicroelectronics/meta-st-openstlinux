@@ -35,4 +35,10 @@ CORE_IMAGE_EXTRA_INSTALL += " \
     ${@bb.utils.contains('COMBINED_FEATURES', 'optee', 'packagegroup-optee-test', '', d)} \
     \
     ${@bb.utils.contains('COMBINED_FEATURES', 'tpm2', 'packagegroup-security-tpm2', '', d)} \
+    \
+    packagegroup-st-demo \
     "
+
+# NOTE:
+#   packagegroup-st-demo are installed on rootfs to populate the package
+#   database.
