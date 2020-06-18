@@ -14,7 +14,7 @@ SRC_URI += " \
 SRC_URI_append_stm32mpcommon = " file://check-gpu "
 
 FILES_${PN} += " ${datadir}/weston \
-         ${systemd_system_unitdir}/weston.service \
+         ${systemd_system_unitdir}/weston@.service \
          ${sbindir}/weston.sh \
          ${sysconfdir}/etc/profile.d \
          ${sysconfdir}/xdg/weston/weston.ini \

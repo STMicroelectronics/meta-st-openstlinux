@@ -23,6 +23,10 @@ check_dt_status() {
 
 check_load_module() {
     local _timeout=0
+    if [ -n "$(cat /proc/modules | grep etnaviv)"  ]; then
+        galcore_module=$(cat /proc/modules | grep ^etnaviv)
+        return
+    fi
     while [ -z "$(cat /proc/modules | grep galcore)" ]; do
         sleep 1
         _timeout=$(($_timeout+1))
@@ -36,6 +40,10 @@ check_load_module() {
 
 check_devices() {
     local _timeout=0
+    if [ -n "$(cat /proc/modules | grep etnaviv)"  ]; then
+        galcore_device=$(cat /proc/modules | grep ^etnaviv)
+        return
+    fi
     while [ -z "$(ls -l /dev/ | grep galcore)" ]; do
         sleep 1
         _timeout=$(($_timeout+1))
