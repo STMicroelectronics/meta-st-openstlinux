@@ -17,12 +17,15 @@ from gi.repository import GObject
 from gi.repository import Gdk
 from gi.repository import GLib
 from gi.repository import GdkPixbuf
+from gi.repository import Pango
 
-import evdev
+import yaml
+
 import subprocess
 import random
 import math
 import os
+import glob
 import socket
 import fcntl
 import struct
@@ -32,8 +35,7 @@ from collections import deque
 from time import sleep, time
 import threading
 
-from bin.bluetooth_panel import BluetoothWindow
-
+import importlib
 #
 # For simulating UI on PC , please use
 # the variable SIMULATE = 1
@@ -44,9 +46,12 @@ SIMULATE = 0
 
 
 if SIMULATE > 0:
-    DEMO_PATH = os.environ['HOME']+"/Desktop/launcher"
+    #DEMO_PATH = os.environ['HOME']+"/Desktop/launcher"
+    DEMO_PATH = "./"
 else:
     DEMO_PATH = "/usr/local/demo"
+
+lock = threading.Lock()
 
 # -------------------------------------------------------------------
 # -------------------------------------------------------------------
@@ -54,15 +59,6 @@ else:
 #
 SIMULATE_SCREEN_SIZE_WIDTH  = 800
 SIMULATE_SCREEN_SIZE_HEIGHT = 480
-
-ICON_SIZE_BIG = 180
-ICON_SIZE_MEDIUM = 160
-ICON_SIZE_SMALL = 128
-
-WIFI_HOTSPOT_IP="192.168.72.1"
-
-WIFI_DEFAULT_SSID="STDemoNetwork"
-WIFI_DEFAULT_PASSWD="stm32mp1"
 
 def popenAndCall(onExit, *popenArgs, **popenKWArgs):
     """
@@ -85,112 +81,44 @@ def popenAndCall(onExit, *popenArgs, **popenKWArgs):
 
     return thread # returns immediately after the thread starts
 
+# -------------------------------------------------------------------
+# -------------------------------------------------------------------
+ICON_SIZE_720 = 180
+ICON_SIZE_480 = 128
+def get_screen_size_management_type(width, height):
+    minsize =  min(width, height)
+    if minsize == 720:
+        return 720
+    elif minsize == 480:
+        return 480
+    return 480
+def get_icon_size_from_screen_size(width, height):
+    minsize =  min(width, height)
+    if minsize == 720:
+        return ICON_SIZE_720
+    elif minsize == 480:
+        return ICON_SIZE_480
+
+# -------------------------------------------------------------------
+# -------------------------------------------------------------------
 # Back video view
 class BackVideoWindow(Gtk.Dialog):
     def __init__(self, parent):
         Gtk.Dialog.__init__(self, "Wifi", parent, 0)
-        self.previous_click_time=0
+        self.previous_click_time=time()
         self.maximize()
         self.set_decorated(False)
-        rgba = Gdk.RGBA(0.31, 0.32, 0.31, 0.8)
-        self.override_background_color(0,rgba)
+        self.set_name("backed_bg")
         self.show_all()
-
-# video Window
-class GstVideoWindow(Gtk.Dialog):
-    def __init__(self, parent):
-        Gtk.Dialog.__init__(self, "Video", parent, 0)
-
-        self.maximize()
-        self.set_decorated(False)
-        rgba = Gdk.RGBA(0, 0, 0, 0)
-        self.override_background_color(0,rgba)
-
-        self.previous_click_time=0
-        self.stream_is_paused=0
-
-        self.connect("button-press-event", self.on_video_press_event)
-
-        self.process_pipe_read, self.process_pipe_write =  os.pipe()
-        cmd = ["%s/bin/launch_video.sh" % DEMO_PATH]
-        thread = popenAndCall(self.video_on_exit, cmd, stdin=self.process_pipe_read, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-
-    def video_on_exit(self):
-        if self:
-            self.destroy()
-
-    def on_video_press_event(self, widget, event):
-        self.click_time = time()
-        #print(self.click_time - self.previous_click_time)
-        # TODO : a fake click is observed, workaround hereafter
-        if (self.click_time - self.previous_click_time) < 0.01:
-            self.previous_click_time = self.click_time
-        elif (self.click_time - self.previous_click_time) < 0.3:
-            #print ("GstVideoWindow double click")
-            os.write(self.process_pipe_write, b"q")
-            os.close(self.process_pipe_write)
-            #cmd = ["%s/bin/stop_video.sh" % DEMO_PATH]
-            #proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-            self.destroy()
-        else:
-            #print ("GstVideoWindow simple click")
-            self.previous_click_time = self.click_time
-            os.write(self.process_pipe_write, b"p")
-            if (self.stream_is_paused == 1):
-                self.stream_is_paused = 0
-            else:
-                self.stream_is_paused = 1
-
-# Camera Window
-class GstCameraWindow(Gtk.Dialog):
-    def __init__(self, parent):
-        Gtk.Dialog.__init__(self, "Video", parent, 0)
-
-        self.maximize()
-        self.set_decorated(False)
-        rgba = Gdk.RGBA(0, 0, 0, 0)
-        self.override_background_color(0,rgba)
-
-        self.previous_click_time=0
-        self.stream_is_paused=0
-
-        self.connect("button-press-event", self.on_camera_press_event)
-        self.process_pipe_read, self.process_pipe_write =  os.pipe()
-        cmd = ["%s/bin/launch_camera.sh" % DEMO_PATH]
-        self.proc = popenAndCall(self.camera_on_exit, cmd, stdin =self.process_pipe_read, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-
-    def camera_on_exit(self):
-        if self:
-            self.destroy()
-
-    def on_camera_press_event(self, widget, event):
-        self.click_time = time()
-        print(self.click_time - self.previous_click_time)
-        # TODO : a fake click is observed, workaround hereafter
-        if (self.click_time - self.previous_click_time) < 0.01:
-            self.previous_click_time = self.click_time
-        elif (self.click_time - self.previous_click_time) < 0.3:
-            self.camera_widget.stop()
-            self.destroy()
-        else:
-            self.previous_click_time = self.click_time
-            os.write(self.process_pipe_write, b"p")
-            if (self.stream_is_paused == 1):
-                self.camera_widget.start()
-                self.stream_is_paused = 0
-            else:
-                self.camera_widget.pause()
-                self.stream_is_paused = 1
 
 # Info view
 class InfoWindow(Gtk.Dialog):
     def __init__(self, parent):
         Gtk.Dialog.__init__(self, "Wifi", parent, 0)
-        self.previous_click_time=0
+        self.previous_click_time=time()
         self.maximize()
         self.set_decorated(False)
-        rgba = Gdk.RGBA(0.31, 0.32, 0.31, 0.8)
-        self.override_background_color(0,rgba)
+        self.set_name("backed_bg")
 
         mainvbox = self.get_content_area()
 
@@ -223,208 +151,11 @@ class InfoWindow(Gtk.Dialog):
             print ("simple click")
             self.previous_click_time = self.click_time
 
-# Netdata view
-class WifiWindow(Gtk.Dialog):
-    def __init__(self, parent):
-        Gtk.Dialog.__init__(self, "Wifi", parent, 0)
-
-        self.maximize()
-        self.set_decorated(False)
-        rgba = Gdk.RGBA(0.31, 0.32, 0.31, 0.8)
-        self.override_background_color(0,rgba)
-
-        mainvbox = self.get_content_area()
-
-        self.page_ip = Gtk.VBox()
-        self.page_ip.set_border_width(10)
-        self.set_border_width(10)
-
-        self.title = Gtk.Label()
-        self.title.set_markup("<span font='30' color='#FFFFFFFF'><b>Access information to netdata</b></span>")
-        self.page_ip.add(self.title)
-        self.label_eth = Gtk.Label()
-        self.label_eth.set_markup("<span font='20' color='#FFFFFFFF'>\nnetdata over Ethernet:</span>")
-        self.label_eth.set_xalign (0.0)
-        self.label_ip_eth0 = Gtk.Label()
-        self.label_ip_eth0.set_xalign (0.0)
-        self.label_wifi = Gtk.Label()
-        self.label_wifi.set_markup("<span font='20' color='#FFFFFFFF'>\nnetdata over Wifi:</span>")
-        self.label_wifi.set_xalign (0.0)
-        self.label_ip_wlan0 = Gtk.Label()
-        self.label_ip_wlan0.set_xalign (0.0)
-        self.label_hotspot = Gtk.Label()
-        self.label_hotspot.set_xalign (0.0)
-
-        self.previous_click_time=0
-        self.wifi_ssid=WIFI_DEFAULT_SSID
-        self.wifi_passwd=WIFI_DEFAULT_PASSWD
-
-        self.info_grid = Gtk.Grid()
-        self.info_grid.set_column_spacing(2)
-        self.info_grid.set_row_spacing(2)
-
-        self.info_grid.attach(self.label_eth, 0, 1, 1, 1)
-        self.info_grid.attach(self.label_ip_eth0, 0, 2, 1, 1)
-
-        if self.is_wifi_available():
-            print ("wlan0 is available")
-            self.hotspot_switch = Gtk.Switch()
-
-            # set wlan switch state on first execution
-            ip_wlan0 = get_ip_address('wlan0')
-            if ip_wlan0 == WIFI_HOTSPOT_IP:
-                self.hotspot_switch.set_active(True)
-            else:
-                self.hotspot_switch.set_active(False)
-
-            self.hotspot_switch.connect("notify::active", self.on_switch_activated)
-            self.info_grid.attach(self.label_wifi, 0, 4, 1, 1)
-            self.info_grid.attach(self.hotspot_switch, 0, 5, 1, 1)
-            self.info_grid.attach(self.label_hotspot, 1, 5, 1, 1)
-
-        else:
-            print ("wlan0 interface not available")
-            self.info_grid.attach(self.label_hotspot, 0, 5, 1, 1)
-
-        self.page_ip.add(self.info_grid)
-        self.refresh_network_page()
-        self.connect("button-release-event", self.on_page_press_event)
-
-        mainvbox.pack_start(self.page_ip, False, True, 3)
-        self.show_all()
-
-    def is_wifi_available(self):
-        if 'wlan0' in open('/proc/net/dev').read():
-            return True
-        return False
-
-    def get_wifi_config(self):
-        filepath = "/etc/default/hostapd"
-        if os.path.isfile(filepath):
-            file = open(filepath, "r")
-            i=0
-            for line in file:
-                if "HOSTAPD_SSID" in line:
-                    self.wifi_ssid = (line.split('=')[1]).rstrip('\r\n')
-                    i+=1
-                if "HOSTAPD_PASSWD" in line:
-                    self.wifi_passwd=(line.split('=')[1]).rstrip('\r\n')
-                    i+=1
-            file.close()
-            if (i==2):
-                print("[Wifi: use hostapd configuration: ssid=%s, passwd=%s]\n" %(self.wifi_ssid, self.wifi_passwd))
-            else:
-                self.wifi_ssid=WIFI_DEFAULT_SSID
-                self.wifi_passwd=WIFI_DEFAULT_PASSWD
-                print("[Wifi: use default configuration: ssid=%s, passwd=%s]\n" %(self.wifi_ssid, self.wifi_passwd))
-        else:
-            print("[Wifi: use default configuration: ssid=%s, passwd=%s]\n" %(self.wifi_ssid, self.wifi_passwd))
-
-    def set_random_wifi_config(self):
-        self.wifi_ssid="ST-" + id_generator()
-        #self.wifi_passwd=id_generator(6, string.ascii_lowercase)
-        self.set_wifi_config(self.wifi_ssid, self.wifi_passwd)
-
-    def set_wifi_config(self, ssid, password):
-        filepath = "/etc/default/hostapd"
-        file = open(filepath, "w")
-        print ("[Wifi: set hostapd config: ssid=%s, passwd=%s]" %(ssid, password))
-        file.write('HOSTAPD_SSID=%s\nHOSTAPD_PASSWD=%s\n' %(ssid, password))
-        file.close()
-
-
-    def refresh_network_page(self):
-        print("[Refresh network page]\n")
-
-        ip_eth0 = get_ip_address('eth0')
-        if ip_eth0 != "NA":
-            eth0_status = "<span font='15' color='#FFFFFFFF'>  http://%s:19999</span>" % ip_eth0
-        else:
-            eth0_status = "<span font='15' color='#FF0000FF'>  No Ethernet connection</span>"
-        self.label_ip_eth0.set_markup(eth0_status)
-
-        if self.is_wifi_available():
-            print ("wlan0 is available")
-            ip_wlan0 = get_ip_address('wlan0')
-            if ip_wlan0 == "NA":
-                hotspot_status = "<span font='15' color='#FF0000FF'>  Wifi not started</span>"
-                self.info_grid.remove_row(6)
-            elif ip_wlan0 == WIFI_HOTSPOT_IP:
-                self.get_wifi_config()
-                hotspot_status = "<span font='15' color='#00AA00FF'>  Wifi hotspot started</span>"
-
-                wifi_qrcode_cmd = "WIFI:S:%s;T:WPA;P:%s;;" %(self.wifi_ssid, self.wifi_passwd)
-                cmd = ["%s/bin/build_qrcode.sh" % DEMO_PATH, "-o %s/pictures/qr-code_wifi_access.png" % DEMO_PATH, wifi_qrcode_cmd]
-                proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-                url_qrcode_cmd = "http://%s:19999" % ip_wlan0
-                cmd2 = ["%s/bin/build_qrcode.sh" % DEMO_PATH, "-o %s/pictures/qr-code_netdata_url.png" % DEMO_PATH, url_qrcode_cmd]
-                proc = subprocess.Popen(cmd2, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                result = proc.stdout.read().decode('utf-8')
-
-                self.wifi_credential = _load_image_wlan_eventBox(self, "%s/pictures/qr-code_wifi_access.png" % DEMO_PATH, "ssid: %s" % self.wifi_ssid, "passwd: %s" % self.wifi_passwd, -1, ICON_SIZE_MEDIUM)
-                self.netdata_url = _load_image_wlan_eventBox(self, "%s/pictures/qr-code_netdata_url.png" % DEMO_PATH, "url: http://%s:19999" % ip_wlan0, "", -1, ICON_SIZE_MEDIUM)
-                self.info_grid.attach(self.wifi_credential, 0, 6, 1, 1)
-                self.info_grid.attach(self.netdata_url, 1, 6, 1, 1)
-
-                self.show_all()
-            else:
-                hotspot_status = "<span font='15' color='#FF0000FF'>Wifi started but not configured as hotspot</span>"
-                self.info_grid.remove_row(6)
-
-                self.label_ip_wlan0.set_markup("<span font='15' color='#FFFFFFFF'>NetData over Wifi: http://%s:19999</span>" % ip_wlan0)
-                self.info_grid.attach(self.label_ip_wlan0, 0, 6, 1, 1)
-                self.show_all()
-        else:
-            print ("wlan0 interface not available")
-            hotspot_status = "<span font='15' color='#FF0000FF'>  Wifi not available on board</span>"
-
-        self.label_hotspot.set_markup(hotspot_status)
-
-    def on_page_press_event(self, widget, event):
-        self.click_time = time()
-        #print(self.click_time - self.previous_click_time)
-        # TODO : a fake click is observed, workaround hereafter
-        if (self.click_time - self.previous_click_time) < 0.01:
-            self.previous_click_time = self.click_time
-        elif (self.click_time - self.previous_click_time) < 0.3:
-            print ("double click : exit")
-            self.destroy()
-        else:
-            #print ("simple click")
-            self.previous_click_time = self.click_time
-
-    def on_switch_activated(self, switch, gparam):
-        if switch.get_active():
-            self.set_random_wifi_config()
-            wifi_hotspot_start()
-        else:
-            wifi_hotspot_stop()
-        self.refresh_network_page()
-
-
-# -------------------------------------------------------------------
-# -------------------------------------------------------------------
-# Get the ip address of board
-def get_ip_address(ifname):
-    ip = "NA"
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        ip = socket.inet_ntoa(fcntl.ioctl(
-            s.fileno(),
-            0x8915,  # SIOCGIFADDR
-            struct.pack('256s', bytes(ifname[:15], 'utf-8'))
-        )[20:24])
-    except socket.error:
-        pass
-    return ip
-
-
 # -------------------------------------------------------------------
 # -------------------------------------------------------------------
 def _load_image_eventBox(parent, filename, label_text1, label_text2, scale_w, scale_h):
     # Create box for xpm and label
-    box = Gtk.VBox(False, 0)
+    box = Gtk.VBox(homogeneous=False, spacing=0)
     # Create an eventBox
     eventBox = Gtk.EventBox()
     # Now on to the image stuff
@@ -450,38 +181,8 @@ def _load_image_eventBox(parent, filename, label_text1, label_text2, scale_w, sc
 
     return eventBox
 
-
-def _load_image_wlan_eventBox(parent, filename, label_text1, label_text2, scale_w, scale_h):
-    # Create box for xpm and label
-    box = Gtk.HBox(False, 0)
-    # Create an eventBox
-    eventBox = Gtk.EventBox()
-    # Now on to the image stuff
-    pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(
-            filename=filename,
-            width=scale_w,
-            height=scale_h,
-            preserve_aspect_ratio=True)
-    image = Gtk.Image.new_from_pixbuf(pixbuf)
-
-    label = Gtk.Label()
-    label.set_markup("<span font='15' color='#FFFFFFFF'>%s\n</span>"
-                     "<span font='15' color='#FFFFFFFF'>%s</span>" % (label_text1, label_text2))
-    label.set_justify(Gtk.Justification.LEFT)
-    label.set_line_wrap(True)
-
-    # Pack the pixmap and label into the box
-    box.pack_start(image, True, False, 0)
-    box.pack_start(label, True, False, 0)
-
-    # Add the image to the eventBox
-    eventBox.add(box)
-
-    return eventBox
-
-
 def _load_image_Box(parent, mp1filename, infofilename, label_text, scale_w, scale_h):
-    box = Gtk.VBox(False, 0)
+    box = Gtk.VBox(homogeneous=False, spacing=0)
     pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(
             filename=mp1filename,
             width=scale_w,
@@ -526,7 +227,7 @@ def _load_image_Box(parent, mp1filename, infofilename, label_text, scale_w, scal
 
 def _load_image_on_button(parent, filename, label_text, scale_w, scale_h):
     # Create box for xpm and label
-    box = Gtk.HBox(False, 0)
+    box = Gtk.HBox(homogeneous=False, spacing=0)
     box.set_border_width(2)
     # print("[DEBUG] image: %s " % filename)
     # Now on to the image stuff
@@ -538,7 +239,7 @@ def _load_image_on_button(parent, filename, label_text, scale_w, scale_h):
     image = Gtk.Image.new_from_pixbuf(pixbuf)
 
     # Create a label for the button
-    label = Gtk.Label(label_text)
+    label = Gtk.Label.new(label_text)
 
     # Pack the pixmap and label into the box
     box.pack_start(image, True, False, 3)
@@ -546,30 +247,267 @@ def _load_image_on_button(parent, filename, label_text, scale_w, scale_h):
     image.show()
     label.show()
     return box
+# -------------------------------------------------------------------
+# -------------------------------------------------------------------
+def read_board_compatibility_name():
+    if SIMULATE > 0:
+        return "all"
+    else:
+        try:
+            with open("/proc/device-tree/compatible") as fp:
+                string = fp.read()
+                return string.split(',')[-1]
+        except:
+            return "all"
+# -------------------------------------------------------------------
+# -------------------------------------------------------------------
 
-def wifi_hotspot_start():
-    cmd = ["%s/bin/st-hotspot-wifi-service.sh" % DEMO_PATH, "start"]
-    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    result = proc.stdout.read().decode('utf-8')
-    return result
+class ScriptWindow(Gtk.Dialog):
+    def __init__(self, parent, name, script):
+        Gtk.Dialog.__init__(self, name, parent, 0)
 
-def wifi_hotspot_stop():
-    cmd = ["%s/bin/st-hotspot-wifi-service.sh" % DEMO_PATH, "stop"]
-    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    result = proc.stdout.read().decode('utf-8')
-    return result
+        self.maximize()
+        self.set_decorated(False)
+        self.set_name("transparent_bg")
 
-def cube_3D_start():
-    cmd = ["%s/bin/launch_cube_3D.sh" % DEMO_PATH]
-    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    result = proc.stdout.read().decode('utf-8')
-    return result
+        self.previous_click_time=time()
+        self.stream_is_paused=0
+        self.script_is_started=False
 
-def demo_AI_start():
-    cmd = ["%s/bin/launch_AI.sh" % DEMO_PATH]
-    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    result = proc.stdout.read().decode('utf-8')
-    return result
+        self.connect("button-press-event", self.on_script_press_event)
+        self.process_pipe_read, self.process_pipe_write =  os.pipe()
+        cmd = [os.path.join(DEMO_PATH,script)]
+        self.proc = popenAndCall(self.on_script_on_exit, cmd, stdin =self.process_pipe_read, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+
+    def on_script_on_exit(self):
+        if self:
+            self.destroy()
+
+    def on_script_press_event(self, widget, event):
+        self.click_time = time()
+        print("click delay: ", self.click_time - self.previous_click_time)
+        if (self.click_time - self.previous_click_time) > 3:
+            self.script_is_started=True
+        if (self.script_is_started):
+            # TODO : a fake click is observed, workaround hereafter
+            if (self.click_time - self.previous_click_time) < 0.01:
+                self.previous_click_time = self.click_time
+            elif (self.click_time - self.previous_click_time) < 0.3:
+                print("double click", self.click_time - self.previous_click_time)
+                os.write(self.process_pipe_write, b"q")
+                os.close(self.process_pipe_write)
+                self.destroy()
+            else:
+                self.previous_click_time = self.click_time
+                os.write(self.process_pipe_write, b"p")
+                if (self.stream_is_paused == 1):
+                    self.stream_is_paused = 0
+                else:
+                    self.stream_is_paused = 1
+
+# -------------------------------------------------------------------
+# -------------------------------------------------------------------
+
+def import_module_by_name(module_name):
+    ''' module example:0application.netdata.netdata
+        (corresponding to application/netdata/netdata.py file)
+    '''
+    try:
+        print("[DEBUG] module_name=>%s<" % module_name)
+        imported = importlib.import_module(module_name)
+    except Exception as e:
+        print("Module Load, error: ", e)
+        return None
+    return imported
+
+class ApplicationButton():
+    def __init__(self, parent, yaml_file, icon_size):
+        self.event_box = None
+        self.yaml_configuration = None
+        self.icon_size = icon_size
+        self._parent = parent
+        self._compatible = True
+
+        with open(yaml_file) as fp:
+            self.yaml_configuration = yaml.load(fp, Loader=yaml.FullLoader)
+        #print(self.yaml_configuration)
+        #print("Name ", self.yaml_configuration["Application"]["Name"])
+
+        if self.yaml_configuration:
+            # check board if it's compatible
+            if (self._is_compatible(self.yaml_configuration["Application"]["Board"])):
+                self._compatible = True
+                self.event_box = _load_image_eventBox(self, "%s/%s" % (DEMO_PATH, self.yaml_configuration["Application"]["Icon"]),
+                                                  self.yaml_configuration["Application"]["Name"],
+                                                  self.yaml_configuration["Application"]["Description"],
+                                                  -1, self.icon_size)
+                if (self.yaml_configuration["Application"]["Type"].rstrip() == "script"):
+                    self.event_box.connect("button_release_event", self.script_handle)
+                    self.event_box.connect("button_press_event", self._parent.highlight_eventBox)
+                elif (self.yaml_configuration["Application"]["Type"].rstrip() == "python"):
+                    self.event_box.connect("button_release_event", self.python_start)
+                    self.event_box.connect("button_press_event", self._parent.highlight_eventBox)
+            else:
+                self._compatible = False
+                print("     %s NOT compatible" % self.yaml_configuration["Application"]["Name"])
+
+
+    def is_exist(self, data):
+        try:
+            #print("[DEBUG][is_exist] ", data)
+            if (data):
+                for masterkey in data:
+                    #print("[DEBUG][is_exist] key available: ", masterkey)
+                    if masterkey == "Exist":
+                        for key in data["Exist"]:
+                            #print("[DEBUG][is_exist] key detected: %s" % key)
+                            if key == "File" and len(data["Exist"]["File"].rstrip()):
+                                if (os.path.exists(data["Exist"]["File"].rstrip())):
+                                    return True
+                                else:
+                                    return False
+                            elif (key == "Command" and len(data["Exist"]["Command"].rstrip())):
+                                retcode = subprocess.call(data["Exist"]["Command"].rstrip(), shell=True);
+                                if (int(retcode) == 0):
+                                    return True
+                                else:
+                                    return False
+                return True
+            else:
+                return True
+        except:
+            print("is_exist exception return true")
+            return True
+
+    def exist_MSG_present(self, data):
+        try:
+            #print("[DEBUG][is_exist] ", data)
+            if (data):
+                for masterkey in data:
+                    #print("[DEBUG][is_exist] key available: ", masterkey)
+                    if masterkey == "Exist":
+                        for key in data["Exist"]:
+                            #print("[DEBUG][is_exist] key detected: %s" % key)
+                            if key == "Msg_false" and len(data["Exist"]["Msg_false"].rstrip()):
+                                return True
+                return False
+        except:
+            return False
+
+
+    def is_compatible(self):
+        return self._compatible
+    def _is_compatible(self, data):
+        board_compatibility_name = read_board_compatibility_name()
+        try:
+            if (data):
+                for key in data:
+                    if key == "List" and len(data["List"].rstrip()):
+                        if data["List"].find('all') > -1:
+                            return True
+                        if data["List"].find(board_compatibility_name) > -1:
+                            return True
+                        return False
+                    elif key == "NotList" and len(data["NotList"].rstrip()):
+                        if data["NotList"].find(board_compatibility_name):
+                            return False
+                        return True
+            else:
+                return True
+        except Exception as e:
+            print("is_compatible exception return true ", e)
+            return True
+        return True
+
+    def get_event_box(self):
+        return self.event_box
+
+    def python_start(self, widget, event):
+        print("Python module =>", self.yaml_configuration["Application"]["Python"]["Module"], "<<<")
+        if (self.is_exist(self.yaml_configuration["Application"]["Python"])):
+            if (self.yaml_configuration["Application"]["Python"]["Module"] and
+                len(self.yaml_configuration["Application"]["Python"]["Module"].rstrip()) > 0):
+                module_imported = import_module_by_name(self.yaml_configuration["Application"]["Python"]["Module"].rstrip())
+                if (module_imported):
+                    print("[Python_event start]")
+                    module_imported.create_subdialogwindow(self._parent)
+                    print("[Python_event stop]\n")
+                    widget.set_name("transparent_bg")
+                    self._parent.button_exit.show()
+        elif (self.exist_MSG_present(self.yaml_configuration["Application"]["Python"])):
+            print("[WARNING] %s not detected\n" % self.yaml_configuration["Application"]["Python"]["Exist"]["Msg_false"])
+            self._parent.display_message("<span font='15' color='#FFFFFFFF'>%s\n</span>" % self.yaml_configuration["Application"]["Python"]["Exist"]["Msg_false"])
+        widget.set_name("transparent_bg")
+        self._parent.button_exit.show()
+
+    def script_start(self):
+        global lock
+        with lock:
+            print("Lock Acquired")
+            backscript_window = BackVideoWindow(self._parent)
+            backscript_window.show_all()
+
+            print("[DEBUG][ApplicationButton][script_handle]:")
+            print("    Name: ", self.yaml_configuration["Application"]["Name"])
+            print("    Start script: ", self.yaml_configuration["Application"]["Script"]["Start"])
+
+            script_window = ScriptWindow(self._parent, self.yaml_configuration["Application"]["Name"], self.yaml_configuration["Application"]["Script"]["Start"])
+            script_window.show_all()
+            response = script_window.run()
+            script_window.destroy()
+            backscript_window.destroy()
+            print("Lock Released")
+
+    def script_handle(self, widget, event):
+        if (self.is_exist(self.yaml_configuration["Application"]["Script"])):
+            print("Acquiring lock")
+            self.script_start()
+
+        elif (self.exist_MSG_present(self.yaml_configuration["Application"]["Script"])):
+            print("[WARNING] %s not detected\n" % self.yaml_configuration["Application"]["Script"]["Exist"]["Msg_false"])
+            self._parent.display_message("<span font='15' color='#FFFFFFFF'>%s\n</span>" % self.yaml_configuration["Application"]["Script"]["Exist"]["Msg_false"])
+
+        print("[script_event stop]\n")
+        widget.set_name("transparent_bg")
+        self._parent.button_exit.show()
+
+
+# -------------------------------------------------------------------
+# -------------------------------------------------------------------
+def gtk_style():
+        css = b"""
+
+.widget .grid .label {
+    background-color: rgba (100%, 100%, 100%, 1.0);
+}
+.textview {
+    color: gray;
+}
+#normal_bg {
+    background-color: rgba (100%, 100%, 100%, 1.0);
+}
+
+#transparent_bg {
+    background-color: rgba (0%, 0%, 0%, 0.0);
+}
+#highlight_bg {
+    background-color: rgba (0%, 0%, 0%, 0.1);
+}
+#logo_bg {
+    background-color: rgba (31%, 32%, 31%, 1.0);
+}
+#backed_bg {
+    background-color: rgba (31%, 32%, 31%, 0.8);
+}
+
+        """
+        style_provider = Gtk.CssProvider()
+        style_provider.load_from_data(css)
+
+        Gtk.StyleContext.add_provider_for_screen(
+            Gdk.Screen.get_default(),
+            style_provider,
+            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
 # -------------------------------------------------------------------
 # -------------------------------------------------------------------
@@ -577,43 +515,47 @@ class MainUIWindow(Gtk.Window):
     def __init__(self):
         Gtk.Window.__init__(self, title="Demo Launcher")
         self.set_decorated(False)
-        self.modify_bg(Gtk.StateType.NORMAL, Gdk.Color(65535, 65535, 65535))
+        gtk_style()
         if SIMULATE > 0:
             self.screen_width = SIMULATE_SCREEN_SIZE_WIDTH
             self.screen_height = SIMULATE_SCREEN_SIZE_HEIGHT
         else:
             #self.fullscreen()
             self.maximize()
-            self.screen_width = self.get_screen().get_width()
-            self.screen_height = self.get_screen().get_height()
+            try:
+                display = Gdk.Display.get_default()
+                monitor = display.get_primary_monitor()
+                geometry = monitor.get_geometry()
+                scale_factor = monitor.get_scale_factor()
+                self.screen_width = scale_factor * geometry.width
+                self.screen_height = scale_factor * geometry.height
+            except:
+                self.screen_width = self.get_screen().get_width()
+                self.screen_height = self.get_screen().get_height()
 
-        if self.screen_width == 720:
-            self.board_name = "Evaluation board"
-        else:
-            self.board_name = "Discovery kit"
+        self.board_name = "STM32MP board"
 
-        if min(self.screen_width, self.screen_height) >= 720:
-            self.icon_size = ICON_SIZE_BIG
-        else:
-            self.icon_size = ICON_SIZE_SMALL
+        self.icon_size = get_icon_size_from_screen_size(self.screen_width, self.screen_height)
 
         self.set_default_size(self.screen_width, self.screen_height)
         print("[DEBUG] screen size: %dx%d" % (self.screen_width, self.screen_height))
         self.set_position(Gtk.WindowPosition.CENTER)
         self.connect('destroy', Gtk.main_quit)
 
-        self.previous_click_time=0
+        self.previous_click_time=time()
+
+        self.application_file = os.path.join(DEMO_PATH,"./application/application.yaml.saved")
+        self.application_path = os.path.join(DEMO_PATH,"./application/")
 
         # page for basic information
-        self.create_page_icon()
+        self.create_page_icon_autodetected()
 
     def display_message(self, message):
         dialog = Gtk.Dialog("Error", self, 0, (Gtk.STOCK_OK, Gtk.ResponseType.OK))
         dialog.set_decorated(False)
         width, height = self.get_size()
         dialog.set_default_size(width, height)
-        rgba = Gdk.RGBA(0.31, 0.32, 0.31, 0.8)
-        dialog.override_background_color(0,rgba)
+        dialog.set_name("backed_bg")
 
         label0 = Gtk.Label() #for padding
 
@@ -649,8 +591,7 @@ class MainUIWindow(Gtk.Window):
         response = info_window.run()
         info_window.destroy()
         print("[info_event stop]\n");
-        rgba = Gdk.RGBA(0.0, 0.0, 0.0, 0.0)
-        widget.override_background_color(0,rgba)
+        widget.set_name("transparent_bg")
         self.button_exit.show()
 
 
@@ -658,175 +599,57 @@ class MainUIWindow(Gtk.Window):
     def highlight_eventBox(self, widget, event):
         ''' highlight the eventBox widget '''
         print("[highlight_eventBox start]")
-        rgba = Gdk.RGBA(0.0, 0.0, 0.0, 0.1)
-        widget.override_background_color(0,rgba)
+        widget.set_name("highlight_bg")
         self.button_exit.hide()
         print("[highlight_eventBox stop]\n")
 
-    def wifi_hotspot_event(self, widget, event):
-        ''' start hotspot wifi on board '''
-        print("[wifi_hotspot_event start]")
-        wifi_window = WifiWindow(self)
-        wifi_window.show_all()
-        response = wifi_window.run()
-        wifi_window.destroy()
-        print("[wifi_hotspot_event stop]\n")
-        rgba = Gdk.RGBA(0.0, 0.0, 0.0, 0.0)
-        widget.override_background_color(0,rgba)
-        self.button_exit.show()
+    def create_page_icon_autodetected(self):
+        self.yaml_application_list = None
+        self.application_list = []
+        self.application_eventbox_list = []
+        self.application_start_previous = 0
+        self.application_start_next = 0
+        self.application_end = 0
 
-    def videoplay_event(self, widget, event):
-        print("[videoplay_event start]");
-
-        backvideo_window = BackVideoWindow(self)
-        backvideo_window.show_all()
-
-        video_window = GstVideoWindow(self)
-        video_window.show_all()
-        response = video_window.run()
-        video_window.destroy()
-        backvideo_window.destroy()
-
-        print("[videoplay_event stop]\n");
-        rgba = Gdk.RGBA(0.0, 0.0, 0.0, 0.0)
-        widget.override_background_color(0,rgba)
-        self.button_exit.show()
-
-    def camera_event(self, widget, event):
-        print("[camera_event start]")
-        if os.path.exists("/dev/video0"):
-            backvideo_window = BackVideoWindow(self)
-            backvideo_window.show_all()
-
-            video_window = GstCameraWindow(self)
-            video_window.show_all()
-            response = video_window.run()
-            video_window.destroy()
-            backvideo_window.destroy()
-        else:
-            print("[WARNING] camera not detected\n")
-            self.display_message("<span font='15' color='#FFFFFFFF'>Webcam is not connected:\n/dev/video0 doesn't exist\n</span>")
-
-        print("[camera_event stop]\n")
-        rgba = Gdk.RGBA(0.0, 0.0, 0.0, 0.0)
-        widget.override_background_color(0,rgba)
-        self.button_exit.show()
-
-    def ai_event(self, widget, event):
-        print("[ai_event start]")
-        devices = [evdev.InputDevice(path) for path in evdev.list_devices()]
-        for device in devices:
-            touchscreen = False
-            if device.name == "EP0110M09":
-                touchscreen = True
-                break
-            if device.name.startswith("generic ft5x06"):
-                touchscreen = True
-                break
-            if device.name == "Goodix Capacitive TouchScreen":
-                touchscreen = True
-                break
-
-        if touchscreen == False:
-            print("[WARNING] No touch screen device\n")
-            self.display_message("<span font='15' color='#FFFFFFFF'>No touch screen device connected.\nThe AI application could not be launch\n</span>")
-        else:
-            print("Touch screen device found\n")
-            demo_AI_start()
-        print("[ai_event stop]\n")
-        rgba = Gdk.RGBA(0.0, 0.0, 0.0, 0.0)
-        widget.override_background_color(0,rgba)
-        self.button_exit.show()
-
-    def gpu3d_event(self, widget, event):
-        print("[gpu3d_event start]")
-        exists = os.path.isfile('/dev/galcore')
-        if exists:
-            print("[WARNING] No GPU capabilities")
-            self.display_message("<span font='15' color='#FFFFFFFF'>No GPU capabilities to run 3D GPU demo\n</span>")
-            print("[gpu3d_event cancelled]\n")
-        else:
-            cube_3D_start()
-            print("[gpu3d_event stop]\n")
-        rgba = Gdk.RGBA(0.0, 0.0, 0.0, 0.0)
-        widget.override_background_color(0,rgba)
-        self.button_exit.show()
-
-    def bluetooth_event(self, widget, event):
-        print("[bluetooth_event start]")
-        # Check that bluetooth is supported on the board
-        self.bluetooth_state = os.system('hciconfig hci0 up')
-        if self.bluetooth_state != 0:
-            print("[WARNING] No bluetooth controller found on the board\n")
-            self.display_message("<span font='15' color='#FFFFFFFF'>Please connect a bluetooth controller on the board\n</span>")
-            print("[bluetooth_event cancelled : no bluetooth device found]\n")
-        else:
-            bt_window = BluetoothWindow(self, "bluetooth panel")
-            bt_window.show_all()
-            response = bt_window.run()
-            bt_window.destroy()
-            print("[bluetooth_event stop]\n")
-        rgba = Gdk.RGBA(0.0, 0.0, 0.0, 0.0)
-        widget.override_background_color(0,rgba)
-        self.button_exit.show()
-
-    def create_page_icon(self):
-        page_main = Gtk.HBox(False, 0)
-        page_main.set_border_width(0)
+        self.page_main = Gtk.HBox(homogeneous=False, spacing=0)
+        self.page_main.set_border_width(0)
 
         # create a grid of icon
-        icon_grid = Gtk.Grid(column_homogeneous=True, row_homogeneous=True)
-        icon_grid.set_column_spacing(20)
-        icon_grid.set_row_spacing(20)
+        self.icon_grid = Gtk.Grid(column_homogeneous=True, row_homogeneous=True)
+        self.icon_grid.set_column_spacing(20)
+        self.icon_grid.set_row_spacing(20)
 
         # STM32MP1 Logo and info area
-        logo_info_area = _load_image_Box(self, "%s/pictures/ST11249_Module_STM32MP1_alpha.png" % DEMO_PATH, "%s/pictures/ST13340_Info_white.png" % DEMO_PATH, self.board_name, -1, 160)
-        rgba = Gdk.RGBA(0.31, 0.32, 0.31, 1.0)
-        logo_info_area.override_background_color(0,rgba)
+        self.logo_info_area = _load_image_Box(self, "%s/pictures/ST11249_Module_STM32MP1_alpha.png" % DEMO_PATH, "%s/pictures/ST13340_Info_white.png" % DEMO_PATH, self.board_name, -1, 160)
+        self.logo_info_area.set_name("logo_bg")
+        self.icon_grid.attach(self.logo_info_area, 3, 0, 1, 2)
 
-        # Button: Netdata icon
-        eventBox_webserv = _load_image_eventBox(self, "%s/pictures/netdata-icon-192x192.png" % DEMO_PATH, "netdata", "perf monitor", -1, self.icon_size)
-        eventBox_webserv.connect("button_release_event", self.wifi_hotspot_event)
-        eventBox_webserv.connect("button_press_event", self.highlight_eventBox)
+        self.back_box = self.create_eventbox_back_next(1)
+        self.next_box = self.create_eventbox_back_next(0)
 
-        # Button: camera icon
-        eventBox_camera = _load_image_eventBox(self, "%s/pictures/ST1077_webcam_dark_blue.png" % DEMO_PATH, "Camera",  "preview", -1, self.icon_size)
-        eventBox_camera.connect("button_release_event", self.camera_event)
-        eventBox_camera.connect("button_press_event", self.highlight_eventBox)
+        number_of_application = 0
+        for file in sorted(os.listdir(self.application_path)):
+            if os.path.isfile(os.path.join(self.application_path, file)) and file.endswith(".yaml"):
+                print("[DEBUG] create event box for ", file)
+                application_button = ApplicationButton(self, os.path.join(self.application_path, file), self.icon_size)
+                if application_button.is_compatible():
+                    self.application_list.append(os.path.join(self.application_path, file))
+                    self.application_eventbox_list.append(application_button.get_event_box())
+                number_of_application = number_of_application + 1
+        print("[DEBUG] there is %d application(s) detected " % number_of_application)
+        if number_of_application == 0:
+            self.set_default_size(self.screen_width, self.screen_height)
+            self.display_message("<span font='15' color='#FFFFFFFF'>There is no application detected\n</span>")
+            self.destroy()
 
-        # Button: video icon
-        eventBox_videoplay = _load_image_eventBox(self, "%s/pictures/Video_playback_logo.png" % DEMO_PATH, "Video", "playback", -1, self.icon_size)
-        eventBox_videoplay.connect("button_release_event", self.videoplay_event)
-        eventBox_videoplay.connect("button_press_event", self.highlight_eventBox)
+        self.application_end = len(self.application_list)
 
-        # Button: ai icon
-        eventBox_ai = _load_image_eventBox(self, "%s/pictures/ST7079_AI_neural_pink.png" % DEMO_PATH, "Artificial", "Intelligence", -1, self.icon_size)
-        eventBox_ai.connect("button_release_event", self.ai_event)
-        eventBox_ai.connect("button_press_event", self.highlight_eventBox)
-
-        # Button: gpu3d icon
-        eventBox_gpu3d = _load_image_eventBox(self, "%s/pictures/ST153_cube_purple.png" % DEMO_PATH, "3D", "GPU", -1, self.icon_size)
-        eventBox_gpu3d.connect("button_release_event", self.gpu3d_event)
-        eventBox_gpu3d.connect("button_press_event", self.highlight_eventBox)
-
-        # Button: BT icon
-        eventBox_bluetooth = _load_image_eventBox(self, "%s/pictures/ST11012_bluetooth_speaker_light_green.png" % DEMO_PATH, "Bluetooth", "speaker", -1, self.icon_size)
-        eventBox_bluetooth.connect("button_release_event", self.bluetooth_event)
-        eventBox_bluetooth.connect("button_press_event", self.highlight_eventBox)
-
-        icon_grid.attach(logo_info_area, 3, 0, 1, 2)
-        icon_grid.attach(eventBox_webserv, 0, 0, 1, 1)
-        icon_grid.attach(eventBox_camera, 1, 0, 1, 1)
-        icon_grid.attach(eventBox_videoplay, 2, 0, 1, 1)
-
-        icon_grid.attach(eventBox_ai, 0, 1, 1, 1)
-        icon_grid.attach(eventBox_gpu3d, 1, 1, 1, 1)
-        icon_grid.attach(eventBox_bluetooth, 2, 1, 1, 1)
-
-        page_main.add(icon_grid)
+        #print("[DEBUG] application list:\n", self.application_list)
+        self.create_page_icon_by_page(0)
+        self.page_main.add(self.icon_grid)
 
         overlay = Gtk.Overlay()
-        overlay.add(page_main)
+        overlay.add(self.page_main)
         self.button_exit = Gtk.Button()
         self.button_exit.connect("clicked", Gtk.main_quit)
         self.button_exit_image = _load_image_on_button(self, "%s/pictures/close_70x70_white.png" % DEMO_PATH, "Exit", -1, 50)
@@ -839,10 +662,117 @@ class MainUIWindow(Gtk.Window):
 
         self.show_all()
 
-def id_generator(size=6, chars=string.ascii_lowercase + string.digits):
-    return "".join(random.choice(chars) for _ in range(size))
+    def create_page_icon_by_page(self, app_start):
+        '''
+            --------------------------------------------------------------
+            |  0,0: app1 |  1,0: app2 |  2,0: app2 |  3,0: information   |
+            --------------------------------------------------------------
+            |  0,1: app1 |  1,1: app2 |  2,1: app2 |  3,1: information   |
+            --------------------------------------------------------------
+            '''
+        for ind in range(0,self.application_end):
+            if (self.application_eventbox_list[ind]):
+                self.icon_grid.remove(self.application_eventbox_list[ind])
+        self.icon_grid.remove(self.back_box)
+        self.icon_grid.remove(self.next_box)
+
+        #print("[ICON DEBUG] app_start ", app_start)
+        # calculate next and previous
+        if app_start > 0:
+            if (app_start % 5) == 0:
+                self.application_start_previous = app_start - 5
+            else:
+                self.application_start_previous = app_start - 4
+            if self.application_start_previous < 0:
+                self.application_start_previous = 0
+            self.application_start_next = app_start + 4
+        else:
+            self.application_start_previous = 0
+            self.application_start_next = 5
+        #print("[ICON DEBUG] previous ", self.application_start_previous)
+        #print("[ICON DEBUG] next ", self.application_start_next)
+
+        if app_start != 0:
+            ''' add previous button '''
+            index = app_start
+            # 0, 0
+            self.icon_grid.attach(self.back_box, 0, 0, 1, 1)
+            # 1, 0
+            if self.application_eventbox_list[index]:
+                self.icon_grid.attach(self.application_eventbox_list[index], 1, 0, 1, 1)
+            index = index + 1
+        else:
+            index = app_start
+            self.application_start_previous = app_start - 4
+            if self.application_start_previous < 0:
+                self.application_start_previous = 0
+            # 0, 0
+            if self.application_eventbox_list[index]:
+                self.icon_grid.attach(self.application_eventbox_list[index], 0, 0, 1, 1)
+            index = index + 1
+            # 1, 0
+            if (index < self.application_end) and self.application_eventbox_list[index]:
+                self.icon_grid.attach(self.application_eventbox_list[index], 1, 0, 1, 1)
+            else:
+                self.icon_grid.show_all()
+                return
+            index = index + 1
+        # 2, 0
+        if (index < self.application_end) and self.application_eventbox_list[index]:
+            self.icon_grid.attach(self.application_eventbox_list[index], 2, 0, 1, 1)
+        else:
+            self.icon_grid.show_all()
+            return
+        index = index + 1
+        # 0, 1
+        if (index < self.application_end) and self.application_eventbox_list[index]:
+            self.icon_grid.attach(self.application_eventbox_list[index], 0, 1, 1, 1)
+        else:
+            self.icon_grid.show_all()
+            return
+        index = index + 1
+        # 1, 1
+        if (index < self.application_end) and self.application_eventbox_list[index]:
+            self.icon_grid.attach(self.application_eventbox_list[index], 1, 1, 1, 1)
+        else:
+            self.icon_grid.show_all()
+            return
+        index = index + 1
+        # 2, 1
+        if ((index+1) < self.application_end) and self.application_eventbox_list[index]:
+            ''' add next button '''
+            self.icon_grid.attach(self.next_box, 2, 1, 1, 1)
+        else:
+            if (index < self.application_end) and self.application_eventbox_list[index]:
+                self.icon_grid.attach(self.application_eventbox_list[index], 2, 1, 1, 1)
+        self.icon_grid.show_all()
 
 
+    def create_eventbox_back_next(self,back):
+        if back > 0:
+            back_eventbox = _load_image_eventBox(self, "%s/pictures/ST10261_back_button_medium_grey.png" % DEMO_PATH, "BACK", "menu", -1, self.icon_size)
+            back_eventbox.connect("button_release_event", self.on_back_menu_event)
+            back_eventbox.connect("button_press_event", self.highlight_eventBox)
+            return back_eventbox
+        else:
+            next_eventbox = _load_image_eventBox(self, "%s/pictures/ST10261_play_button_medium_grey.png" % DEMO_PATH, "NEXT", "menu", -1, self.icon_size)
+            next_eventbox.connect("button_release_event", self.on_next_menu_event)
+            next_eventbox.connect("button_press_event", self.highlight_eventBox)
+            return next_eventbox
+
+    def on_back_menu_event(self, widget, event):
+        self.create_page_icon_by_page(self.application_start_previous)
+        widget.set_name("normal_bg")
+        widget.set_name("transparent_bg")
+        self.button_exit.show()
+    def on_next_menu_event(self, widget, event):
+        self.create_page_icon_by_page(self.application_start_next)
+        widget.set_name("normal_bg")
+        widget.set_name("transparent_bg")
+        self.button_exit.show()
+
+# -------------------------------------------------------------------
+# Managment of lock file to have only excution of this script as same time
 lock_handle = None
 lock_file_path = '/var/lock/demo_launcher.lock'
 
@@ -866,12 +796,11 @@ if __name__ == "__main__":
     if file_is_locked(lock_file_path):
         print("[ERROR] another instance is running exiting now\n")
         exit(0)
-
     try:
         win = MainUIWindow()
         win.connect("delete-event", Gtk.main_quit)
         win.show_all()
+        Gtk.main()
     except Exception as exc:
         print("Main Exception: ", exc )
 
-    Gtk.main()

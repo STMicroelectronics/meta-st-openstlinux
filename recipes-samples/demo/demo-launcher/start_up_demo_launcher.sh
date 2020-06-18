@@ -7,7 +7,7 @@ do
 	found=`echo $i | grep -n STM32MP | wc -l`
 	if [ $found -eq 0  ];
 	then
-		pacmd set-card-profile $index output:analog-stereo
+		su.util-linux -l root -c 'pacmd set-card-profile $index output:analog-stereo'
 	fi
 	index=$((index+1))
 done
