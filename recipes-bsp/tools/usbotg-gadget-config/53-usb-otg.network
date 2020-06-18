@@ -4,3 +4,12 @@ Name=usb0
 [Network]
 Address=192.168.7.1/24
 DHCPServer=yes
+
+[DHCP]
+CriticalConnection=true
+UseTimezone=false
+
+[DHCPServer]
+EmitTimezone=no
+EmitRouter=no
+
