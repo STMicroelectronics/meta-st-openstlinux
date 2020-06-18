@@ -1,0 +1,36 @@
+From 5125f72a627299acff0a8d00d44f29175b1f38b9 Mon Sep 17 00:00:00 2001
+From: Christophe Priouzeau <christophe.priouzeau@st.com>
+Date: Thu, 19 Mar 2020 12:20:32 +0100
+Subject: [PATCH 2/2] Force to close all output
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+In case of plug/unplug HMDI, it's necessary to close all output enabled.
+Without this patch, weston is stuck on DSI output.
+
+Signed-off-by: Yannick Fertré <yannick.fertre@st.com>
+---
+ compositor/main.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/compositor/main.c b/compositor/main.c
+index eef3eac..750b476 100644
+--- a/compositor/main.c
++++ b/compositor/main.c
+@@ -2190,7 +2190,11 @@ drm_heads_changed(struct wl_listener *listener, void *arg)
+ 
+ 		if ((connected || forced) && !enabled) {
+ 			drm_head_prepare_enable(wet, head);
+-		} else if (!(connected || forced) && enabled) {
++		} else if (enabled) {
++			/*
++			 * closed all output (connected or not connected)
++			 * this is neccessary to switch between HDMI <> DSI
++			 */
+ 			drm_head_disable(head);
+ 		} else if (enabled && changed) {
+ 			weston_log("Detected a monitor change on head '%s', "
+-- 
+2.17.1
+
