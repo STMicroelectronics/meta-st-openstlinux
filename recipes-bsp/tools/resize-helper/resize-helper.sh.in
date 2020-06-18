@@ -12,11 +12,6 @@ case $1 in
 	start)
 		echo "Starting $DESC"
 		@sbindir@/resize-helper
-
-		echo "remove $DESC from runlevels starting"
-		rm @sysconfdir@/rc3.d/S22resize-helper.sh &> /dev/null
-		rm @sysconfdir@/rc5.d/S22resize-helper.sh &> /dev/null
-		echo "remove $DESC from runlevels completed"
 	;;
   *)
 		echo "Usage: @sysconfdir@/init.d/resize-helper.sh {start}" >&2
