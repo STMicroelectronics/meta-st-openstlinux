@@ -1,0 +1,35 @@
+From 31c4a53fb0f7538850e0814bdecfc927a36433d4 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?C=C3=A9dric=20VINCENT?= <cedric.vincent@st.com>
+Date: Wed, 20 Nov 2019 16:33:28 +0100
+Subject: [PATCH] Add support for ARM Thumb branches with instruction-set
+ exchange.
+
+This is issue has been detected on OpenSTLinux 2019-10-09, where
+ltrace failed to single-step on a "bx lr" instruction when tracing
+weston-simple-egl.
+---
+ sysdeps/linux-gnu/arm/trace.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/sysdeps/linux-gnu/arm/trace.c b/sysdeps/linux-gnu/arm/trace.c
+index 54632f3..7475f81 100644
+--- a/sysdeps/linux-gnu/arm/trace.c
++++ b/sysdeps/linux-gnu/arm/trace.c
+@@ -430,6 +430,14 @@ thumb_get_next_pcs(struct process *proc,
+ 		}
+ 	} else if ((inst1 & 0xf800) == 0xe000) { /* unconditional branch */
+ 		next_pcs[nr++] = pc + (SBITS(inst1, 0, 10) << 1);
++	} else if ((inst1 & 0xff07) == 0x4700) { /* branch with exchange */
++		const enum arm_register reg = BITS(inst1, 3, 6);
++		uint32_t next;
++
++		if (arm_get_register(proc, reg, &next) < 0)
++			return -1;
++
++		next_pcs[nr++] = (arch_addr_t) (next & 0xfffffffe);
+ 	} else if (thumb_insn_size(inst1) == 4) { /* 32-bit instruction */
+ 		unsigned short inst2;
+ 		if (proc_read_16(proc, pc + 2, &inst2) < 0)
+-- 
+2.20.1
+
