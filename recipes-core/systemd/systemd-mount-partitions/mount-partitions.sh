@@ -31,6 +31,20 @@ get_type() {
         /dev/mmcblk1*)
             ROOT_TYPE="mmc"
             ;;
+        /dev/disk/by-*)
+            LINK=$(/usr/bin/readlink $ROOT_DEVICE | tr '/' ' ' | tr '.' ' ' | sed "s/ //g")
+            case $LINK in
+            ubi*)
+                ROOT_TYPE="nand"
+                ;;
+            mmcblk0*)
+                ROOT_TYPE="sdmmc"
+                ;;
+            mmcblk1*)
+                ROOT_TYPE="mmc"
+                ;;
+            esac
+            ;;
         esac
     else
         if [ `cat /proc/cmdline | sed "s/.*mmcblk0.*/mmcblk0/" ` == "mmcblk0" ]; then
@@ -114,6 +128,7 @@ case "$1" in
             mountpoint=$(echo $part | cut -d',' -f2)
             found_devices DEVICE DEVICE_OPTION $TYPE $part_label
             echo "$part_label device: $DEVICE"
+            [ -d $mountpoint ] || mkdir -p $mountpoint
             [ -e $DEVICE ] && mount $DEVICE_OPTION $DEVICE $mountpoint
         done
         ;;
