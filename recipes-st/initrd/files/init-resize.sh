@@ -22,41 +22,29 @@ BOOTFS=
                     case $label in
                     user*)
                         USERFS=$DEVICE
+                        echo "RESIZE USERFS [$USERFS]"
+                        /sbin/e2fsck -f -y -c -C 0 $USERFS && /sbin/resize2fs $USERFS
                         ;;
                     root*)
                         ROOTFS=$DEVICE
+                        echo "RESIZE ROOTFS [$ROOTFS]"
+                        /sbin/resize2fs $ROOTFS
                         ;;
                     vendor*)
                         VENDORFS=$DEVICE
+                        echo "RESIZE VENDORFS [$VENDORFS]"
+                        /sbin/e2fsck -f -y -c -C 0 $VENDORFS && /sbin/resize2fs $VENDORFS
                         ;;
                     boot*)
                         BOOTFS=$DEVICE
+                        echo "RESIZE BOOTFS [$BOOTFS]"
+                        /sbin/e2fsck -f -y -c -C 0 $BOOTFS && /sbin/resize2fs $BOOTFS
                         ;;
                      esac
                  fi
             done
         done
 
-        # resize rootfs
-        if [ -n "$ROOTFS" ]; then
-            echo "RESIZE ROOTFS [$ROOTFS]"
-            /sbin/resize2fs $ROOTFS
-        fi
-        # resize bootfs
-        if [ -n "$BOOTFS" ]; then
-            echo "RESIZE BOOTFS [$BOOTFS]"
-            /sbin/e2fsck -f -y -c -C 0 $BOOTFS && /sbin/resize2fs $BOOTFS
-        fi
-        # resize vendorfs
-        if [ -n "$VENDORFS" ]; then
-            echo "RESIZE VENDORFS [$VENDORFS]"
-            /sbin/e2fsck -f -y -c -C 0 $VENDORFS && /sbin/resize2fs $VENDORFS
-        fi
-        # resize userfs
-        if [ -n "$USERFS" ]; then
-            echo "RESIZE USERFS [$USERFS]"
-            /sbin/e2fsck -f -y -c -C 0 $USERFS && /sbin/resize2fs $USERFS
-        fi
         touch $ROOTFS_DIR/etc/.resized
     fi
 fi
