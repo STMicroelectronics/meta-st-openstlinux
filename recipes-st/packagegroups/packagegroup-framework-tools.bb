@@ -52,6 +52,7 @@ RDEPENDS_packagegroup-framework-tools-core = "\
     cracklib        \
     db              \
     sqlite3         \
+    rt-tests        \
     "
 
 SUMMARY_packagegroup-framework-tools-kernel = "Framework tools components for kernel"
@@ -77,7 +78,7 @@ RDEPENDS_packagegroup-framework-tools-network = "\
     openssh-sftp    \
     ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'dhcp-client', '', d)}                       \
     ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'systemd-networkd-configuration', '', d)}    \
-    usbip           \
+    usbip uhubctl   \
     bridge-utils    \
     "
 
