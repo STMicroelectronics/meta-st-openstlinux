@@ -33,6 +33,7 @@ def license_create_summary(d):
     image_list_arrray = []
     # Process IMAGE_SUMMARY_LIST to feed image_list_arrray
     image_summary_list = (d.getVar('IMAGE_SUMMARY_LIST') or "").split(';')
+    mount_list = []
     for img in image_summary_list:
         if img.strip() == "":
             continue
@@ -42,26 +43,30 @@ def license_create_summary(d):
         img_name = re.sub(r'-%s$' % d.getVar('DISTRO'), '', img_name)
         # Configure target folder to search for image file
         if img_mount == '/':
+            filter = True
             target_deploydir = temp_deploy_image_dir
         else:
+            filter = False
             target_deploydir = deploy_image_dir
+            mount_list.append(img_mount)
         for fi in os.listdir(target_deploydir):
             if fi.startswith(img_name) and fi.endswith(".ext4"):
                 r = re.compile("(.*)-(\d\d\d\d+)")
                 mi = r.match(os.path.basename(fi))
                 if mi:
-                    image_list_arrray.append([mi.group(1), mi.group(2), img_name, img_mount])
+                    image_list_arrray.append([mi.group(1), mi.group(2), img_name, img_mount, filter])
     # Append any INITRD image to image_list_arrray
     img_name = d.getVar('INITRD_IMAGE') or ""
     if img_name:
         img_ext = d.getVar('INITRAMFS_FSTYPES') or ""
         img_mount = '/'
+        filter = False
         for fi in os.listdir(deploy_image_dir):
             if fi.startswith(img_name) and fi.endswith(img_ext):
                 r = re.compile("(.*)-(\d\d\d\d+)")
                 mi = r.match(os.path.basename(fi))
                 if mi:
-                    image_list_arrray.append([mi.group(1), mi.group(2), img_name, img_mount])
+                    image_list_arrray.append([mi.group(1), mi.group(2), img_name, img_mount, filter])
 
     if tab.startswith("1"):
         with_tab = 1
@@ -543,11 +548,13 @@ def license_create_summary(d):
         html.stopTable()
 
         # image content list
+        package_processed_list = []
         for img in image_list_arrray:
             _image_prefix = img[0]
             _image_date = img[1]
             _image_name = img[2]
             _image_mount_point = img[3]
+            _image_filter = img[4]
 
             html.addNewLine()
             html.addNewLine()
@@ -606,6 +613,20 @@ def license_create_summary(d):
                 else:
                     style = None
                     style_wrapped = None
+
+                # Filter partition in case of a package is already in another partition
+                if _image_filter:
+                    to_filter = False
+                    for other_mount in mount_list:
+                        if file_info.find(other_mount+'/') >= 0:
+                            to_filter = True
+                            break
+
+                    if to_filter:
+                        bb.note("Package %s is found in both %s and %s. Don't add it in %s" %
+                             (package_name, other_mount,_image_mount_point, _image_name))
+                        continue
+
                 # remove package which are dependency of installed package but
                 # not present on this mount point
                 if file_info.find(_image_mount_point) < 0:
