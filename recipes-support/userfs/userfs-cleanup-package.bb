@@ -16,9 +16,9 @@ inherit systemd update-rc.d
 
 ST_USERFS ?= "1"
 
-SYSTEMD_PACKAGES += " ${@bb.utils.contains('ST_USERFS', '1', 'userfs-cleanup-package', '', d)} "
+SYSTEMD_PACKAGES += "${PN}"
 SYSTEMD_SERVICE_${PN} = "userfs-cleanup-package.service"
-SYSTEMD_AUTO_ENABLE_${PN} = "enable"
+SYSTEMD_AUTO_ENABLE_${PN} = "${@bb.utils.contains('ST_USERFS', '1', 'enable', 'disable', d)}"
 
 do_install() {
     install -d ${D}${systemd_unitdir}/system ${D}${base_sbindir}
