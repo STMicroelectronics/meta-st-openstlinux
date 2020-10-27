@@ -4,7 +4,7 @@ HOMEPAGE = "https://github.com/OP-TEE/optee_test"
 LICENSE = "BSD-2-Clause & GPLv2"
 LIC_FILES_CHKSUM = "file://${S}/LICENSE.md;md5=daa2bcccc666345ab8940aab1315a4fa"
 
-DEPENDS = "optee-client virtual/optee-os python3-pycryptodomex-native python3-pycrypto-native"
+DEPENDS = "optee-client virtual/optee-os python3-pycryptodomex-native python3-pycrypto-native libgcc"
 
 inherit python3native
 
@@ -30,7 +30,9 @@ EXTRA_OEMAKE = " TA_DEV_KIT_DIR=${TA_DEV_KIT_DIR} \
                  CROSS_COMPILE_TA=${TARGET_PREFIX} \
                  V=1 \
                  CFG_TEE_CLIENT_LOAD_PATH=${libdir} \
-                 "
+                 CFLAGS32='--sysroot=${STAGING_DIR_HOST}' \
+                 arch-bits-ta_arm32='32' \
+               "
 
 
 do_compile() {
