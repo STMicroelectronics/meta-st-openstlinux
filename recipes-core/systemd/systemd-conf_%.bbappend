@@ -14,9 +14,8 @@ do_install_prepend() {
     echo "HandlePowerKey=ignore" >> ${D}${systemd_unitdir}/logind.conf.d/01-openstlinux.conf
 
     # Journal, do not store journald on filesystem (syslog make it already)
-#    install -d ${D}${systemd_unitdir}/journald.conf.d/
-#    echo "[Journal]" > ${D}${systemd_unitdir}/journald.conf.d/01-openstlinux.conf
-#    echo "Storage=none" >> ${D}${systemd_unitdir}/journald.conf.d/01-openstlinux.conf
-
+    install -d ${D}${systemd_unitdir}/journald.conf.d/
+    echo "[Journal]" > ${D}${systemd_unitdir}/journald.conf.d/01-openstlinux.conf
+    echo "Storage=volatile" >> ${D}${systemd_unitdir}/journald.conf.d/01-openstlinux.conf
 }
 FILES_${PN} += " ${sysconfdir}/systemd/coredump.conf.d/ "
