@@ -31,8 +31,6 @@ RDEPENDS_packagegroup-framework-sample-qt = "\
     qtmultimedia-qmlplugins         \
     \
     qtscript                        \
-    \
-    openstlinux-qt-eglfs            \
     "
 
 SUMMARY_packagegroup-framework-sample-qt-examples = "Framework sample qt components for examples"

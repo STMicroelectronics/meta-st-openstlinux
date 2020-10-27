@@ -1,16 +1,16 @@
-SUMMARY = "ST example of image based on Qt framework."
+SUMMARY = "ST example of image based on Qt framework over Weston/Wayland."
 LICENSE = "Proprietary"
 
 include recipes-st/images/st-image.inc
 
 inherit core-image features_check populate_sdk_qt5
 
-# let's make sure we have a good image..
-CONFLICT_DISTRO_FEATURES = "x11 wayland"
+# let's make sure we have a good image...
+REQUIRED_DISTRO_FEATURES = "wayland"
 
 IMAGE_LINGUAS = "en-us"
 
-IMAGE_FEATURES += " \
+IMAGE_FEATURES += "\
     splash              \
     package-management  \
     ssh-server-dropbear \
@@ -35,10 +35,23 @@ CORE_IMAGE_EXTRA_INSTALL += " \
     packagegroup-framework-tools-base   \
     \
     packagegroup-framework-core         \
-    packagegroup-framework-tools       \
+    packagegroup-framework-tools        \
     \
     packagegroup-framework-core-extra   \
     \
-    packagegroup-framework-sample-qt-eglfs      \
+    ${@bb.utils.contains('COMBINED_FEATURES', 'optee', 'packagegroup-optee-core', '', d)} \
+    ${@bb.utils.contains('COMBINED_FEATURES', 'optee', 'packagegroup-optee-test', '', d)} \
+    \
+    ${@bb.utils.contains('COMBINED_FEATURES', 'tpm2', 'packagegroup-security-tpm2', '', d)} \
+    \
+    packagegroup-st-demo \
+    \
+    packagegroup-framework-sample-qtwayland     \
     packagegroup-framework-sample-qt-examples   \
     "
+
+# IMAGE_INSTALL_append += "qtbase qtwayland qtbase-plugins qtwayland-plugins"
+
+# NOTE:
+#   packagegroup-st-demo are installed on rootfs to populate the package
+#   database.
