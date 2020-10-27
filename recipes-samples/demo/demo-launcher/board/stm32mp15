@@ -1,0 +1,4 @@
+BOARD:  STM32MP15
+LOGO: pictures/ST11249_Module_STM32MP1_alpha.png
+INFO: <span font='14' color='#FFFFFFFF'><b>STM32MP Board</b></span>|<span font='10' color='#FFFFFFFF'>Dual Arm&#174; Cortex&#174;-A7</span>|<span font='10' color='#FFFFFFFF'>+</span>|<span font='10' color='#FFFFFFFF'>Copro Arm&#174; Cortex&#174;-M4</span>
+

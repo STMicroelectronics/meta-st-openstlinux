@@ -3,7 +3,7 @@ Application:
     Description: GPU with picture
     Icon: application/3d-cube/pictures/ST153_cube_purple.png
     Board:
-        List: all
+        List: stm32mp157
     Type: script
     Script:
         Exist:

@@ -5,7 +5,7 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/BSD-3-Clause;m
 
 DEPENDS = "demo-launcher"
 
-PV = "2.0"
+PV = "2.1"
 
 SRC_URI = " \
     file://060-bluetooth_audio_output.yaml \

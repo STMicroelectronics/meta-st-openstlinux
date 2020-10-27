@@ -21,6 +21,8 @@ SRC_URI = " file://ai_char_reco_launcher.c \
             file://demo \
           "
 
+PV = "2.1"
+
 S = "${WORKDIR}"
 
 do_configure[noexec] = "1"

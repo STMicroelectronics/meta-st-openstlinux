@@ -59,45 +59,53 @@ lock = threading.Lock()
 #
 SIMULATE_SCREEN_SIZE_WIDTH  = 800
 SIMULATE_SCREEN_SIZE_HEIGHT = 480
-
-def popenAndCall(onExit, *popenArgs, **popenKWArgs):
-    """
-    Runs a subprocess.Popen, and then calls the function onExit when the
-    subprocess completes.
-
-    Use it exactly the way you'd normally use subprocess.Popen, except include a
-    callable to execute as the first argument. onExit is a callable object, and
-    *popenArgs and **popenKWArgs are simply passed up to subprocess.Popen.
-    """
-    def runInThread(onExit, popenArgs, popenKWArgs):
-        process = subprocess.Popen(*popenArgs, **popenKWArgs)
-        process.wait()
-        onExit()
-        return
-
-    thread = threading.Thread(target=runInThread,
-                              args=(onExit, popenArgs, popenKWArgs))
-    thread.start()
-
-    return thread # returns immediately after the thread starts
+#SIMULATE_SCREEN_SIZE_WIDTH  = 480
+#SIMULATE_SCREEN_SIZE_HEIGHT = 272
 
 # -------------------------------------------------------------------
 # -------------------------------------------------------------------
 ICON_SIZE_720 = 180
 ICON_SIZE_480 = 128
-def get_screen_size_management_type(width, height):
+ICON_SIZE_272 = 68
+
+# return format:
+# [ icon_size, font_size, logo_size, exit_size, column_spacing, row_spacing ]
+SIZES_ID_ICON_SIZE = 0
+SIZES_ID_FONT_SIZE = 1
+SIZES_ID_LOGO_SIZE = 2
+SIZES_ID_EXIT_SIZE = 3
+SIZES_ID_COLUMN_SPACING = 4
+SIZES_ID_ROW_SPACING = 5
+def get_sizes_from_screen_size(width, height):
     minsize =  min(width, height)
+    icon_size = None
+    font_size = None
+    logo_size = None
+    exit_size = None
+    column_spacing = None
+    row_spacing = None
     if minsize == 720:
-        return 720
+        icon_size = ICON_SIZE_720
+        font_size = 15
+        logo_size = 160
+        exit_size = 50
+        column_spacing = 20
+        row_spacing = 20
     elif minsize == 480:
-        return 480
-    return 480
-def get_icon_size_from_screen_size(width, height):
-    minsize =  min(width, height)
-    if minsize == 720:
-        return ICON_SIZE_720
-    elif minsize == 480:
-        return ICON_SIZE_480
+        icon_size = ICON_SIZE_480
+        font_size = 15
+        logo_size = 160
+        exit_size = 50
+        column_spacing = 10
+        row_spacing = 10
+    elif minsize == 272:
+        icon_size = ICON_SIZE_272
+        font_size = 13
+        logo_size = 60
+        exit_size = 25
+        column_spacing = 5
+        row_spacing = 5
+    return [icon_size, font_size, logo_size, exit_size, column_spacing, row_spacing]
 
 # -------------------------------------------------------------------
 # -------------------------------------------------------------------
@@ -153,7 +161,7 @@ class InfoWindow(Gtk.Dialog):
 
 # -------------------------------------------------------------------
 # -------------------------------------------------------------------
-def _load_image_eventBox(parent, filename, label_text1, label_text2, scale_w, scale_h):
+def _load_image_eventBox(parent, filename, label_text1, label_text2, scale_w, scale_h, font_size):
     # Create box for xpm and label
     box = Gtk.VBox(homogeneous=False, spacing=0)
     # Create an eventBox
@@ -167,8 +175,9 @@ def _load_image_eventBox(parent, filename, label_text1, label_text2, scale_w, sc
     image = Gtk.Image.new_from_pixbuf(pixbuf)
 
     label = Gtk.Label()
-    label.set_markup("<span font='15' color='#39A9DCFF'>%s\n</span>"
-                     "<span font='15' color='#002052FF'>%s</span>" % (label_text1, label_text2))
+    label.set_markup("<span font='%d' color='#39A9DCFF'>%s\n</span>"
+                     "<span font='%d' color='#002052FF'>%s</span>" %
+                     (font_size, label_text1, font_size, label_text2))
     label.set_justify(Gtk.Justification.CENTER)
     label.set_line_wrap(True)
 
@@ -193,10 +202,7 @@ def _load_image_Box(parent, mp1filename, infofilename, label_text, scale_w, scal
     # Create a label for the button
     label0 = Gtk.Label() #for padding
     label1 = Gtk.Label()
-    label1.set_markup("<span font='14' color='#FFFFFFFF'><b>%s</b></span>\n"
-                      "<span font='10' color='#FFFFFFFF'>Dual Arm&#174; Cortex&#174;-A7</span>\n"
-                      "<span font='10' color='#FFFFFFFF'>+</span>\n"
-                      "<span font='10' color='#FFFFFFFF'>Copro Arm&#174; Cortex&#174;-M4</span>\n" % label_text)
+    label1.set_markup("%s\n" % label_text)
     label1.set_justify(Gtk.Justification.CENTER)
     label1.set_line_wrap(True)
 
@@ -256,54 +262,46 @@ def read_board_compatibility_name():
         try:
             with open("/proc/device-tree/compatible") as fp:
                 string = fp.read()
-                return string.split(',')[-1]
+                return string.split(',')[-1].rstrip('\x00')
         except:
             return "all"
 # -------------------------------------------------------------------
 # -------------------------------------------------------------------
+BOARD_CONFIG_ID_BOARD = 0
+BOARD_CONFIG_ID_LOGO = 1
+BOARD_CONFIG_ID_INFO_TEXT = 2
+def read_configuration_board_file(search_path):
+    board_list = []
+    yaml_configuration = None
+    board_compatibility_name = read_board_compatibility_name()
+    print("[DEBUG] compatiblity name ", read_board_compatibility_name())
+    configuration_found = None
+    for file in sorted(os.listdir(search_path)):
+        if board_compatibility_name.find(file) > -1:
+            configuration_found = file
+            #print("DEBUG: found board configuration file: ", file)
+    if configuration_found and os.path.isfile(os.path.join(search_path, configuration_found)):
+        print("[DEBUG] read configuration box for ", configuration_found)
+        with open(os.path.join(search_path, configuration_found)) as fp:
+            yaml_configuration = yaml.load(fp, Loader=yaml.FullLoader)
 
-class ScriptWindow(Gtk.Dialog):
-    def __init__(self, parent, name, script):
-        Gtk.Dialog.__init__(self, name, parent, 0)
-
-        self.maximize()
-        self.set_decorated(False)
-        self.set_name("transparent_bg")
-
-        self.previous_click_time=time()
-        self.stream_is_paused=0
-        self.script_is_started=False
-
-        self.connect("button-press-event", self.on_script_press_event)
-        self.process_pipe_read, self.process_pipe_write =  os.pipe()
-        cmd = [os.path.join(DEMO_PATH,script)]
-        self.proc = popenAndCall(self.on_script_on_exit, cmd, stdin =self.process_pipe_read, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-
-    def on_script_on_exit(self):
-        if self:
-            self.destroy()
-
-    def on_script_press_event(self, widget, event):
-        self.click_time = time()
-        print("click delay: ", self.click_time - self.previous_click_time)
-        if (self.click_time - self.previous_click_time) > 3:
-            self.script_is_started=True
-        if (self.script_is_started):
-            # TODO : a fake click is observed, workaround hereafter
-            if (self.click_time - self.previous_click_time) < 0.01:
-                self.previous_click_time = self.click_time
-            elif (self.click_time - self.previous_click_time) < 0.3:
-                print("double click", self.click_time - self.previous_click_time)
-                os.write(self.process_pipe_write, b"q")
-                os.close(self.process_pipe_write)
-                self.destroy()
-            else:
-                self.previous_click_time = self.click_time
-                os.write(self.process_pipe_write, b"p")
-                if (self.stream_is_paused == 1):
-                    self.stream_is_paused = 0
-                else:
-                    self.stream_is_paused = 1
+    # board name
+    if yaml_configuration and yaml_configuration["BOARD"]:
+        board_list.append(yaml_configuration["BOARD"])
+    else:
+        board_list.append('STM32MP')
+    # logo to used
+    if yaml_configuration and yaml_configuration["LOGO"]:
+        board_list.append(yaml_configuration["LOGO"])
+    else:
+        board_list.append('pictures/ST11249_Module_STM32MP1_alpha.png')
+    # info text to display
+    if yaml_configuration and yaml_configuration["INFO"]:
+        info = '\n'.join(yaml_configuration["INFO"].split('|'))
+        board_list.append(info)
+    else:
+        board_list.append("<span font='14' color='#FFFFFFFF'><b>STM32MP BOARD</b></span>")
+    return board_list
 
 # -------------------------------------------------------------------
 # -------------------------------------------------------------------
@@ -321,10 +319,11 @@ def import_module_by_name(module_name):
     return imported
 
 class ApplicationButton():
-    def __init__(self, parent, yaml_file, icon_size):
+    def __init__(self, parent, yaml_file, icon_size, font_size):
         self.event_box = None
         self.yaml_configuration = None
         self.icon_size = icon_size
+        self.font_size = font_size
         self._parent = parent
         self._compatible = True
 
@@ -340,7 +339,7 @@ class ApplicationButton():
                 self.event_box = _load_image_eventBox(self, "%s/%s" % (DEMO_PATH, self.yaml_configuration["Application"]["Icon"]),
                                                   self.yaml_configuration["Application"]["Name"],
                                                   self.yaml_configuration["Application"]["Description"],
-                                                  -1, self.icon_size)
+                                                  -1, self.icon_size, self.font_size)
                 if (self.yaml_configuration["Application"]["Type"].rstrip() == "script"):
                     self.event_box.connect("button_release_event", self.script_handle)
                     self.event_box.connect("button_press_event", self._parent.highlight_eventBox)
@@ -403,10 +402,15 @@ class ApplicationButton():
             if (data):
                 for key in data:
                     if key == "List" and len(data["List"].rstrip()):
+                        #print("[DEBUG] <", data["List"], "> %s" % board_compatibility_name)
                         if data["List"].find('all') > -1:
                             return True
                         if data["List"].find(board_compatibility_name) > -1:
                             return True
+                        else:
+                            for b in data["List"]:
+                                if board_compatibility_name.find(b) > -1:
+                                    return True
                         return False
                     elif key == "NotList" and len(data["NotList"].rstrip()):
                         if data["NotList"].find(board_compatibility_name):
@@ -451,10 +455,8 @@ class ApplicationButton():
             print("    Name: ", self.yaml_configuration["Application"]["Name"])
             print("    Start script: ", self.yaml_configuration["Application"]["Script"]["Start"])
 
-            script_window = ScriptWindow(self._parent, self.yaml_configuration["Application"]["Name"], self.yaml_configuration["Application"]["Script"]["Start"])
-            script_window.show_all()
-            response = script_window.run()
-            script_window.destroy()
+            cmd = [os.path.join(DEMO_PATH,self.yaml_configuration["Application"]["Script"]["Start"])]
+            subprocess.run(cmd, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, shell=True)
             backscript_window.destroy()
             print("Lock Released")
 
@@ -535,8 +537,6 @@ class MainUIWindow(Gtk.Window):
 
         self.board_name = "STM32MP board"
 
-        self.icon_size = get_icon_size_from_screen_size(self.screen_width, self.screen_height)
-
         self.set_default_size(self.screen_width, self.screen_height)
         print("[DEBUG] screen size: %dx%d" % (self.screen_width, self.screen_height))
         self.set_position(Gtk.WindowPosition.CENTER)
@@ -544,8 +544,18 @@ class MainUIWindow(Gtk.Window):
 
         self.previous_click_time=time()
 
-        self.application_file = os.path.join(DEMO_PATH,"./application/application.yaml.saved")
         self.application_path = os.path.join(DEMO_PATH,"./application/")
+        self.board_path = os.path.join(DEMO_PATH,"./board/")
+
+        self.board_configuration = read_configuration_board_file(self.board_path)
+
+        sizes = get_sizes_from_screen_size(self.screen_width, self.screen_height)
+        self.icon_size = sizes[SIZES_ID_ICON_SIZE]
+        self.font_size = sizes[SIZES_ID_FONT_SIZE]
+        self.logo_size = sizes[SIZES_ID_LOGO_SIZE]
+        self.exit_size = sizes[SIZES_ID_EXIT_SIZE]
+        self.column_spacing = sizes[SIZES_ID_COLUMN_SPACING]
+        self.row_spacing = sizes[SIZES_ID_ROW_SPACING]
 
         # page for basic information
         self.create_page_icon_autodetected()
@@ -616,11 +626,13 @@ class MainUIWindow(Gtk.Window):
 
         # create a grid of icon
         self.icon_grid = Gtk.Grid(column_homogeneous=True, row_homogeneous=True)
-        self.icon_grid.set_column_spacing(20)
-        self.icon_grid.set_row_spacing(20)
+        self.icon_grid.set_column_spacing(self.column_spacing)
+        self.icon_grid.set_row_spacing(self.row_spacing)
 
         # STM32MP1 Logo and info area
-        self.logo_info_area = _load_image_Box(self, "%s/pictures/ST11249_Module_STM32MP1_alpha.png" % DEMO_PATH, "%s/pictures/ST13340_Info_white.png" % DEMO_PATH, self.board_name, -1, 160)
+        info_box_text = self.board_configuration[BOARD_CONFIG_ID_INFO_TEXT]
+        info_box_logo = self.board_configuration[BOARD_CONFIG_ID_LOGO]
+        self.logo_info_area = _load_image_Box(self, "%s/%s" % (DEMO_PATH,info_box_logo), "%s/pictures/ST13340_Info_white.png" % DEMO_PATH, info_box_text, -1, self.logo_size)
         self.logo_info_area.set_name("logo_bg")
         self.icon_grid.attach(self.logo_info_area, 3, 0, 1, 2)
 
@@ -631,7 +643,7 @@ class MainUIWindow(Gtk.Window):
         for file in sorted(os.listdir(self.application_path)):
             if os.path.isfile(os.path.join(self.application_path, file)) and file.endswith(".yaml"):
                 print("[DEBUG] create event box for ", file)
-                application_button = ApplicationButton(self, os.path.join(self.application_path, file), self.icon_size)
+                application_button = ApplicationButton(self, os.path.join(self.application_path, file), self.icon_size, self.font_size)
                 if application_button.is_compatible():
                     self.application_list.append(os.path.join(self.application_path, file))
                     self.application_eventbox_list.append(application_button.get_event_box())
@@ -652,7 +664,7 @@ class MainUIWindow(Gtk.Window):
         overlay.add(self.page_main)
         self.button_exit = Gtk.Button()
         self.button_exit.connect("clicked", Gtk.main_quit)
-        self.button_exit_image = _load_image_on_button(self, "%s/pictures/close_70x70_white.png" % DEMO_PATH, "Exit", -1, 50)
+        self.button_exit_image = _load_image_on_button(self, "%s/pictures/close_70x70_white.png" % DEMO_PATH, "Exit", -1, self.exit_size)
         self.button_exit.set_halign(Gtk.Align.END)
         self.button_exit.set_valign(Gtk.Align.START)
         self.button_exit.add(self.button_exit_image)
@@ -750,12 +762,14 @@ class MainUIWindow(Gtk.Window):
 
     def create_eventbox_back_next(self,back):
         if back > 0:
-            back_eventbox = _load_image_eventBox(self, "%s/pictures/ST10261_back_button_medium_grey.png" % DEMO_PATH, "BACK", "menu", -1, self.icon_size)
+            back_eventbox = _load_image_eventBox(self, "%s/pictures/ST10261_back_button_medium_grey.png" % DEMO_PATH,
+                                                 "BACK", "menu", -1, self.icon_size, self.font_size)
             back_eventbox.connect("button_release_event", self.on_back_menu_event)
             back_eventbox.connect("button_press_event", self.highlight_eventBox)
             return back_eventbox
         else:
-            next_eventbox = _load_image_eventBox(self, "%s/pictures/ST10261_play_button_medium_grey.png" % DEMO_PATH, "NEXT", "menu", -1, self.icon_size)
+            next_eventbox = _load_image_eventBox(self, "%s/pictures/ST10261_play_button_medium_grey.png" % DEMO_PATH,
+                                                 "NEXT", "menu", -1, self.icon_size, self.font_size)
             next_eventbox.connect("button_release_event", self.on_next_menu_event)
             next_eventbox.connect("button_press_event", self.highlight_eventBox)
             return next_eventbox

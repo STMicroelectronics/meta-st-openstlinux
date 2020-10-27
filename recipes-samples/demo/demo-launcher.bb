@@ -9,7 +9,10 @@ SRC_URI = " \
     file://start_up_demo_launcher.sh \
     file://pictures \
     file://application \
+    file://board \
     "
+
+PV = "2.1"
 
 do_configure[noexec] = "1"
 do_compile[noexec] = "1"
@@ -20,6 +23,7 @@ do_install() {
     install -d ${D}${prefix}/local/demo/pictures
     install -d ${D}${prefix}/local/demo/media
     install -d ${D}${prefix}/local/demo/application
+    install -d ${D}${prefix}/local/demo/board
 
     install -m 0755 ${WORKDIR}/demo_launcher.py ${D}${prefix}/local/demo/
     LIST=$(ls ${WORKDIR}/pictures/*)
@@ -29,6 +33,10 @@ do_install() {
     LIST=$(ls ${WORKDIR}/application/*)
     if [ -n "$LIST" ]; then
         cp -r ${WORKDIR}/application/* ${D}${prefix}/local/demo/application/
+    fi
+    LIST=$(ls ${WORKDIR}/board/*)
+    if [ -n "$LIST" ]; then
+        cp -r ${WORKDIR}/board/* ${D}${prefix}/local/demo/board/
     fi
 
     # start at startup

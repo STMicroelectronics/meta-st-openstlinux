@@ -2,7 +2,8 @@ Application:
     Name: 3D Color
     Description: GPU Shader
     Icon: application/3d-cube-extra/pictures/ST153_cube_purple.png
-    Board: all
+    Board:
+        List: stm32mp157
     Type: script
     Script:
         Exist:
