@@ -23,7 +23,6 @@ POKY_NON_REMOVABLE += "${OEROOT}/layers/poky/meta-yocto"
 #
 BASELAYERS ?= " \
     ${OEROOT}/layers/meta-openembedded/meta-gnome \
-    ${OEROOT}/layers/meta-openembedded/meta-xfce \
     ${OEROOT}/layers/meta-openembedded/meta-initramfs \
     ${OEROOT}/layers/meta-openembedded/meta-multimedia \
     ${OEROOT}/layers/meta-openembedded/meta-networking \
