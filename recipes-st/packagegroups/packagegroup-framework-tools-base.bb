@@ -50,6 +50,9 @@ RDEPENDS_packagegroup-framework-tools-base-kernel = "\
     memtester       \
     mtd-utils       \
     v4l-utils       \
+    util-linux      \
+    util-linux-fdisk\
+    pciutils        \
     "
 
 SUMMARY_packagegroup-framework-tools-base-network = "Framework tools base components for network"
