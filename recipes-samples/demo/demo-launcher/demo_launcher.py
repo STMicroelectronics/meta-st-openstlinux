@@ -66,7 +66,7 @@ SIMULATE_SCREEN_SIZE_HEIGHT = 480
 # -------------------------------------------------------------------
 ICON_SIZE_720 = 180
 ICON_SIZE_480 = 128
-ICON_SIZE_272 = 68
+ICON_SIZE_272 = 48
 
 # return format:
 # [ icon_size, font_size, logo_size, exit_size, column_spacing, row_spacing ]
@@ -100,7 +100,7 @@ def get_sizes_from_screen_size(width, height):
         row_spacing = 10
     elif minsize == 272:
         icon_size = ICON_SIZE_272
-        font_size = 13
+        font_size = 11
         logo_size = 60
         exit_size = 25
         column_spacing = 5
