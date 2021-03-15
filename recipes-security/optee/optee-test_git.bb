@@ -8,16 +8,13 @@ DEPENDS = "optee-client virtual/optee-os python3-pycryptodomex-native python3-py
 
 inherit python3native
 
-PV = "3.9.0+git${SRCPV}"
+PV = "3.12.0+git${SRCPV}"
 
-SRC_URI = "git://github.com/OP-TEE/optee_test.git;protocol=https \
-        file://0001-xtest-regression-1027-1028-skip-test.patch \
-        file://0002-xtest-fix-generic-argument-handling.patch \
-    "
+SRC_URI = "git://github.com/OP-TEE/optee_test.git;protocol=https"
 
 S = "${WORKDIR}/git"
 
-SRCREV = "f461e1d47fcc82eaa67508a3d796c11b7d26656e"
+SRCREV = "7be42398e8848f09995abf8a9e9d8bb8840cc19a"
 
 OPTEE_CLIENT_EXPORT = "${STAGING_DIR_HOST}${prefix}"
 TEEC_EXPORT         = "${STAGING_DIR_HOST}${prefix}"
@@ -30,8 +27,7 @@ EXTRA_OEMAKE = " TA_DEV_KIT_DIR=${TA_DEV_KIT_DIR} \
                  CROSS_COMPILE_TA=${TARGET_PREFIX} \
                  V=1 \
                  CFG_TEE_CLIENT_LOAD_PATH=${libdir} \
-                 CFLAGS32='--sysroot=${STAGING_DIR_HOST}' \
-                 arch-bits-ta_arm32='32' \
+                 LIBGCC_LOCATE_CFLAGS='--sysroot=${STAGING_DIR_HOST}' \
                "
 
 
