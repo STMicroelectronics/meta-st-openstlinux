@@ -51,3 +51,6 @@ BUILDCFG_VARS += "PREFERRED_VERSION_${PREFERRED_PROVIDER_virtual/kernel}"
 #
 IMAGE_BUILDINFO_VARS = "${BUILDCFG_VARS}"
 INHERIT += "image-buildinfo"
+
+# FORCE to use libgpiod 1.6.2
+PREFERRED_VERSION_libgpiod = "1.6.2"
