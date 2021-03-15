@@ -15,8 +15,12 @@ check_dt_status() {
         echo "Gcnano in /proc/device-tree/soc/ is not available" > /dev/kmsg
         exit 1
     else
-        if $(grep -q "okay" /proc/device-tree/soc/$gcnano_dir/status); then
+        if [ ! -f /proc/device-tree/soc/$gcnano_dir/status ]; then
             gcnano_status="okay"
+        else
+            if $(grep -q "okay" /proc/device-tree/soc/$gcnano_dir/status); then
+                gcnano_status="okay"
+            fi
         fi
     fi
 }
