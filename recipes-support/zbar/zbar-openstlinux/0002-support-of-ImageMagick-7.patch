@@ -1,0 +1,45 @@
+From 3d4fd19334b1d4c35ba64dff63a31e9eec01c422 Mon Sep 17 00:00:00 2001
+From: Christophe Priouzeau <christophe.priouzeau@st.com>
+Date: Fri, 9 Oct 2020 11:21:38 +0200
+Subject: [PATCH] support of ImageMagick 7
+
+Signed-off-by: Christophe Priouzeau <christophe.priouzeau@st.com>
+---
+ configure.ac      | 2 +-
+ zbarimg/zbarimg.c | 6 +-----
+ 2 files changed, 2 insertions(+), 6 deletions(-)
+
+diff --git a/configure.ac b/configure.ac
+index 256aedb..5d4ed23 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -324,7 +324,7 @@ dnl but the latter doesn't exist in older verisons (bug #2848437)
+ dnl double check ImageMagick install (bug #2582232)
+       CPPFLAGS_save="$CPPFLAGS"
+       CPPFLAGS="$CPPFLAGS $MAGICK_CFLAGS"
+-      AC_CHECK_HEADER([wand/MagickWand.h],
++      AC_CHECK_HEADER([MagickWand/MagickWand.h],
+         [have_IM="yes"],
+         [have_IM="broken"])
+       CPPFLAGS="$CPPFLAGS_save"])])
+diff --git a/zbarimg/zbarimg.c b/zbarimg/zbarimg.c
+index d3cf5e8..fc7abba 100644
+--- a/zbarimg/zbarimg.c
++++ b/zbarimg/zbarimg.c
+@@ -39,12 +39,8 @@
+ 
+ #include <zbar.h>
+ 
+-#ifdef HAVE_GRAPHICSMAGICK
+-# include <wand/wand_api.h>
+-#endif
+-
+ #ifdef HAVE_IMAGEMAGICK
+-# include <wand/MagickWand.h>
++#include <MagickWand/MagickWand.h>
+ 
+ /* ImageMagick frequently changes API names - just use the original
+  * (more stable?) names to match GraphicsMagick
+-- 
+2.17.1
+
