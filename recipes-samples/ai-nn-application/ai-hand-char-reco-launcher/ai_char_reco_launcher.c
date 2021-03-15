@@ -1,5 +1,8 @@
+#include <dirent.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <linux/input.h>
+#include <linux/uinput.h>
 #include <pthread.h>
 #include <signal.h>
 #include <stdbool.h>
@@ -21,13 +24,10 @@
 #define BOARD_TYPE_DK2             0
 #define BOARD_TYPE_EV1             1
 
-/* the supported touch screen */
-#define EVENT_DEVICE_NAME_1        "EP0110M09"
-#define EVENT_DEVICE_NAME_2        "generic ft5x06"
-#define EVENT_DEVICE_NAME_3        "Goodix Capacitive TouchScreen"
-#define EVENT_DEVICE_NAME_4        "BYZHYYZHY By ZH851 Touchscreen"
+
 
 #define EVENT_TYPE_ABS             EV_ABS
+#define EVENT_TYPE_REL             EV_REL
 #define EVENT_TYPE_KEY             EV_KEY
 #define EVENT_CODE_X               ABS_X
 #define EVENT_CODE_Y               ABS_Y
@@ -35,11 +35,6 @@
 
 #define LINE_BREAK                 0x0FFF
 
-#define DISPLAY_DISCO_WIDTH        800
-#define DISPLAY_DISCO_HEIGHT       480
-
-#define DISPLAY_EVAL_WIDTH         1280
-#define DISPLAY_EVAL_HEIGHT        720
 
 #define DRAW_AREA_WIDTH            250
 #define DRAW_AREA_HEIGHT           250
@@ -402,6 +397,166 @@ static void *copro_vitural_tty_thread(void *arg)
 	pthread_exit(&ret);
 }
 
+static int EndsWith(const char *str, const char *suffix)
+{
+	if (!str || !suffix)
+		return 0;
+	size_t lenstr = strlen(str);
+	size_t lensuffix = strlen(suffix);
+	if (lensuffix >  lenstr)
+		return 0;
+	return strncmp(str + lenstr - lensuffix, suffix, lensuffix) == 0;
+}
+
+static void deleteSpaces(char src[], char dst[])
+{
+	// src is supposed to be zero ended
+	// dst is supposed to be large enough to hold src
+	int s, d=0;
+	for (s=0; src[s] != 0; s++) {
+		if (src[s] != ' ') {
+			dst[d] = src[s];
+			d++;
+		}
+	}
+	dst[d] = 0;
+}
+
+static void getDisplayName(char *display_name)
+{
+	FILE *fp;
+	char result[128];
+	char delim[] = "\t" ;
+
+	/* Open the command for reading. */
+	fp = popen("modetest | grep -v disconnected | grep connected", "r");
+	if (fp == NULL) {
+		printf("Failed to run modetest command\n");
+		exit(1);
+	}
+	fgets(result, sizeof(result), fp);
+	pclose(fp);
+
+	char *ptr = strtok(result, delim);
+	ptr = strtok(NULL, delim);
+	ptr = strtok(NULL, delim);
+	ptr = strtok(NULL, delim);
+	deleteSpaces(ptr, display_name);
+}
+
+
+static void getResolution(const char *display_name, uint16_t *width, uint16_t *height)
+{
+	FILE *fp;
+	char result[256];
+	char str[80]; /*ASCII value for tab*/
+
+	strcpy(str, "cat /sys/class/drm/card0-");
+	strcat(str, display_name);
+	strcat(str, "/modes");
+
+	fp = popen(str, "r");
+	if (fp == NULL) {
+		printf("Failed to run command : %s\n", str);
+		exit(1);
+	}
+	fgets(result, sizeof(result), fp);
+	pclose(fp);
+
+	char delim[] ="x";
+	char *ptr = strtok(result, delim);
+	*height = atoi(ptr);
+	ptr = strtok(NULL, delim);
+	*width = atoi(ptr);
+}
+
+int set_cursor_position(int x, int y)
+{
+	struct uinput_user_dev uidev;
+	struct input_event ev;
+	int fd;
+
+	fd = open("/dev/uinput", O_WRONLY | O_NONBLOCK);
+	if(fd < 0)
+		printf("error: open");
+
+	if(ioctl(fd, UI_SET_EVBIT, EV_KEY) < 0)
+		printf("error: ioctl");
+	if(ioctl(fd, UI_SET_KEYBIT, BTN_LEFT) < 0)
+		printf("error: ioctl");
+	if(ioctl(fd, UI_SET_KEYBIT, BTN_RIGHT) < 0)
+		printf("error: ioctl");
+	if(ioctl(fd, UI_SET_EVBIT, EV_REL) < 0)
+		printf("error: ioctl");
+	if(ioctl(fd, UI_SET_RELBIT, REL_X) < 0)
+		printf("error: ioctl");
+	if(ioctl(fd, UI_SET_RELBIT, REL_Y) < 0)
+		printf("error: ioctl");
+	if(ioctl(fd, UI_SET_EVBIT, EV_ABS) < 0)
+		printf("error: ioctl");
+	if(ioctl(fd, UI_SET_ABSBIT,ABS_X) < 0)
+		printf("error: ioctl");
+	if(ioctl(fd, UI_SET_ABSBIT, ABS_Y) < 0)
+		printf("error: ioctl");
+
+	memset(&uidev, 0, sizeof(uidev));
+	snprintf(uidev.name, UINPUT_MAX_NAME_SIZE, "uinput-sample");
+	uidev.id.bustype = BUS_USB;
+	uidev.id.vendor  = 0x1;
+	uidev.id.product = 0x1;
+	uidev.id.version = 1;
+
+	uidev.absmin[ABS_X]=0;
+	uidev.absmax[ABS_X]= x * 2;
+	uidev.absfuzz[ABS_X]=0;
+	uidev.absflat[ABS_X ]=0;
+	uidev.absmin[ABS_Y]=0;
+	uidev.absmax[ABS_Y]=y * 2;
+	uidev.absfuzz[ABS_Y]=0;
+	uidev.absflat[ABS_Y ]=0;
+
+	if(write(fd, &uidev, sizeof(uidev)) < 0)
+		printf("error: write0");
+
+	if(ioctl(fd, UI_DEV_CREATE) < 0)
+		printf("error: ioctl");
+
+	sleep(2);
+
+	memset(&ev, 0, sizeof(struct input_event));
+	gettimeofday(&ev.time,NULL);
+	ev.type = EV_ABS;
+	ev.code = ABS_X;
+	ev.value = x;
+	if(write(fd, &ev, sizeof(struct input_event)) < 0)
+		printf("error: write1");
+
+	memset(&ev, 0, sizeof(struct input_event));
+	ev.type = EV_SYN;
+	if(write(fd, &ev, sizeof(struct input_event)) < 0)
+		printf("error: write4");
+
+	memset(&ev, 0, sizeof(struct input_event));
+	ev.type = EV_ABS;
+	ev.code = ABS_Y;
+	ev.value = y;
+	if(write(fd, &ev, sizeof(struct input_event)) < 0)
+		printf("error: write2");
+
+	memset(&ev, 0, sizeof(struct input_event));
+	ev.type = EV_SYN;
+	if(write(fd, &ev, sizeof(struct input_event)) < 0)
+		printf("error: write3");
+
+	//printf("\nWritten x:%d y:%d\n",x,y);
+
+	if(ioctl(fd, UI_DEV_DESTROY) < 0)
+		printf("error: cannot destroy uinput device\n");
+
+	close(fd);
+	return 0;
+}
+
 /**
  * Definition for touch event thread
  */
@@ -409,11 +564,16 @@ static void *read_touch_event_thread(void *arg)
 {
 	struct input_event ev;
 	int fd;
+	char input_path[32] = "/dev/input/by-path/";
 	char event_dev_file[128];
 	char event_dev_name[256] = "Unknown";
 	int touch_rotate = 0;
-	int n = 0;
-	int i = 0;
+	DIR *d;
+	struct dirent *dir;
+	char display_name[64];
+	int mouse_found = 0, touchscreen_found = 0;
+	int mouse_button_pressed = 0;
+	int cursor_x = 0, cursor_y = 0;
 
 	printf("create read touch event thread\n");
 
@@ -422,56 +582,57 @@ static void *read_touch_event_thread(void *arg)
 		return NULL;
 	}
 
-	n = sprintf(event_dev_file, "/dev/input/event");
-	/* Hack: pre loop to detect specific touchscreen */
-	while (i < 20) {
-		/* Parse all input event untill we found the right one */
-		sprintf(event_dev_file + n, "%d", i);
+	getDisplayName(display_name);
+	getResolution(display_name, &displayWidth, &displayHeight);
+	if (displayWidth > displayHeight)
+		touch_rotate = 1;
+
+	d = opendir(input_path);
+	if (d) {
+		while ((dir = readdir(d)) != NULL) {
+			//printf("%s\n", dir->d_name);
+			if (EndsWith(dir->d_name, "i2c-event")) {
+				printf("%s is a touchscreen\n",  dir->d_name);
+				touchscreen_found = 1;
+				break;
+			}
+			if (EndsWith(dir->d_name, "-event-mouse")) {
+				printf("%s is a mouse\n",  dir->d_name);
+				/* As mouse returned relative coordonates, need to init cursor position */
+				cursor_x = displayWidth / 2;
+				cursor_y = displayHeight / 2;
+				set_cursor_position(cursor_x, cursor_y);
+				mouse_found = 1;
+			}
+		}
+		closedir(d);
+
+		if ((touchscreen_found == 0) && (mouse_found == 0)) {
+			printf("ERROR: no input device found\n");
+			exit(0);
+		} else if ((touchscreen_found == 1) && (mouse_found == 1)) {
+			printf("Mouse and Touchscreen found : use Touchscreen\n");
+			mouse_found = 0;
+		}
+
+		strcpy(event_dev_file, input_path);
+		strcat(event_dev_file, dir->d_name);
 		fd = open(event_dev_file, O_RDONLY);
 		if (fd != -1) {
 			ioctl(fd, EVIOCGNAME(sizeof(event_dev_name)), event_dev_name);
-			if (strcmp(event_dev_name, EVENT_DEVICE_NAME_4) == 0) {
-				displayWidth = DISPLAY_EVAL_WIDTH;
-				displayHeight = DISPLAY_EVAL_HEIGHT;
-				break;
-			}
+		} else {
+			printf("\nERROR, not able to open %s\n", event_dev_file);
 		}
-		i++;
-	}
-	if (i == 20) {
-		i = 0;
-		while (i < 20) {
-			/* Parse all input event untill we found the right one */
-			sprintf(event_dev_file + n, "%d", i);
-			fd = open(event_dev_file, O_RDONLY);
-			if (fd != -1) {
-				ioctl(fd, EVIOCGNAME(sizeof(event_dev_name)), event_dev_name);
-				if ((strcmp(event_dev_name, EVENT_DEVICE_NAME_1) == 0) ||
-				    (strncmp(event_dev_name, EVENT_DEVICE_NAME_2, strlen(EVENT_DEVICE_NAME_2)) == 0)) {
-					displayWidth = DISPLAY_DISCO_WIDTH;
-					displayHeight = DISPLAY_DISCO_HEIGHT;
-					touch_rotate = 1;
-					break;
-				} else if (strcmp(event_dev_name, EVENT_DEVICE_NAME_3) == 0) {
-					displayWidth = DISPLAY_EVAL_WIDTH;
-					displayHeight = DISPLAY_EVAL_HEIGHT;
-					touch_rotate = 1;
-					break;
-				}
-			}
-			i++;
-
-			if (i == 20) {
-				printf("no touch event device found\n");
-				exit(0);
-			}
-		}
+	} else {
+		printf("ERROR: %s not found\n", input_path);
+		exit(1);
 	}
 
 	/* Print Device Name */
 	printf("Reading from:\n");
 	printf("device file = %s\n", event_dev_file);
 	printf("device name = %s\n", event_dev_name);
+	printf("\ndisplayWidth=%d, displayHeight=%d, touch_rotate=%d\n", displayWidth, displayHeight, touch_rotate);
 
 	while (1) {
 		const size_t ev_size = sizeof(struct input_event);
@@ -490,8 +651,12 @@ static void *read_touch_event_thread(void *arg)
 			return NULL;
 		}
 
-		if (ev.type == EVENT_TYPE_KEY && ev.code == EVENT_TOUCH) {
+		//printf("ev.type=0x%x, ev.code=0x%x, ev.value=%d\n", ev.type, ev.code, ev.value);
+
+		if (ev.type == EVENT_TYPE_KEY && ((ev.code == EVENT_TOUCH) || (ev.code == BTN_MOUSE))) {
 			if (ev.value == TOUCH_DOWN) {
+				if  (ev.code == BTN_MOUSE)
+					mouse_button_pressed = 1;
 				if (timer1) {
 					timer_stop(timer1);
 					timer1= 0;
@@ -510,28 +675,69 @@ static void *read_touch_event_thread(void *arg)
 				draw_touch_coordinate[touch_idx].y = LINE_BREAK;
 				touch_idx++;
 			} else {
+				if  (ev.code == BTN_MOUSE)
+					mouse_button_pressed = 0;
 				if (defaultInputType == 0) {
 					/* configure default AI naural network input type */
 					copro_send_input_type(INPUT_IS_LETTER);
 					defaultInputType = 1;
 				}
 				timer1 = timer_start(500, timer_callback, NULL);
+
+				/* init cursor position to avoid misalignement between computed
+				 * absolute position and cursor position given by Wayland
+				 * TODO : get mouse coordinates from libinput to avoid that
+				 */
+				if (mouse_found) {
+					cursor_x = displayWidth / 2;
+					cursor_y = displayHeight / 2;
+					set_cursor_position(cursor_x, cursor_y);
+				}
 			}
 		}
 
-		if (ev.type == EVENT_TYPE_ABS && (ev.code == EVENT_CODE_X
-					      || ev.code == EVENT_CODE_Y)) {
-			if (touch_rotate) {
+		/* update mouse coordinates */
+		if (ev.type == EVENT_TYPE_REL) {
+			if (ev.code == REL_X) {
+				cursor_x = cursor_x + ev.value;
+				if (cursor_x > displayWidth)
+					cursor_x = displayWidth;
+				if (cursor_x < 0)
+					cursor_x = 0;
+			} else if (ev.code == REL_Y) {
+				cursor_y = cursor_y + ev.value;
+				if (cursor_y > displayHeight)
+					cursor_y = displayHeight;
+				if (cursor_y < 0)
+					cursor_y = 0;
+			}
+			//printf("cursor_x=%d, cursor_y=%d\n", cursor_x, cursor_y);
+		}
+
+		if (((ev.type == EVENT_TYPE_REL && (ev.code == EVENT_CODE_X
+					|| ev.code == EVENT_CODE_Y)) && mouse_button_pressed)
+				|| (ev.type == EVENT_TYPE_ABS && (ev.code == EVENT_CODE_X
+					|| ev.code == EVENT_CODE_Y))) {
+			int value = ev.value;
+
+			if (ev.type == EVENT_TYPE_REL) {
+				if (ev.code == REL_X)
+					value = cursor_x;
+				else if (ev.code == REL_Y)
+					value = cursor_y;
+			}
+
+			if (touch_rotate && touchscreen_found) {
 				/*  The UI is rotated take it into account */
 				if (ev.code == EVENT_CODE_X)
-					draw_touch_coordinate[touch_idx].y = ev.value;
+					draw_touch_coordinate[touch_idx].y = value;
 				if (ev.code == EVENT_CODE_Y)
-					draw_touch_coordinate[touch_idx].x = displayWidth - ev.value;
+					draw_touch_coordinate[touch_idx].x = displayWidth - value;
 			} else {
 				if (ev.code == EVENT_CODE_X)
-					draw_touch_coordinate[touch_idx].x = ev.value;
+					draw_touch_coordinate[touch_idx].x = value;
 				if (ev.code == EVENT_CODE_Y)
-					draw_touch_coordinate[touch_idx].y = ev.value;
+					draw_touch_coordinate[touch_idx].y = value;
 				if ((draw_touch_coordinate[touch_idx].x == 0) ||
 				    (draw_touch_coordinate[touch_idx].y == 0)) {
 					draw_touch_coordinate[touch_idx].x = -1;
