@@ -53,6 +53,7 @@ RDEPENDS_packagegroup-framework-tools-core = "\
     db              \
     sqlite3         \
     rt-tests        \
+    stm32-ddr-tools \
     "
 
 SUMMARY_packagegroup-framework-tools-kernel = "Framework tools components for kernel"
