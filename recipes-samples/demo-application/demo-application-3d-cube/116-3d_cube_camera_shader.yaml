@@ -8,7 +8,7 @@ Application:
     Script:
         Exist:
             File: /dev/galcore
-            Msg_false: No GPU capabilities to run 3D GPU demo
+            Msg_false: No GCNANO GPU STACK capabilities to run 3D GPU demo
         Start: application/3d-cube-extra/bin/launch_cube_3D_camera_shader.sh
     Action:
         button_release_event: script_management

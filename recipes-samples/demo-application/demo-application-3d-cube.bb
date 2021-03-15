@@ -5,7 +5,7 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/BSD-3-Clause;m
 
 DEPENDS = "weston-cube demo-launcher"
 
-PV = "2.1"
+PV = "3.0"
 SRC_URI = " \
     file://100-3d-cube.yaml \
     file://101-3d-cube-shader.yaml \
