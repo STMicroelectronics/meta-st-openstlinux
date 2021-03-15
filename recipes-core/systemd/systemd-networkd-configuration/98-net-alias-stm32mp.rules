@@ -1,0 +1,5 @@
+#store kernel alias
+ACTION=="change", SUBSYSTEM=="platform", ENV{OF_ALIAS_0}=="ethernet*", RUN+="/usr/sbin/stm32mp-net-alias-udev.sh store $env{OF_ALIAS_0} %p"
+#store link between path and interface name
+ACTION=="add", SUBSYSTEM=="net", RUN+="/usr/sbin/stm32mp-net-alias-udev.sh interface $env{ID_NET_NAME} %p"
+
