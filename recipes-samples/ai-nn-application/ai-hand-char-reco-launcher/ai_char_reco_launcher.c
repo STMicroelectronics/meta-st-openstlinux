@@ -567,7 +567,7 @@ static void *read_touch_event_thread(void *arg)
 	char input_path[32] = "/dev/input/by-path/";
 	char event_dev_file[128];
 	char event_dev_name[256] = "Unknown";
-	int touch_rotate = 0;
+	int touch_rotate = 1;
 	DIR *d;
 	struct dirent *dir;
 	char display_name[64];
@@ -584,8 +584,6 @@ static void *read_touch_event_thread(void *arg)
 
 	getDisplayName(display_name);
 	getResolution(display_name, &displayWidth, &displayHeight);
-	if (displayWidth > displayHeight)
-		touch_rotate = 1;
 
 	d = opendir(input_path);
 	if (d) {
@@ -598,10 +596,6 @@ static void *read_touch_event_thread(void *arg)
 			}
 			if (EndsWith(dir->d_name, "-event-mouse")) {
 				printf("%s is a mouse\n",  dir->d_name);
-				/* As mouse returned relative coordonates, need to init cursor position */
-				cursor_x = displayWidth / 2;
-				cursor_y = displayHeight / 2;
-				set_cursor_position(cursor_x, cursor_y);
 				mouse_found = 1;
 			}
 		}
@@ -611,8 +605,13 @@ static void *read_touch_event_thread(void *arg)
 			printf("ERROR: no input device found\n");
 			exit(0);
 		} else if ((touchscreen_found == 1) && (mouse_found == 1)) {
-			printf("Mouse and Touchscreen found : use Touchscreen\n");
+			printf("WARNING: Mouse and Touchscreen found : use Touchscreen\n");
 			mouse_found = 0;
+		} else if ((touchscreen_found == 0) && (mouse_found == 1)) {
+			/* As mouse returned relative coordonates, need to init cursor position */
+			cursor_x = displayWidth / 2;
+			cursor_y = displayHeight / 2;
+			set_cursor_position(cursor_x, cursor_y);
 		}
 
 		strcpy(event_dev_file, input_path);
@@ -622,17 +621,16 @@ static void *read_touch_event_thread(void *arg)
 			ioctl(fd, EVIOCGNAME(sizeof(event_dev_name)), event_dev_name);
 		} else {
 			printf("\nERROR, not able to open %s\n", event_dev_file);
+			exit(1);
 		}
 	} else {
 		printf("ERROR: %s not found\n", input_path);
 		exit(1);
 	}
 
-	/* Print Device Name */
-	printf("Reading from:\n");
-	printf("device file = %s\n", event_dev_file);
-	printf("device name = %s\n", event_dev_name);
-	printf("\ndisplayWidth=%d, displayHeight=%d, touch_rotate=%d\n", displayWidth, displayHeight, touch_rotate);
+	/* Print input and output informations */
+	printf("Reading from: %s (%s)\n", event_dev_name, event_dev_file);
+	printf("Writing to: %s in %dx%d\n", display_name, displayWidth, displayHeight);
 
 	while (1) {
 		const size_t ev_size = sizeof(struct input_event);
