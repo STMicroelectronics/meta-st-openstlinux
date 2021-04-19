@@ -438,7 +438,7 @@ def license_sdk_create_summary(d):
             html.addColumnHeaderContent("Description", html.bold)
             html.stopRow()
             for p in contents:
-                package_license = None
+                package_license = ""
                 package_recipe = None
                 package_name = p.split('\n')[0].split(' ')[0]
                 package_version = None
@@ -449,6 +449,9 @@ def license_sdk_create_summary(d):
                 else:
                     package_file = pkgdata_dir + "/runtime-reverse/" + package_name
                 package_file_content = private_open(package_file)
+                if len(package_file_content) == 0:
+                    package_file = pkgdata_dir + "/runtime-reverse/" + package_name
+                    package_file_content = private_open(package_file)
                 r = re.compile("([^:]+):\s*(.*)")
                 for line in package_file_content:
                     m = r.match(line)
