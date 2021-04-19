@@ -1,6 +1,6 @@
 Application:
     Name: 3D Pict
-    Description: GPU with picture
+    Description: GPU
     Icon: application/3d-cube/pictures/ST153_cube_purple.png
     Board:
         List: stm32mp157
