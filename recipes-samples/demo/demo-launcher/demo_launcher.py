@@ -408,7 +408,7 @@ class ApplicationButton():
                         if data["List"].find(board_compatibility_name) > -1:
                             return True
                         else:
-                            for b in data["List"]:
+                            for b in data["List"].split():
                                 if board_compatibility_name.find(b) > -1:
                                     return True
                         return False
