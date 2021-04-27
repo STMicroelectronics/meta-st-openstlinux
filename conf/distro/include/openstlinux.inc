@@ -97,6 +97,9 @@ DISTRO_FEATURES_append = " systemd polkit "
 # add support of efi
 DISTRO_FEATURES_append = " efi "
 
+# add support of InitRD installation package
+DISTRO_FEATURES_append = " initrd "
+
 # add support of autoresize through InitRD
 DISTRO_FEATURES_append = " autoresize "
 
@@ -128,5 +131,5 @@ LICENSE_FLAGS_WHITELIST += " non-commercial commercial"
 # X11 addons
 DISTRO_EXTRA_RDEPENDS_append = " ${@bb.utils.contains('DISTRO_FEATURES', 'x11', 'xf86-video-modesetting', '', d)} "
 
-# INITRD addons to resize file system
-DISTRO_EXTRA_RRECOMMENDS_append = " ${@bb.utils.contains('COMBINED_FEATURES', 'autoresize', '${AUTORESIZE}', '', d)} "
+# INITRD addons to image
+DISTRO_EXTRA_RRECOMMENDS_append = " ${@bb.utils.contains('COMBINED_FEATURES', 'initrd', '${INITRD_PACKAGE}', '', d)} "

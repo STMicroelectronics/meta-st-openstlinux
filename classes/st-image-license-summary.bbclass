@@ -56,8 +56,8 @@ def license_create_summary(d):
                 if mi:
                     image_list_arrray.append([mi.group(1), mi.group(2), img_name, img_mount, filter])
     # Append any INITRD image to image_list_arrray
-    img_name = d.getVar('INITRD_IMAGE') or ""
-    if img_name:
+    initrd_img = d.getVar('INITRD_IMAGE_ALL') or d.getVar('INITRD_IMAGE') or ""
+    for img_name in initrd_img.split():
         img_ext = d.getVar('INITRAMFS_FSTYPES') or ""
         img_mount = '/'
         filter = False

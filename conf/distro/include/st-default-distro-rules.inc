@@ -38,6 +38,12 @@ OELAYOUT_ABI = "12"
 COPY_LIC_MANIFEST = "1"
 
 #--------------------------
+# Configure InitRD image installation package
+INITRD_PACKAGE = "st-initrd"
+# Init default InitRD image to ST resize image
+INITRD_IMAGE ?= "${@bb.utils.contains('COMBINED_FEATURES', 'autoresize', 'st-image-resize-initrd', '', d)}"
+
+#--------------------------
 # Tune build config display
 #
 BUILDCFG_VARS += "DISTRO_CODENAME"
