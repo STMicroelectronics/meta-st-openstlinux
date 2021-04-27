@@ -26,14 +26,14 @@ SYSTEMD_AUTO_ENABLE_${PN} = "enable"
 # This list should be set with partition label and associated mountpoint
 # <partition_label1>,<partition_mountpoint1> <partition_label2>,<partition_mountpoint2>
 MOUNT_PARTITIONS_LIST ?= ""
-PARTITIONS_CONFIG ?= ""
+PARTITIONS_IMAGES ?= ""
 
-# Update MOUNT_PARTITIONS_LIST var with input from PARTITIONS_CONFIG enabled
+# Update MOUNT_PARTITIONS_LIST var with input from PARTITIONS_IMAGES enabled
 python set_partitions_list() {
-    partitionsconfig = (d.getVar('PARTITIONS_CONFIG') or "").split()
+    partitionsconfig = (d.getVar('PARTITIONS_IMAGES') or "").split()
 
     if len(partitionsconfig) > 0:
-        partitionsconfigflags = d.getVarFlags('PARTITIONS_CONFIG')
+        partitionsconfigflags = d.getVarFlags('PARTITIONS_IMAGES')
         # The "doc" varflag is special, we don't want to see it here
         partitionsconfigflags.pop('doc', None)
 
