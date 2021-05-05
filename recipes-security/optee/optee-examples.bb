@@ -9,7 +9,7 @@ DEPENDS = "optee-client virtual/optee-os python3-pycryptodomex-native python3-py
 inherit python3native
 
 SRC_URI = "git://github.com/linaro-swg/optee_examples.git"
-SRCREV = "f7f5a3ad2e8601bf2f846992d0b10aae3e3e5530"
+SRCREV = "9a755dcf4d8ef6117af59dfd1b1a82315cee58ca"
 
 S = "${WORKDIR}/git"
 
@@ -23,6 +23,7 @@ EXTRA_OEMAKE = " TA_DEV_KIT_DIR=${TA_DEV_KIT_DIR} \
                  HOST_CROSS_COMPILE=${TARGET_PREFIX} \
                  TA_CROSS_COMPILE=${TARGET_PREFIX} \
                  V=1 \
+                 LIBGCC_LOCATE_CFLAGS='--sysroot=${STAGING_DIR_HOST}' \
                "
 
 do_compile() {
