@@ -19,7 +19,10 @@ import subprocess
 import pexpect
 from time import sleep, time
 
-from application.bluetooth.wrap_blctl import wrapper_blctl as Bluetoothctl
+try:
+    from application.bluetooth.wrap_blctl import wrapper_blctl as Bluetoothctl
+except ModuleNotFoundError:
+    from wrap_blctl import wrapper_blctl as Bluetoothctl
 
 # -------------------------------------------------------------------
 # -------------------------------------------------------------------
@@ -27,14 +30,51 @@ SUBMODULE_PATH = "application/bluetooth"
 DEMO_PATH = "/usr/local/demo"
 # -------------------------------------------------------------------
 # -------------------------------------------------------------------
+ICON_SIZE_720 = 180
+ICON_SIZE_480 = 128
+ICON_SIZE_272 = 48
+
 TREELIST_HEIGHT_720 = 400
 TREELIST_HEIGHT_480 = 160
+TREELIST_HEIGHT_272 = 68
+
+# return format:
+# [ icon_size, font_size, treelist_height, button_height ]
+SIZES_ID_ICON_SIZE = 0
+SIZES_ID_FONT_SIZE = 1
+SIZES_ID_TREELIST_HEIGHT = 2
+SIZES_ID_BUTTON_HEIGHT = 3
+def get_sizes_from_screen_size(width, height):
+    minsize =  min(width, height)
+    icon_size = None
+    font_size = None
+    treelist_height = None
+    button_height = None
+    if minsize == 720:
+        icon_size = ICON_SIZE_720
+        font_size = 25
+        treelist_height = TREELIST_HEIGHT_720
+        button_height = 60
+    elif minsize == 480:
+        icon_size = ICON_SIZE_480
+        font_size = 20
+        treelist_height = TREELIST_HEIGHT_480
+        button_height = 60
+    elif minsize == 272:
+        icon_size = ICON_SIZE_272
+        font_size = 15
+        treelist_height = TREELIST_HEIGHT_272
+        button_height = 25
+    return [icon_size, font_size, treelist_height, button_height]
+
 def get_treelist_height_from_screen_size(width, height):
     minsize =  min(width, height)
     if minsize == 720:
         return TREELIST_HEIGHT_720
     elif minsize == 480:
         return TREELIST_HEIGHT_480
+    elif minsize == 272:
+        return TREELIST_HEIGHT_272
 
 # -------------------------------------------------------------------
 # -------------------------------------------------------------------
@@ -289,6 +329,9 @@ class BluetoothWindow(Gtk.Dialog):
             self.screen_width = self.get_screen().get_width()
             self.screen_height = self.get_screen().get_height()
         self.treelist_height = get_treelist_height_from_screen_size(self.screen_width, self.screen_height)
+        sizes = get_sizes_from_screen_size(self.screen_width, self.screen_height)
+        self.font_size = sizes[SIZES_ID_FONT_SIZE]
+        self.button_height = sizes[SIZES_ID_BUTTON_HEIGHT]
 
         self.connect("button-release-event", self.on_page_press_event)
         mainvbox = self.get_content_area()
@@ -302,24 +345,24 @@ class BluetoothWindow(Gtk.Dialog):
         self.previous_click_time=0
 
         self.page_bluetooth = Gtk.VBox()
-        self.page_bluetooth.set_border_width(30)
+        self.page_bluetooth.set_border_width(15)
 
         self.title = Gtk.Label()
-        self.title.set_markup("<span font='30' color='#00000000'>Connect bluetooth headset</span>")
+        self.title.set_markup("<span font='%d' color='#00000000'>Connect bluetooth headset</span>" % (self.font_size+5))
         self.page_bluetooth.add(self.title)
 
         self.ButtonBox = Gtk.HBox(homogeneous=True)
 
         self.lb_button_scan = Gtk.Label()
-        self.lb_button_scan.set_markup("<span font='20'>start scan</span>")
+        self.lb_button_scan.set_markup("<span font='%d'>start scan</span>" % self.font_size)
         self.button_scan = Gtk.Button()
-        self.button_scan.set_property("height-request", 60)
+        self.button_scan.set_property("height-request", self.button_height)
         self.button_scan.add(self.lb_button_scan)
         self.button_scan.connect("clicked", self.on_selection_scan_clicked)
         self.ButtonBox.add(self.button_scan)
 
         self.lb_button_connect = Gtk.Label()
-        self.lb_button_connect.set_markup("<span font='20' color='#88888888'>connect</span>")
+        self.lb_button_connect.set_markup("<span font='%d' color='#88888888'>connect</span>" % self.font_size)
         self.button_connect = Gtk.Button()
         self.button_connect.add(self.lb_button_connect)
         self.button_connect.connect("clicked", self.on_selection_connect_clicked)
@@ -341,7 +384,7 @@ class BluetoothWindow(Gtk.Dialog):
         l_col = ["n°", "name", "connected", "Audio"]
         for i, column_title in enumerate(l_col):
             renderer = Gtk.CellRendererText()
-            renderer.set_property('font', "20")
+            renderer.set_property('font', "%d" % self.font_size)
             column = Gtk.TreeViewColumn(column_title, renderer, text=i)
             self.bluetooth_treeview.append_column(column)
         self.bluetooth_treeview.get_selection().connect("changed", self.on_changed)
@@ -356,7 +399,7 @@ class BluetoothWindow(Gtk.Dialog):
         self.page_bluetooth.add(self.tree_list_vbox)
 
         self.label_audio = Gtk.Label()
-        self.label_audio.set_markup("<span font='20' color='#FFFFFFFF'> </span>")
+        self.label_audio.set_markup("<span font='%d' color='#FFFFFFFF'> </span>" % self.font_size)
         self.label_audio.set_justify(Gtk.Justification.LEFT)
         self.label_audio.set_line_wrap(True)
         self.page_bluetooth.add(self.label_audio)
@@ -432,7 +475,7 @@ class BluetoothWindow(Gtk.Dialog):
         if new_val > 1:
            self.scan_progress.set_fraction(0.0)
            self.bl.blctl_scan_off()
-           self.lb_button_scan.set_markup("<span font='20'>start scan</span>")
+           self.lb_button_scan.set_markup("<span font='%d'>start scan</span>" % self.font_size)
            self.scan_done = True
            self.update_display()
            return False
@@ -449,22 +492,22 @@ class BluetoothWindow(Gtk.Dialog):
             #print(self.audio_bt_sink)
             self.dev_selected.update({'mac_address':self.current_devs[model[iter][0]-1], 'name':model[iter][1]})
             if model[iter][2] == " yes":
-                self.lb_button_connect.set_markup("<span font='20'>disconnect</span>")
+                self.lb_button_connect.set_markup("<span font='%d'>disconnect</span>" % self.font_size)
             else:
                 if self.label_audio.get_text() == "Device not connected":
-                    self.lb_button_connect.set_markup("<span font='20'>connect</span>")
+                    self.lb_button_connect.set_markup("<span font='%d'>connect</span>" %  self.font_size)
                 else:
-                    self.lb_button_connect.set_markup("<span font='20' color='#88888888'>connect</span>")
+                    self.lb_button_connect.set_markup("<span font='%d' color='#88888888'>connect</span>" % self.font_size)
         return True
 
     def connect_process(self, dev):
         if device_connected(self.bl, dev['mac_address']):
-            self.lb_button_connect.set_markup("<span font='20'>disconnect</span>")
+            self.lb_button_connect.set_markup("<span font='%d'>disconnect</span>" % self.font_size)
             self.update_display()
         else:
             connect_res=self.bl.blctl_connect(dev['mac_address'])
             if connect_res == True:
-                self.lb_button_connect.set_markup("<span font='20' color='#88888888'>disconnect</span>")
+                self.lb_button_connect.set_markup("<span font='%d' color='#88888888'>disconnect</span>" % self.font_size)
                 self.update_display()
         # refresh status_playback after 2,5s because pulseaudio takes some time to update its status
         timer_update_dev = GLib.timeout_add(2500, self.delayed_status_playback, None)
@@ -492,7 +535,7 @@ class BluetoothWindow(Gtk.Dialog):
                     self.display_message("<span font='15' color='#000000'>A BT device is already connected :\nPlease disconnect it before connecting a new device\n</span>")
             else:
                 connect_res=self.bl.blctl_disconnect(device['mac_address'])
-                self.lb_button_connect.set_markup("<span font='20' color='#88888888'>connect</span>")
+                self.lb_button_connect.set_markup("<span font='%d' color='#88888888'>connect</span>" % self.font_size)
                 self.update_display()
         else:
             print("[WARNING] Select the BT device to connect\n")
@@ -502,7 +545,7 @@ class BluetoothWindow(Gtk.Dialog):
         if self.lb_button_scan.get_text() == "start scan":
            self.bl.blctl_scan_on()
            timer_scan = GLib.timeout_add(SCAN_DURATION_IN_S * 10, self.progress_timeout, None)
-           self.lb_button_scan.set_markup("<span font='20'>scan progress</span>")
+           self.lb_button_scan.set_markup("<span font='%d'>scan progress</span>"% self.font_size)
 
     def update_display(self):
         if (self.scan_done == True):

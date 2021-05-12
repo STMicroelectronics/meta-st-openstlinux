@@ -41,12 +41,35 @@ if SIMULATE > 0:
 # -------------------------------------------------------------------
 ICON_SIZE_720 = 160
 ICON_SIZE_480 = 160
+ICON_SIZE_272 = 48
+
+# return format:
+# [ icon_size, font_size ]
+SIZES_ID_ICON_SIZE = 0
+SIZES_ID_FONT_SIZE = 1
+def get_sizes_from_screen_size(width, height):
+    minsize =  min(width, height)
+    icon_size = None
+    font_size = None
+    if minsize == 720:
+        icon_size = ICON_SIZE_720
+        font_size = 25
+    elif minsize == 480:
+        icon_size = ICON_SIZE_480
+        font_size = 20
+    elif minsize == 272:
+        icon_size = ICON_SIZE_272
+        font_size = 10
+    return [icon_size, font_size]
+
 def get_icon_size_from_screen_size(width, height):
     minsize =  min(width, height)
     if minsize == 720:
         return ICON_SIZE_720
     elif minsize == 480:
         return ICON_SIZE_480
+    elif minsize == 272:
+        return ICON_SIZE_272
 
 # -------------------------------------------------------------------
 # -------------------------------------------------------------------
@@ -67,7 +90,7 @@ def get_ip_address(ifname):
 # -------------------------------------------------------------------
 def _load_image_wlan_eventBox(parent, filename, label_text1, label_text2, scale_w, scale_h):
     # Create box for xpm and label
-    box = Gtk.HBox(False, 0)
+    box = Gtk.VBox(homogeneous=False, spacing=0)
     # Create an eventBox
     eventBox = Gtk.EventBox()
     # Now on to the image stuff
@@ -79,9 +102,9 @@ def _load_image_wlan_eventBox(parent, filename, label_text1, label_text2, scale_
     image = Gtk.Image.new_from_pixbuf(pixbuf)
 
     label = Gtk.Label()
-    label.set_markup("<span font='15' color='#FFFFFFFF'>%s\n</span>"
-                     "<span font='15' color='#FFFFFFFF'>%s</span>" % (label_text1, label_text2))
-    label.set_justify(Gtk.Justification.LEFT)
+    label.set_markup("<span font='10' color='#FFFFFFFF'>%s\n</span>"
+                     "<span font='10' color='#FFFFFFFF'>%s</span>" % (label_text1, label_text2))
+    #label.set_justify(Gtk.Justification.LEFT)
     label.set_line_wrap(True)
 
     # Pack the pixmap and label into the box
@@ -122,6 +145,8 @@ class NetdataWebserver(Gtk.Dialog):
                 self.screen_height = self.get_screen().get_height()
 
         self.icon_size = get_icon_size_from_screen_size(self.screen_width, self.screen_height)
+        sizes = get_sizes_from_screen_size(self.screen_width, self.screen_height)
+        self.font_size = sizes[SIZES_ID_FONT_SIZE]
 
         self.set_decorated(False)
         rgba = Gdk.RGBA(0.31, 0.32, 0.31, 0.8)
@@ -129,23 +154,23 @@ class NetdataWebserver(Gtk.Dialog):
 
         mainvbox = self.get_content_area()
 
-        self.page_ip = Gtk.VBox()
+        self.page_ip = Gtk.VBox(homogeneous=False, spacing=0)
         self.page_ip.set_border_width(10)
         self.set_border_width(10)
 
         self.title = Gtk.Label()
-        self.title.set_markup("<span font='30' color='#FFFFFFFF'><b>Access information to netdata</b></span>")
+        self.title.set_markup("<span font='%d' color='#FFFFFFFF'><b>Access information to netdata</b></span>" % (self.font_size+5))
         self.page_ip.add(self.title)
         self.label_eth = Gtk.Label()
-        self.label_eth.set_markup("<span font='20' color='#FFFFFFFF'>\nnetdata over Ethernet:</span>")
+        self.label_eth.set_markup("<span font='%d' color='#FFFFFFFF'>netdata over Ethernet:</span>" % self.font_size)
         self.label_eth.set_xalign (0.0)
         self.label_ip_eth0 = Gtk.Label()
-        self.label_ip_eth0.set_xalign (0.0)
+        #self.label_ip_eth0.set_xalign (0.0)
         self.label_wifi = Gtk.Label()
-        self.label_wifi.set_markup("<span font='20' color='#FFFFFFFF'>\nnetdata over Wifi:</span>")
+        self.label_wifi.set_markup("<span font='%d' color='#FFFFFFFF'>netdata over Wifi:</span>" % self.font_size)
         self.label_wifi.set_xalign (0.0)
         self.label_ip_wlan0 = Gtk.Label()
-        self.label_ip_wlan0.set_xalign (0.0)
+        #self.label_ip_wlan0.set_xalign (0.0)
         self.label_hotspot = Gtk.Label()
         self.label_hotspot.set_xalign (0.0)
 
@@ -158,7 +183,7 @@ class NetdataWebserver(Gtk.Dialog):
         self.info_grid.set_row_spacing(2)
 
         self.info_grid.attach(self.label_eth, 0, 1, 1, 1)
-        self.info_grid.attach(self.label_ip_eth0, 0, 2, 1, 1)
+        self.info_grid.attach(self.label_ip_eth0, 1, 1, 1, 1)
 
         if self.is_wifi_available():
             print ("wlan0 is available")
@@ -172,13 +197,13 @@ class NetdataWebserver(Gtk.Dialog):
                 self.hotspot_switch.set_active(False)
 
             self.hotspot_switch.connect("notify::active", self.on_switch_activated)
-            self.info_grid.attach(self.label_wifi, 0, 4, 1, 1)
-            self.info_grid.attach(self.hotspot_switch, 0, 5, 1, 1)
-            self.info_grid.attach(self.label_hotspot, 1, 5, 1, 1)
+            self.info_grid.attach(self.label_wifi, 0, 2, 1, 1)
+            self.info_grid.attach(self.hotspot_switch, 0, 3, 1, 1)
+            self.info_grid.attach(self.label_hotspot, 1, 3, 1, 1)
 
         else:
             print ("wlan0 interface not available")
-            self.info_grid.attach(self.label_hotspot, 0, 5, 1, 1)
+            self.info_grid.attach(self.label_hotspot, 0, 3, 1, 1)
 
         self.page_ip.add(self.info_grid)
         self.refresh_network_page()
@@ -232,20 +257,20 @@ class NetdataWebserver(Gtk.Dialog):
 
         ip_eth0 = get_ip_address('eth0')
         if ip_eth0 != "NA":
-            eth0_status = "<span font='15' color='#FFFFFFFF'>  http://%s:19999</span>" % ip_eth0
+            eth0_status = "<span font='%d' color='#FFFFFFFF'>  http://%s:19999</span>" % (self.font_size, ip_eth0)
         else:
-            eth0_status = "<span font='15' color='#FF0000FF'>  No Ethernet connection</span>"
+            eth0_status = "<span font='%d' color='#FF0000FF'>  No Ethernet connection</span>"  % self.font_size
         self.label_ip_eth0.set_markup(eth0_status)
 
         if self.is_wifi_available():
             print ("wlan0 is available")
             ip_wlan0 = get_ip_address('wlan0')
             if ip_wlan0 == "NA":
-                hotspot_status = "<span font='15' color='#FF0000FF'>  Wifi not started</span>"
+                hotspot_status = "<span font='%d' color='#FF0000FF'>  Wifi not started</span>" % self.font_size
                 self.info_grid.remove_row(6)
             elif ip_wlan0 == WIFI_HOTSPOT_IP:
                 self.get_wifi_config()
-                hotspot_status = "<span font='15' color='#00AA00FF'>  Wifi hotspot started</span>"
+                hotspot_status = "<span font='%d' color='#00AA00FF'>  Wifi hotspot started</span>" % self.font_size
 
                 wifi_qrcode_cmd = "WIFI:S:%s;T:WPA;P:%s;;" %(self.wifi_ssid, self.wifi_passwd)
                 print("%s/bin/build_qrcode.sh" % os.path.join(DEMO_PATH,SUBMODULE_PATH), "-o /tmp/qr-code_wifi_access.png", wifi_qrcode_cmd)
@@ -265,15 +290,15 @@ class NetdataWebserver(Gtk.Dialog):
 
                 self.show_all()
             else:
-                hotspot_status = "<span font='15' color='#FF0000FF'>Wifi started but not configured as hotspot</span>"
+                hotspot_status = "<span font='%d' color='#FF0000FF'>Wifi started but not configured as hotspot</span>" % self.font_size
                 self.info_grid.remove_row(6)
 
-                self.label_ip_wlan0.set_markup("<span font='15' color='#FFFFFFFF'>NetData over Wifi: http://%s:19999</span>" % ip_wlan0)
+                self.label_ip_wlan0.set_markup("<span font='%d' color='#FFFFFFFF'>NetData over Wifi: http://%s:19999</span>" % (self.font_size, ip_wlan0))
                 self.info_grid.attach(self.label_ip_wlan0, 0, 6, 1, 1)
                 self.show_all()
         else:
             print ("wlan0 interface not available")
-            hotspot_status = "<span font='15' color='#FF0000FF'>  Wifi not available on board</span>"
+            hotspot_status = "<span font='%d' color='#FF0000FF'>  Wifi not available on board</span>" % self.font_size
 
         self.label_hotspot.set_markup(hotspot_status)
 
