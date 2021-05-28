@@ -3,15 +3,17 @@
 
 def check_sanity_ostl(sanity_data):
     ref_layer = "st-openstlinux"
-    ref_version = d.getVar("ST_OSTL_COMPATIBILTY_VERSION_%s" % ref_layer)
+    ref_version = d.getVar("ST_OSTL_COMPATIBILITY_VERSION_%s" % ref_layer, None)
 
     #bb.warn("OSTL: reference version: %s" % ref_version)
     layerlist = set((d.getVar("BBFILE_COLLECTIONS") or "").split())
     for layername in layerlist:
-        version = d.getVar("ST_OSTL_COMPATIBILTY_VERSION_%s" % layername)
-        if version is not None:
-            if not version == ref_version:
-                raise_sanity_error("OSTL: layer %s (ver = %s) are not compatible with OpenSTlinux (Version = %s)" % (layername, version, ref_version), sanity_data)
+        versions = d.getVar("ST_OSTL_COMPATIBILITY_VERSION_%s" % layername)
+        if versions is None:
+            versions = d.getVar("ST_OSTL_COMPATIBILTY_VERSION_%s" % layername)
+        if versions is not None:
+            if not ref_version in versions:
+                raise_sanity_error("OSTL: layer %s (ver = %s) are not compatible with OpenSTlinux (Version = %s)" % (layername, versions, ref_version), sanity_data)
                 os._exit(1)
 
 
