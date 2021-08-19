@@ -365,9 +365,9 @@ class Sensors():
         z = accel[2]
         if x == 0 and y == 0 and z == 0:
             return [0, 0, 0]
-        pitch = round(math.atan(x / math.sqrt(y * y + z * z)) * 180.0 * math.pi)
-        roll  = round(math.atan(y / math.sqrt(x * x + z * z)) * 180.0 * math.pi)
-        yaw   = round(math.atan(z / math.sqrt(x * x + z * z)) * 180.0 * math.pi)
+        pitch = round(math.atan(x / math.sqrt(y * y + z * z)) * (180.0 / math.pi))
+        roll  = round(math.atan(y / math.sqrt(x * x + z * z)) * (180.0 / math.pi))
+        yaw   = round(math.atan(z / math.sqrt(x * x + z * z)) * (180.0 / math.pi))
 
         return [pitch, roll, yaw]
     def get_imu_orientation(self, pitch, roll):
