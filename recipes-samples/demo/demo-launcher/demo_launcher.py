@@ -402,19 +402,20 @@ class ApplicationButton():
             if (data):
                 for key in data:
                     if key == "List" and len(data["List"].rstrip()):
-                        #print("[DEBUG] <", data["List"], "> %s" % board_compatibility_name)
+                        #print("[DEBUG] List<", data["List"], "> %s" % board_compatibility_name, " ")
                         if data["List"].find('all') > -1:
                             return True
-                        if data["List"].find(board_compatibility_name) > -1:
-                            return True
-                        else:
-                            for b in data["List"].split():
-                                if board_compatibility_name.find(b) > -1:
-                                    return True
+                        for b in data["List"].split():
+                            #print("[DEBUG] test for List <", b, "> %s" % board_compatibility_name, " " , board_compatibility_name.find(b) )
+                            if board_compatibility_name.find(b) > -1:
+                                return True
                         return False
                     elif key == "NotList" and len(data["NotList"].rstrip()):
-                        if data["NotList"].find(board_compatibility_name):
-                            return False
+                        #print("[DEBUG] NotList<", data["NotList"], "> %s" % board_compatibility_name, "  "))
+                        for b in data["NotList"].split():
+                            #print("[DEBUG] test for Not List <", b, "> %s" % board_compatibility_name, " " , board_compatibility_name.find(b) )
+                            if board_compatibility_name.find(b) > -1:
+                                return False
                         return True
             else:
                 return True
