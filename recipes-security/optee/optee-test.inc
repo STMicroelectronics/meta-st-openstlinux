@@ -1,20 +1,9 @@
-SUMMARY = "OP-TEE sanity testsuite"
-HOMEPAGE = "https://github.com/OP-TEE/optee_test"
-
-LICENSE = "BSD-2-Clause & GPLv2"
-LIC_FILES_CHKSUM = "file://${S}/LICENSE.md;md5=daa2bcccc666345ab8940aab1315a4fa"
+# Imports machine specific configs from staging to build
+PACKAGE_ARCH = "${MACHINE_ARCH}"
 
 DEPENDS = "optee-client virtual/optee-os python3-pycryptodomex-native python3-pycrypto-native libgcc"
 
 inherit python3native
-
-PV = "3.12.0+git${SRCPV}"
-
-SRC_URI = "git://github.com/OP-TEE/optee_test.git;protocol=https"
-
-S = "${WORKDIR}/git"
-
-SRCREV = "7be42398e8848f09995abf8a9e9d8bb8840cc19a"
 
 OPTEE_CLIENT_EXPORT = "${STAGING_DIR_HOST}${prefix}"
 TEEC_EXPORT         = "${STAGING_DIR_HOST}${prefix}"
@@ -29,7 +18,6 @@ EXTRA_OEMAKE = " TA_DEV_KIT_DIR=${TA_DEV_KIT_DIR} \
                  CFG_TEE_CLIENT_LOAD_PATH=${libdir} \
                  LIBGCC_LOCATE_CFLAGS='--sysroot=${STAGING_DIR_HOST}' \
                "
-
 
 do_compile() {
     # Top level makefile doesn't seem to handle parallel make gracefully
@@ -47,6 +35,3 @@ do_install () {
 }
 
 FILES_${PN} += "${nonarch_base_libdir}/optee_armtz/"
-
-# Imports machine specific configs from staging to build
-PACKAGE_ARCH = "${MACHINE_ARCH}"
