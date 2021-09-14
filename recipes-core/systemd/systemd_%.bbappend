@@ -1,6 +1,7 @@
 PACKAGECONFIG_append = " \
     firstboot \
     coredump \
+    iptc \
     "
 
 do_install_append() {
