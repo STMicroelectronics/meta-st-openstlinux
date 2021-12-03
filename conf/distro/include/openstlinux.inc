@@ -10,47 +10,20 @@
 #      DISTRO_EXTRA_RRECOMMENDS [optional]
 #      TCLIBC [required if creating from scratch]
 
+LOCALCONF_VERSION = "1"
+LAYER_CONF_VERSION ?= "7"
+
+# =========================================================================
+# Set default distro naming
+# =========================================================================
+require openstlinux-default-naming.inc
+
 # =========================================================================
 # Enable uninative support
 # =========================================================================
 require conf/distro/include/no-static-libs.inc
 require conf/distro/include/yocto-uninative.inc
 INHERIT += "uninative"
-
-# Init OPENSTLINUX_RELEASE flag to snapshot
-OPENSTLINUX_RELEASE ??= "snapshot"
-
-DISTRO = "openstlinux"
-DISTRO_NAME = "ST OpenSTLinux (A Yocto Project Based Distro)"
-DISTRO_VERSION = "3.1.11-${@bb.utils.contains('OPENSTLINUX_RELEASE', 'snapshot', 'snapshot-${DATE}', '${OPENSTLINUX_RELEASE}', d)}"
-# Don't include the DATE variable in the sstate package signatures
-DISTRO_VERSION[vardepsexclude] = "DATE"
-DISTRO_CODENAME = "dunfell"
-
-# Warning: SDK_VENDOR does not contains a valid OS/ARCH name like : linux, arm
-SDK_VENDOR = "-ostl_sdk"
-SDK_VERSION := "${@'${DISTRO_VERSION}'.replace('snapshot-${DATE}','snapshot')}"
-# Don't include the DATE variable in the sstate package signatures
-SDK_VERSION[vardepsexclude] = "DATE"
-
-MAINTAINER = "Christophe Priouzeau <christophe.priouzeau@st.com>"
-
-# Warning: TARGET_VENDOR does not contains a valid OS/ARCH name like : linux, arm
-TARGET_VENDOR = "-ostl"
-
-# Append distro name to each image name
-IMAGE_BASENAME_append = "-${DISTRO}"
-
-# Add image name for generated SDK and set default SDK install folder
-SDK_NAME = "${IMAGE_LINK_NAME}-${SDK_ARCH}"
-SDKPATH = "/opt/st/${MACHINE}/${SDK_VERSION}"
-# Don't include the DATE variable in the sstate package signatures
-SDKPATH[vardepsexclude] = "DATE"
-
-LOCALCONF_VERSION = "1"
-LAYER_CONF_VERSION ?= "7"
-
-IMAGE_LINGUAS = "en-us en-gb"
 
 # =========================================================================
 # DISTRO features
@@ -123,6 +96,8 @@ VIRTUAL-RUNTIME_initscripts = "systemd-compat-units"
 # =========================================================================
 # IMAGE addons
 # =========================================================================
+IMAGE_LINGUAS = "en-us en-gb"
+
 LICENSE_FLAGS_WHITELIST += " non-commercial commercial"
 
 # X11 addons
