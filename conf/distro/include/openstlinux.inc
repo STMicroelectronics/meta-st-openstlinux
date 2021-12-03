@@ -43,9 +43,9 @@ IMAGE_BASENAME_append = "-${DISTRO}"
 
 # Add image name for generated SDK and set default SDK install folder
 SDK_NAME = "${IMAGE_LINK_NAME}-${SDK_ARCH}"
-SDKPATH = "/opt/st/${MACHINE}/${SDK_VERSION}"
+SDKPATHINSTALL = "/opt/st/${MACHINE}/${SDK_VERSION}"
 # Don't include the DATE variable in the sstate package signatures
-SDKPATH[vardepsexclude] = "DATE"
+SDKPATHINSTALL[vardepsexclude] = "DATE"
 
 LOCALCONF_VERSION = "1"
 LAYER_CONF_VERSION ?= "7"
