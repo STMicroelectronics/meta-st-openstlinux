@@ -14,7 +14,7 @@ resize_run() {
         then
             for j in 0 1;
             do
-                for i in 3 4 5 6 7 8 9 10;
+                for i in 3 4 5 6 7 8 9 10 11 12 13 14 15 16;
                 do
                     DEVICE="/dev/mmcblk"$j"p"$i
                     if [ -e $DEVICE ]; then
