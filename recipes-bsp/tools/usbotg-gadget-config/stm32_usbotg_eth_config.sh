@@ -63,7 +63,7 @@ do_start() {
     mkdir -p "${d}/configs/${c}"
     mkdir -p "${d}/configs/${c}/strings/0x409"
     echo "Config 1: RNDIS" > "${d}/configs/${c}/strings/0x409/configuration"
-    echo 250 > "${d}/configs/${c}/MaxPower"
+    echo 0 > "${d}/configs/${c}/MaxPower"
     echo 0xC0 > "${d}/configs/${c}/bmAttributes" # self powered device
 
     # Windows extension to force RNDIS config
