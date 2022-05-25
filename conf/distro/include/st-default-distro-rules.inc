@@ -53,10 +53,10 @@ BUILDCFG_VARS += "PREFERRED_PROVIDER_virtual/kernel"
 BUILDCFG_VARS += "PREFERRED_VERSION_${PREFERRED_PROVIDER_virtual/kernel}"
 
 #--------------------------
-# Writes build information to target filesystem on /etc/build
+# Configure build info file for rootfs availability
 #
-IMAGE_BUILDINFO_VARS = "${BUILDCFG_VARS}"
-INHERIT += "image-buildinfo"
-
-# FORCE to use libgpiod 1.6.2
-PREFERRED_VERSION_libgpiod = "1.6.2"
+DISTRO_EXTRA_RDEPENDS_append = " build-info-openstlinux "
+# Set IMAGE_BUILDINFO_FILE to configure the expected file name
+IMAGE_BUILDINFO_FILE ?= "${sysconfdir}/build"
+# Avoid conflict with image-buildinfo class that may feed same file on rootfs
+INHERIT_remove = "${@bb.utils.contains('DISTRO_EXTRA_RDEPENDS', 'build-info-openstlinux', 'image-buildinfo', '', d)}"
