@@ -1,0 +1,1 @@
+SUBSYSTEMS=="drm", ACTION=="change", RUN+="/usr/bin/pulseaudio_hdmi_switch.sh

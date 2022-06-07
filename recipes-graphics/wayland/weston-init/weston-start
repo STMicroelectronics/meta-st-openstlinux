@@ -1,99 +1,41 @@
 #!/bin/sh
-# Copyright (C) 2016 O.S. Systems Software LTDA.
-# Copyright (C) 2016 Freescale Semiconductor
-
-export PATH="/sbin:/usr/sbin:/bin:/usr/bin"
-
-usage() {
-    cat <<EOF
-    $0 [<openvt arguments>] [-- <weston options>]
-EOF
-}
-
-## Module support
-modules_dir=@DATADIR@/weston-start
-start_application_dir=@DATADIR@/weston-start-at-startup
-start_local_application_dir=/usr/local/weston-start-at-startup
-
-
-# Add weston extra argument
-add_weston_argument() {
-	weston_args="$weston_args $1"
-}
-
-# Add openvt extra argument
-add_openvt_argument() {
-	openvt_args="$openvt_args $1"
-}
-
-if [ -n "$WAYLAND_DISPLAY" ]; then
-	echo "ERROR: A Wayland compositor is already running, nested Weston instance is not supported yet."
-	exit 1
-fi
-
-if [ -n "$WESTON_USER" ]; then
-	if [ -z "$WESTON_TTY" ]; then
-		echo "ERROR: If you have WESTON_USER variable set, you also need WESTON_TTY."
-		exit 1
-	fi
-	weston_args_user="-u $WESTON_USER -t $WESTON_TTY"
-fi
-
-if [ -n "$DISPLAY" ]; then
-	launcher="weston"
-else
-	launcher="weston-launch $weston_args_user --"
-fi
-
-openvt_args="-s"
-while [ -n "$1" ]; do
-	if [ "$1" = "--" ]; then
-		shift
-		break
-	fi
-	openvt_args="$openvt_args $1"
-	shift
-done
 
 weston_args=$*
 
-# Load and run modules
-if [ -d "$modules_dir" ]; then
-	for m in "$modules_dir"/*; do
-		# Skip backup files
-		if [ "`echo $m | sed -e 's/\~$//'`" != "$m" ]; then
-			continue
-		fi
-
-		# process module
-		. $m
-	done
+if [ -z "$WESTON_USER" ]; then
+    WESTON_USER=weston
+fi
+if [ "$USER" != "$WESTON_USER" ]; then
+    weston_args_user="-u $WESTON_USER"
 fi
 
-if test -z "$XDG_RUNTIME_DIR"; then
-	export XDG_RUNTIME_DIR=/run/user/`id -u ${WESTON_USER}`
-	if ! test -d "$XDG_RUNTIME_DIR"; then
-		mkdir --parents $XDG_RUNTIME_DIR
-		chmod 0700 $XDG_RUNTIME_DIR
-	fi
-	if [ -n "$WESTON_USER" ]
-	then
-		chown $WESTON_USER:$WESTON_USER $XDG_RUNTIME_DIR
-	fi
+
+# for associated service: pulseaudio
+if [ ! -d "/var/run/pulse" ]; then
+    su  -c "mkdir -p /var/run/pulse"
+    su -c "chown -R weston.weston /var/run/pulse"
 fi
 
-# Load and run application at startup
-if [ -d "$start_application_dir" ]; then
-    for m in "$start_application_dir"/*; do
-        (sleep 5 && $m)&
-    done
-fi
-if [ -d "$start_local_application_dir" ]; then
-    for m in "$start_local_application_dir"/*; do
-        (sleep 5 && $m)&
-    done
-fi
+## Module support
+start_application_dir=/usr/share/weston-start-at-startup
+start_local_application_dir=/usr/local/weston-start-at-startup
 
-export WL_EGL_GBM_FENCE=0
-#exec openvt $openvt_args -- $launcher $weston_args --log=@LOCALSTATEDIR@/log/weston.log
-exec /usr/bin/weston --log=/var/log/weston.log  $weston_args
+systemctl --user restart pulseaudio
+
+if [ "$USER" == "$WESTON_USER" ]; then
+    # Load and run application at startup
+    if [ -d "$start_application_dir" ]; then
+        for m in "$start_application_dir"/*; do
+            echo "($m)"
+            (sleep 5 && $m)&
+        done
+    fi
+    if [ -d "$start_local_application_dir" ]; then
+        for m in "$start_local_application_dir"/*; do
+            echo "($m)"
+            (sleep 5  && $m)&
+        done
+    fi
+fi
+exec /usr/bin/weston-launch $weston_args_user -- $weston_args
+

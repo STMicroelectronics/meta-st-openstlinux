@@ -1,0 +1,49 @@
+From 00384d5c39473f95868b1173aee81b763794de54 Mon Sep 17 00:00:00 2001
+From: Christophe Priouzeau <christophe.priouzeau@foss.st.com>
+Date: Tue, 26 Apr 2022 09:59:10 +0200
+Subject: [PATCH 3/4] Disable gles3
+
+Signed-off-by: Christophe Priouzeau <christophe.priouzeau@foss.st.com>
+---
+ libweston/renderer-gl/gl-renderer.c                         | 6 ++++++
+ .../renderer-gl/gl-shader-config-color-transformation.c     | 5 +++++
+ 2 files changed, 11 insertions(+)
+
+diff --git a/libweston/renderer-gl/gl-renderer.c b/libweston/renderer-gl/gl-renderer.c
+index a5f5eae..2f7941f 100644
+--- a/libweston/renderer-gl/gl-renderer.c
++++ b/libweston/renderer-gl/gl-renderer.c
+@@ -29,7 +29,13 @@
+ 
+ #include <GLES2/gl2.h>
+ #include <GLES2/gl2ext.h>
++#if 0
+ #include <GLES3/gl3.h>
++#else
++#define GL_RGBA16F                        0x881A
++#define GL_RGB10_A2                       0x8059
++#define GL_HALF_FLOAT                     0x140B
++#endif
+ 
+ #include <stdbool.h>
+ #include <stdint.h>
+diff --git a/libweston/renderer-gl/gl-shader-config-color-transformation.c b/libweston/renderer-gl/gl-shader-config-color-transformation.c
+index 21a4565..d5f2491 100644
+--- a/libweston/renderer-gl/gl-shader-config-color-transformation.c
++++ b/libweston/renderer-gl/gl-shader-config-color-transformation.c
+@@ -25,7 +25,12 @@
+ 
+ #include "config.h"
+ 
++#if 0
+ #include <GLES3/gl3.h>
++#else
++#include <GLES2/gl2.h>
++#define GL_R32F                           0x822E
++#endif
+ #include <GLES2/gl2ext.h>
+ 
+ #include <assert.h>
+-- 
+2.25.1
+

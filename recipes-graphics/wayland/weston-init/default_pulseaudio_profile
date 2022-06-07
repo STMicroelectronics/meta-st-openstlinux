@@ -1,0 +1,3 @@
+DEFAULT_PULSE_AUDIO_LOCAL_PROFILE=output:analog-stereo
+DEFAULT_PULSE_AUDIO_HDMI_PROFILE=output:hdmi-stereo
+

@@ -1,0 +1,56 @@
+From 45a8c37e9dbff9207d58846df048406bf54ce30b Mon Sep 17 00:00:00 2001
+From: Christophe Priouzeau <christophe.priouzeau@foss.st.com>
+Date: Fri, 6 May 2022 11:41:10 +0200
+Subject: [PATCH 4/4] Revert gl-renderer: Add EGL_IMAGE_PRESERVED_KHR to our
+ attributes
+
+Signed-off-by: Christophe Priouzeau <christophe.priouzeau@foss.st.com>
+---
+ libweston/renderer-gl/gl-renderer.c | 10 +++-------
+ 1 file changed, 3 insertions(+), 7 deletions(-)
+
+diff --git a/libweston/renderer-gl/gl-renderer.c b/libweston/renderer-gl/gl-renderer.c
+index 2f7941f..2ab707c 100644
+--- a/libweston/renderer-gl/gl-renderer.c
++++ b/libweston/renderer-gl/gl-renderer.c
+@@ -2152,7 +2152,7 @@ gl_renderer_attach_egl(struct weston_surface *es, struct weston_buffer *buffer,
+ 	struct weston_compositor *ec = es->compositor;
+ 	struct gl_renderer *gr = get_renderer(ec);
+ 	struct gl_surface_state *gs = get_surface_state(es);
+-	EGLint attribs[5];
++	EGLint attribs[3];
+ 	GLenum target;
+ 	int i, num_planes;
+ 
+@@ -2205,9 +2205,7 @@ gl_renderer_attach_egl(struct weston_surface *es, struct weston_buffer *buffer,
+ 	for (i = 0; i < num_planes; i++) {
+ 		attribs[0] = EGL_WAYLAND_PLANE_WL;
+ 		attribs[1] = i;
+-		attribs[2] = EGL_IMAGE_PRESERVED_KHR;
+-		attribs[3] = EGL_TRUE;
+-		attribs[4] = EGL_NONE;
++		attribs[2] = EGL_NONE;
+ 
+ 		gs->images[i] = egl_image_create(gr,
+ 						 EGL_WAYLAND_BUFFER_WL,
+@@ -2242,7 +2240,7 @@ import_simple_dmabuf(struct gl_renderer *gr,
+                      struct dmabuf_attributes *attributes)
+ {
+ 	struct egl_image *image;
+-	EGLint attribs[52];
++	EGLint attribs[50];
+ 	int atti = 0;
+ 	bool has_modifier;
+ 
+@@ -2260,8 +2258,6 @@ import_simple_dmabuf(struct gl_renderer *gr,
+ 	attribs[atti++] = attributes->height;
+ 	attribs[atti++] = EGL_LINUX_DRM_FOURCC_EXT;
+ 	attribs[atti++] = attributes->format;
+-	attribs[atti++] = EGL_IMAGE_PRESERVED_KHR;
+-	attribs[atti++] = EGL_TRUE;
+ 
+ 	if (attributes->modifier[0] != DRM_FORMAT_MOD_INVALID) {
+ 		if (!gr->has_dmabuf_import_modifiers)
+-- 
+2.25.1
+
