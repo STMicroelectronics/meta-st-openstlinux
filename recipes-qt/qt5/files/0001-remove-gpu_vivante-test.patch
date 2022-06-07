@@ -1,0 +1,66 @@
+From beb3456d5c78db39ffa0b5530ab25d901a8f70da Mon Sep 17 00:00:00 2001
+From: Christophe Priouzeau <christophe.priouzeau@foss.st.com>
+Date: Thu, 28 Apr 2022 09:34:30 +0200
+Subject: [PATCH] remove gpu_vivante test
+
+Signed-off-by: Christophe Priouzeau <christophe.priouzeau@foss.st.com>
+---
+ config.tests/gpu_vivante/gpu_vivante.pro |  1 -
+ config.tests/gpu_vivante/main.cpp        | 37 ------------------------
+ 2 files changed, 38 deletions(-)
+ delete mode 100644 config.tests/gpu_vivante/gpu_vivante.pro
+ delete mode 100644 config.tests/gpu_vivante/main.cpp
+
+diff --git a/config.tests/gpu_vivante/gpu_vivante.pro b/config.tests/gpu_vivante/gpu_vivante.pro
+deleted file mode 100644
+index 28dcadcbf..000000000
+--- a/config.tests/gpu_vivante/gpu_vivante.pro
++++ /dev/null
+@@ -1 +0,0 @@
+-SOURCES += main.cpp
+diff --git a/config.tests/gpu_vivante/main.cpp b/config.tests/gpu_vivante/main.cpp
+deleted file mode 100644
+index 589fca084..000000000
+--- a/config.tests/gpu_vivante/main.cpp
++++ /dev/null
+@@ -1,37 +0,0 @@
+-/****************************************************************************
+-**
+-** Copyright (C) 2016 The Qt Company Ltd.
+-** Contact: https://www.qt.io/licensing/
+-**
+-** This file is part of the Qt Toolkit
+-**
+-** $QT_BEGIN_LICENSE:GPL-EXCEPT$
+-** Commercial License Usage
+-** Licensees holding valid commercial Qt licenses may use this file in
+-** accordance with the commercial license agreement provided with the
+-** Software or, alternatively, in accordance with the terms contained in
+-** a written agreement between you and The Qt Company. For licensing terms
+-** and conditions see https://www.qt.io/terms-conditions. For further
+-** information use the contact form at https://www.qt.io/contact-us.
+-**
+-** GNU General Public License Usage
+-** Alternatively, this file may be used under the terms of the GNU
+-** General Public License version 3 as published by the Free Software
+-** Foundation with exceptions as appearing in the file LICENSE.GPL3-EXCEPT
+-** included in the packaging of this file. Please review the following
+-** information to ensure the GNU General Public License requirements will
+-** be met: https://www.gnu.org/licenses/gpl-3.0.html.
+-**
+-** $QT_END_LICENSE$
+-**
+-****************************************************************************/
+-
+-#include <GLES2/gl2.h>
+-#include <GLES2/gl2ext.h>
+-
+-const int format = GL_VIV_YV12;
+-
+-int main(int argc, char** argv)
+-{
+-    return 0;
+-}
+-- 
+2.25.1
+
