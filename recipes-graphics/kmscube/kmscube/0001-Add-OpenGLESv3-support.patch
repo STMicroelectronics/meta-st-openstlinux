@@ -1,0 +1,222 @@
+From 0b38add393d250e729e3e26b80f262903853df6e Mon Sep 17 00:00:00 2001
+From: Pierre-Yves MORDRET <pierre-yves.mordret@st.som>
+Date: Wed, 18 May 2022 15:26:20 +0200
+Subject: [PATCH] Add OpenGLESv3 support
+
+Test whether OpenGLESv3 is present before compiling tool
+
+Signed-off-by: Pierre-Yves MORDRET <pierre-yves.mordret@st.som>
+---
+ drm-atomic.c |  4 ++++
+ drm-legacy.c |  4 ++++
+ kmscube.c    | 17 +++++++++++++++++
+ meson.build  | 27 +++++++++++++++++----------
+ 4 files changed, 42 insertions(+), 10 deletions(-)
+
+diff --git a/drm-atomic.c b/drm-atomic.c
+index 16c4d08..fd3dea1 100644
+--- a/drm-atomic.c
++++ b/drm-atomic.c
+@@ -319,7 +319,9 @@ static int atomic_run(const struct gbm *gbm, const struct egl *egl)
+ 		flags &= ~(DRM_MODE_ATOMIC_ALLOW_MODESET);
+ 	}
+ 
++#ifdef HAVE_GLESV3
+ 	finish_perfcntrs();
++#endif
+ 
+ 	cur_time = get_time_ns();
+ 	double elapsed_time = cur_time - start_time;
+@@ -328,7 +330,9 @@ static int atomic_run(const struct gbm *gbm, const struct egl *egl)
+ 	printf("Rendered %u frames in %f sec (%f fps)\n",
+ 		frames, secs, (double)frames/secs);
+ 
++#ifdef HAVE_GLESV3
+ 	dump_perfcntrs(frames, elapsed_time);
++#endif
+ 
+ 	return ret;
+ }
+diff --git a/drm-legacy.c b/drm-legacy.c
+index 8f773e8..c8c4635 100644
+--- a/drm-legacy.c
++++ b/drm-legacy.c
+@@ -155,7 +155,9 @@ static int legacy_run(const struct gbm *gbm, const struct egl *egl)
+ 		bo = next_bo;
+ 	}
+ 
++#ifdef HAVE_GLESV3
+ 	finish_perfcntrs();
++#endif
+ 
+ 	cur_time = get_time_ns();
+ 	double elapsed_time = cur_time - start_time;
+@@ -164,7 +166,9 @@ static int legacy_run(const struct gbm *gbm, const struct egl *egl)
+ 	printf("Rendered %u frames in %f sec (%f fps)\n",
+ 		frames, secs, (double)frames/secs);
+ 
++#ifdef HAVE_GLESV3
+ 	dump_perfcntrs(frames, elapsed_time);
++#endif
+ 
+ 	return 0;
+ }
+diff --git a/kmscube.c b/kmscube.c
+index 7f2ac26..837ad7c 100644
+--- a/kmscube.c
++++ b/kmscube.c
+@@ -41,7 +41,11 @@ static const struct egl *egl;
+ static const struct gbm *gbm;
+ static const struct drm *drm;
+ 
++#ifdef HAVE_GLESV3
+ static const char *shortopts = "Ac:D:f:M:m:p:S:s:V:v:x";
++#else
++static const char *shortopts = "Ac:D:f:M:m:p:S:s:V:v:x";
++#endif
+ 
+ static const struct option longopts[] = {
+ 	{"atomic", no_argument,       0, 'A'},
+@@ -50,7 +54,10 @@ static const struct option longopts[] = {
+ 	{"format", required_argument, 0, 'f'},
+ 	{"mode",   required_argument, 0, 'M'},
+ 	{"modifier", required_argument, 0, 'm'},
++#ifdef HAVE_GLESV3
+ 	{"perfcntr", required_argument, 0, 'p'},
++	{"shadertoy", required_argument, 0, 'S'},
++#endif
+ 	{"samples",  required_argument, 0, 's'},
+ 	{"video",  required_argument, 0, 'V'},
+ 	{"vmode",  required_argument, 0, 'v'},
+@@ -73,10 +80,12 @@ static void usage(const char *name)
+ 			"        nv12-2img -  yuv textured (color conversion in shader)\n"
+ 			"        nv12-1img -  yuv textured (single nv12 texture)\n"
+ 			"    -m, --modifier=MODIFIER  hardcode the selected modifier\n"
++#if HAVE_GLESV3
+ 			"    -p, --perfcntr=LIST      sample specified performance counters using\n"
+ 			"                             the AMD_performance_monitor extension (comma\n"
+ 			"                             separated list, shadertoy mode only)\n"
+ 			"    -S, --shadertoy=FILE     use specified shadertoy shader\n"
++#endif
+ 			"    -s, --samples=N          use MSAA\n"
+ 			"    -V, --video=FILE         video textured cube (comma separated list)\n"
+ 			"    -v, --vmode=VMODE        specify the video mode in the format\n"
+@@ -90,8 +99,10 @@ int main(int argc, char *argv[])
+ {
+ 	const char *device = NULL;
+ 	const char *video = NULL;
++#ifdef HAVE_GST
+ 	const char *shadertoy = NULL;
+ 	const char *perfcntr = NULL;
++#endif
+ 	char mode_str[DRM_DISPLAY_MODE_LEN] = "";
+ 	char *p;
+ 	enum mode mode = SMOOTH;
+@@ -154,6 +165,7 @@ int main(int argc, char *argv[])
+ 		case 'm':
+ 			modifier = strtoull(optarg, NULL, 0);
+ 			break;
++#ifdef HAVE_GLESV3
+ 		case 'p':
+ 			perfcntr = optarg;
+ 			break;
+@@ -161,6 +173,7 @@ int main(int argc, char *argv[])
+ 			mode = SHADERTOY;
+ 			shadertoy = optarg;
+ 			break;
++#endif
+ 		case 's':
+ 			samples = strtoul(optarg, NULL, 0);
+ 			break;
+@@ -210,8 +223,10 @@ int main(int argc, char *argv[])
+ 		egl = init_cube_smooth(gbm, samples);
+ 	else if (mode == VIDEO)
+ 		egl = init_cube_video(gbm, video, samples);
++#if HAVE_GLESV3
+ 	else if (mode == SHADERTOY)
+ 		egl = init_cube_shadertoy(gbm, shadertoy, samples);
++#endif
+ 	else
+ 		egl = init_cube_tex(gbm, mode, samples);
+ 
+@@ -220,6 +235,7 @@ int main(int argc, char *argv[])
+ 		return -1;
+ 	}
+ 
++#ifdef HAVE_GLESV3
+ 	if (perfcntr) {
+ 		if (mode != SHADERTOY) {
+ 			printf("performance counters only supported in shadertoy mode\n");
+@@ -227,6 +243,7 @@ int main(int argc, char *argv[])
+ 		}
+ 		init_perfcntrs(egl, perfcntr);
+ 	}
++#endif
+ 
+ 	/* clear the color buffer */
+ 	glClearColor(0.5, 0.5, 0.5, 1.0);
+diff --git a/meson.build b/meson.build
+index 4fca2f2..bd69109 100644
+--- a/meson.build
++++ b/meson.build
+@@ -35,7 +35,6 @@ endif
+ 
+ sources = files(
+   'common.c',
+-  'cube-shadertoy.c',
+   'cube-smooth.c',
+   'cube-tex.c',
+   'drm-atomic.c',
+@@ -45,7 +44,6 @@ sources = files(
+   'frame-512x512-NV12.c',
+   'frame-512x512-RGBA.c',
+   'kmscube.c',
+-  'perfcntrs.c',
+ )
+ 
+ cc = meson.get_compiler('c')
+@@ -55,12 +53,20 @@ dep_libdrm = dependency('libdrm', version : '>=2.4.71')
+ dep_gbm = dependency('gbm', version : '>=13.0')
+ dep_egl = dependency('egl')
+ dep_gles2 = dependency('glesv2')
++dep_gles3 = dependency('glesv3', required : false)
+ dep_libpng = dependency('libpng', required : false)
+ 
+ if dep_libpng.found()
+   add_project_arguments('-DHAVE_LIBPNG', language : 'c')
+ endif
+ 
++if dep_gles3.found()
++  message('OpenGLESv3 present')
++  add_project_arguments('-DHAVE_GLESV3', language : 'c')
++  sources += files( 'cube-shadertoy.c', 'perfcntrs.c')
++else
++  message('No OpenGLESv3 support')
++endif
+ 
+ dep_common = [dep_m, dep_threads, dep_libdrm, dep_gbm, dep_egl, dep_gles2, dep_libpng]
+ 
+@@ -95,11 +101,12 @@ endif
+ 
+ executable('kmscube', sources, dependencies : dep_common, install : true)
+ 
+-
+-executable('texturator', files(
+-	'common.c',
+-	'drm-legacy.c',
+-	'drm-common.c',
+-	'perfcntrs.c',  # not used, but required to link
+-	'texturator.c',
+-), dependencies : dep_common, install : true)
++if dep_gles3.found()
++	executable('texturator', files(
++		'common.c',
++		'drm-legacy.c',
++		'drm-common.c',
++		'perfcntrs.c',  # not used, but required to link
++		'texturator.c',
++	), dependencies : [ dep_common, dep_gles3 ], install : true)
++endif
+-- 
+2.17.1
+
