@@ -20,13 +20,15 @@ ORDER = [
 
 CHARTS = {
     'usage': {
-        'options': [None, 'Usage', 'percent', 'usage', None, 'line'],
+        'options': [None, 'Usage', 'percent', 'usage', 'gpu.usage', 'line'],
         'lines': [
-            ['usage', None, 'absolute', 1, 100]
+            ['usage', 'Usage', 'absolute', 0, 100]
         ]
     },
 }
-
+_DATA_TEMPLATE = {
+    'usage': 0,
+}
 
 def getpipeoutput(cmds):
     p = Popen(cmds[0], stdout = PIPE, shell = True)
@@ -53,24 +55,35 @@ class Service(SimpleService):
         return True
 
     def _get_data(self):
-        data = 0.0
-        result = getpipeoutput(["cat /sys/kernel/debug/gc/idle"]).split('\n')
-        for line in result:
-            parts = line.split(' ')
-            subline = " ".join(parts[1:]).replace(" ", "")
-            subline = re.sub("ns", "", subline, flags=re.UNICODE)
-            subline = re.sub(",", "", subline, flags=re.UNICODE)
-            if parts[0] == "On:":
-                on = int(subline)
-            if parts[0] == "Off:":
-                off = int(subline)
-            if parts[0] == "Idle:":
-                idle = int(subline)
-            if parts[0] == "Suspend:":
-                suspend = int(subline)
-        data = float( (on - self.sysfs_on) * 100 / (on + off + idle + suspend - self.sysfs_start) )
+        on = 0
+        off = 0
+        idle = 0
+        suspend = 0
+        try:
+            data = dict(_DATA_TEMPLATE)
 
-        self.sysfs_on = on
-        self.sysfs_start = on + off + idle + suspend
-        return { 'usage': int(data * 100) }
+            percent_data = 0.0
+            result = getpipeoutput(["cat /sys/kernel/debug/gc/idle"]).split('\n')
+            for line in result:
+                parts = line.split(' ')
+                subline = " ".join(parts[1:]).replace(" ", "")
+                subline = re.sub("ns", "", subline, flags=re.UNICODE)
+                subline = re.sub(",", "", subline, flags=re.UNICODE)
+                if parts[0] == "On:":
+                    on = int(subline)
+                if parts[0] == "Off:":
+                    off = int(subline)
+                if parts[0] == "Idle:":
+                    idle = int(subline)
+                if parts[0] == "Suspend:":
+                    suspend = int(subline)
+            percent_data = float( (on - self.sysfs_on) * 100 / (on + off + idle + suspend - self.sysfs_start) )
+
+            self.sysfs_on = on
+            self.sysfs_start = on + off + idle + suspend
+            data['usage'] = percent_data * 100
+
+            return data
+        except (ValueError, AttributeError):
+            return None
 
