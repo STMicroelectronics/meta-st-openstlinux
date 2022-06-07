@@ -1,7 +1,7 @@
-From 4f4c843ab7f9853364179b6606289e8dabd0d470 Mon Sep 17 00:00:00 2001
+From e14996eb9c0332aeda6390db207380dd0267e7c2 Mon Sep 17 00:00:00 2001
 From: Hugues Fruchet <hugues.fruchet@st.com>
 Date: Wed, 25 Sep 2019 16:01:49 +0200
-Subject: [PATCH 14/14] waylandsink: silently drop erroneous frame
+Subject: [PATCH 13/14] waylandsink: silently drop erroneous frame
 
 Do not stop playback when erroneous frame is received at show_frame():
 - test file descriptors validity, to not let throw erroneous
@@ -17,10 +17,10 @@ Signed-off-by: Hugues Fruchet <hugues.fruchet@st.com>
  3 files changed, 27 insertions(+), 3 deletions(-)
 
 diff --git a/ext/wayland/gstwaylandsink.c b/ext/wayland/gstwaylandsink.c
-index d53f8f7..4eaaefc 100644
+index e4952cb..cf355d3 100644
 --- a/ext/wayland/gstwaylandsink.c
 +++ b/ext/wayland/gstwaylandsink.c
-@@ -1003,9 +1003,9 @@ activate_failed:
+@@ -1025,9 +1025,9 @@ activate_failed:
    }
  src_map_failed:
    {
@@ -66,10 +66,10 @@ index 96487d1..36815b5 100644
            stride, 0, 0);
      } else {
 diff --git a/ext/wayland/wlshmallocator.c b/ext/wayland/wlshmallocator.c
-index 8207113..2da0596 100644
+index 0a82a35..8659c2f 100644
 --- a/ext/wayland/wlshmallocator.c
 +++ b/ext/wayland/wlshmallocator.c
-@@ -197,12 +197,22 @@ gst_wl_shm_memory_construct_wl_buffer (GstMemory * mem, GstWlDisplay * display,
+@@ -212,12 +212,22 @@ gst_wl_shm_memory_construct_wl_buffer (GstMemory * mem, GstWlDisplay * display,
    enum wl_shm_format format;
    struct wl_shm_pool *wl_pool;
    struct wl_buffer *wbuffer;
@@ -93,5 +93,5 @@ index 8207113..2da0596 100644
    height = GST_VIDEO_INFO_HEIGHT (info);
    stride = GST_VIDEO_INFO_PLANE_STRIDE (info, 0);
 -- 
-2.7.4
+2.25.1
 

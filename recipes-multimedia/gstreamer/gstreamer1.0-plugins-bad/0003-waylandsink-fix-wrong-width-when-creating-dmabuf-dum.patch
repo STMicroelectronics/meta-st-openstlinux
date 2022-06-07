@@ -1,7 +1,7 @@
-From 2d79383ba78e55f24110c567a50a1bceabd07633 Mon Sep 17 00:00:00 2001
+From 754625fd6a60fbc529416ba88ff06f542523937a Mon Sep 17 00:00:00 2001
 From: Hugues Fruchet <hugues.fruchet@st.com>
 Date: Thu, 6 Dec 2018 18:08:15 +0100
-Subject: [PATCH 04/14] waylandsink: fix wrong width when creating dmabuf dumb
+Subject: [PATCH 03/14] waylandsink: fix wrong width when creating dmabuf dumb
  buffers
 
 Unaligned width is given in argument of create_dumb(), fix this.
@@ -30,5 +30,5 @@ index 9b20884..6e98143 100644
  
        return NULL;
 -- 
-2.7.4
+2.25.1
 

@@ -1,7 +1,7 @@
-From 11fd91354c5c76b3424b1ff6c204775def3ddda7 Mon Sep 17 00:00:00 2001
+From 5cf87e34ad0aa98ceb004f68ea72498f490e6858 Mon Sep 17 00:00:00 2001
 From: Hugues Fruchet <hugues.fruchet@st.com>
 Date: Wed, 12 Dec 2018 12:04:03 +0100
-Subject: [PATCH 09/14] waylandsink: HACK: disable frame dropping while redraw
+Subject: [PATCH 08/14] waylandsink: HACK: disable frame dropping while redraw
  is pending
 
 This workaround is needed to reach 30fps video playback.
@@ -24,11 +24,11 @@ Signed-off-by: Hugues Fruchet <hugues.fruchet@st.com>
  1 file changed, 19 insertions(+)
 
 diff --git a/ext/wayland/gstwaylandsink.c b/ext/wayland/gstwaylandsink.c
-index a6bd697..739dd44 100644
+index 40edff7..b97570e 100644
 --- a/ext/wayland/gstwaylandsink.c
 +++ b/ext/wayland/gstwaylandsink.c
-@@ -754,9 +754,28 @@ render_last_buffer (GstWaylandSink * sink, gboolean redraw)
-   wlbuffer = gst_buffer_get_wl_buffer (sink->last_buffer);
+@@ -774,10 +774,29 @@ render_last_buffer (GstWaylandSink * sink, gboolean redraw)
+   wlbuffer = gst_buffer_get_wl_buffer (sink->display, sink->last_buffer);
    surface = gst_wl_window_get_wl_surface (sink->window);
  
 +  /*
@@ -51,11 +51,12 @@ index a6bd697..739dd44 100644
 +#if 0
    sink->redraw_pending = TRUE;
    callback = wl_surface_frame (surface);
+   sink->callback = callback;
    wl_callback_add_listener (callback, &frame_callback_listener, sink);
 +#endif
  
    if (G_UNLIKELY (sink->video_info_changed && !redraw)) {
      info = &sink->video_info;
 -- 
-2.7.4
+2.25.1
 

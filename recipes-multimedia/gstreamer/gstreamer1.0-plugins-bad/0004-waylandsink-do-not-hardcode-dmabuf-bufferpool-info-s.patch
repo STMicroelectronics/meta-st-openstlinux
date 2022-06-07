@@ -1,7 +1,7 @@
-From 42a69fd2a4916a6a3f3130c36bda88d8d41c8741 Mon Sep 17 00:00:00 2001
+From f1e46e02aeac410a4bf1faae5a7dac62c0dfbe1d Mon Sep 17 00:00:00 2001
 From: Hugues Fruchet <hugues.fruchet@st.com>
 Date: Wed, 12 Dec 2018 11:39:33 +0100
-Subject: [PATCH 05/14] waylandsink: do not hardcode dmabuf bufferpool info
+Subject: [PATCH 04/14] waylandsink: do not hardcode dmabuf bufferpool info
  size
 
 Read pool config to get the maximum number of buffers
@@ -40,5 +40,5 @@ index 6e98143..1ba1f85 100644
    /* allocate shm pool */
    snprintf (filename, 1024, "%s/%s-%d-%s", g_get_user_runtime_dir (),
 -- 
-2.7.4
+2.25.1
 

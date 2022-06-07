@@ -1,4 +1,4 @@
-FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}/:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}/:"
 
 PACKAGECONFIG ?= " \
     ${GSTREAMER_ORC} \
@@ -13,6 +13,7 @@ EXTRA_OEMESON += " \
     -Dv4l2-libv4l2=enabled \
     "
 
-do_configure_prepend() {
-    ${S}/autogen.sh --noconfigure
-}
+# remove qt5 for the moment
+PACKAGECONFIG:remove = " qt5"
+
+RDEPENDS:${PN}-soup += "libsoup-2.4"

@@ -1,7 +1,7 @@
-From 7c58cbf6292cc8a648fab7828bc53fb732da22fd Mon Sep 17 00:00:00 2001
+From a69cd4d027f3b86fd19a87d8139e08614587885c Mon Sep 17 00:00:00 2001
 From: Hugues Fruchet <hugues.fruchet@st.com>
 Date: Mon, 26 Nov 2018 17:38:13 +0100
-Subject: [PATCH 03/14] waylandsink: fix error when mmapping dmabuf buffers
+Subject: [PATCH 02/14] waylandsink: fix error when mmapping dmabuf buffers
 
 Linux Kernel 4.10 DRM/KMS requires DRM_RDWR rights
 in addition to DRM_CLOEXEC (see drmPrimeHandleToFD())
@@ -27,5 +27,5 @@ index 70e40b4..9b20884 100644
      struct drm_mode_destroy_dumb destroy_arg;
  
 -- 
-2.7.4
+2.25.1
 

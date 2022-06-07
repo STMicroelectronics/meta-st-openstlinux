@@ -1,0 +1,1570 @@
+From 33fa3db5ac3c5e3c82df9573dec334ef7bf77ee3 Mon Sep 17 00:00:00 2001
+From: George Kiagiadakis <george.kiagiadakis@collabora.com>
+Date: Fri, 17 Dec 2021 14:02:51 +0200
+Subject: [PATCH 16/16] Add new gtkwaylandsink element
+
+---
+ ext/gtk/gstgtkutils.c         |  71 +++++
+ ext/gtk/gstgtkutils.h         |  29 ++
+ ext/gtk/gstgtkwaylandsink.c   | 460 +++++++++++++++++++++++++++++
+ ext/gtk/gstgtkwaylandsink.h   |  51 ++++
+ ext/gtk/gstplugin.c           |  43 +++
+ ext/gtk/gtkgstbasewidget.c    | 542 ++++++++++++++++++++++++++++++++++
+ ext/gtk/gtkgstbasewidget.h    | 100 +++++++
+ ext/gtk/gtkgstwaylandwidget.c |  67 +++++
+ ext/gtk/gtkgstwaylandwidget.h |  68 +++++
+ ext/gtk/meson.build           |  22 ++
+ ext/meson.build               |   1 +
+ meson_options.txt             |   1 +
+ 12 files changed, 1455 insertions(+)
+ create mode 100644 ext/gtk/gstgtkutils.c
+ create mode 100644 ext/gtk/gstgtkutils.h
+ create mode 100644 ext/gtk/gstgtkwaylandsink.c
+ create mode 100644 ext/gtk/gstgtkwaylandsink.h
+ create mode 100644 ext/gtk/gstplugin.c
+ create mode 100644 ext/gtk/gtkgstbasewidget.c
+ create mode 100644 ext/gtk/gtkgstbasewidget.h
+ create mode 100644 ext/gtk/gtkgstwaylandwidget.c
+ create mode 100644 ext/gtk/gtkgstwaylandwidget.h
+ create mode 100644 ext/gtk/meson.build
+
+diff --git a/ext/gtk/gstgtkutils.c b/ext/gtk/gstgtkutils.c
+new file mode 100644
+index 0000000..c730f01
+--- /dev/null
++++ b/ext/gtk/gstgtkutils.c
+@@ -0,0 +1,71 @@
++/*
++ * GStreamer
++ * Copyright (C) 2015 Matthew Waters <matthew@centricular.com>
++ * Copyright (C) 2015 Thibault Saunier <tsaunier@gnome.org>
++ *
++ * This library is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU Library General Public
++ * License as published by the Free Software Foundation; either
++ * version 2 of the License, or (at your option) any later version.
++ *
++ * This library is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * Library General Public License for more details.
++ *
++ * You should have received a copy of the GNU Library General Public
++ * License along with this library; if not, write to the
++ * Free Software Foundation, Inc., 51 Franklin St, Fifth Floor,
++ * Boston, MA 02110-1301, USA.
++ */
++
++#include "gstgtkutils.h"
++
++struct invoke_context
++{
++  GThreadFunc func;
++  gpointer data;
++  GMutex lock;
++  GCond cond;
++  gboolean fired;
++
++  gpointer res;
++};
++
++static gboolean
++gst_gtk_invoke_func (struct invoke_context *info)
++{
++  g_mutex_lock (&info->lock);
++  info->res = info->func (info->data);
++  info->fired = TRUE;
++  g_cond_signal (&info->cond);
++  g_mutex_unlock (&info->lock);
++
++  return G_SOURCE_REMOVE;
++}
++
++gpointer
++gst_gtk_invoke_on_main (GThreadFunc func, gpointer data)
++{
++  GMainContext *main_context = g_main_context_default ();
++  struct invoke_context info;
++
++  g_mutex_init (&info.lock);
++  g_cond_init (&info.cond);
++  info.fired = FALSE;
++  info.func = func;
++  info.data = data;
++
++  g_main_context_invoke (main_context, (GSourceFunc) gst_gtk_invoke_func,
++      &info);
++
++  g_mutex_lock (&info.lock);
++  while (!info.fired)
++    g_cond_wait (&info.cond, &info.lock);
++  g_mutex_unlock (&info.lock);
++
++  g_mutex_clear (&info.lock);
++  g_cond_clear (&info.cond);
++
++  return info.res;
++}
+diff --git a/ext/gtk/gstgtkutils.h b/ext/gtk/gstgtkutils.h
+new file mode 100644
+index 0000000..7584ae2
+--- /dev/null
++++ b/ext/gtk/gstgtkutils.h
+@@ -0,0 +1,29 @@
++/*
++ * GStreamer
++ * Copyright (C) 2015 Matthew Waters <matthew@centricular.com>
++ * Copyright (C) 2015 Thibault Saunier <tsaunier@gnome.org>
++ *
++ * This library is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU Library General Public
++ * License as published by the Free Software Foundation; either
++ * version 2 of the License, or (at your option) any later version.
++ *
++ * This library is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * Library General Public License for more details.
++ *
++ * You should have received a copy of the GNU Library General Public
++ * License along with this library; if not, write to the
++ * Free Software Foundation, Inc., 51 Franklin St, Fifth Floor,
++ * Boston, MA 02110-1301, USA.
++ */
++
++#ifndef __GST_GTK_UTILS_H__
++#define __GST_GTK_UTILS_H__
++
++#include <glib.h>
++
++gpointer gst_gtk_invoke_on_main (GThreadFunc func, gpointer data);
++
++#endif /* __GST_GTK_UTILS_H__ */
+diff --git a/ext/gtk/gstgtkwaylandsink.c b/ext/gtk/gstgtkwaylandsink.c
+new file mode 100644
+index 0000000..c38ea51
+--- /dev/null
++++ b/ext/gtk/gstgtkwaylandsink.c
+@@ -0,0 +1,460 @@
++/*
++ * GStreamer
++ * Copyright (C) 2015 Matthew Waters <matthew@centricular.com>
++ * Copyright (C) 2021 Collabora Ltd.
++ *   @author George Kiagiadakis <george.kiagiadakis@collabora.com>
++ *
++ * This library is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU Library General Public
++ * License as published by the Free Software Foundation; either
++ * version 2 of the License, or (at your option) any later version.
++ *
++ * This library is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * Library General Public License for more details.
++ *
++ * You should have received a copy of the GNU Library General Public
++ * License along with this library; if not, write to the
++ * Free Software Foundation, Inc., 51 Franklin St, Fifth Floor,
++ * Boston, MA 02110-1301, USA.
++ */
++
++#ifdef HAVE_CONFIG_H
++#include "config.h"
++#endif
++
++#include "gstgtkwaylandsink.h"
++#include "gtkgstwaylandwidget.h"
++#include "gstgtkutils.h"
++
++#include <gst/video/video.h>
++#include <gst/wayland/wayland.h>
++
++#include <gdk/gdk.h>
++
++#ifdef GDK_WINDOWING_WAYLAND
++#include <gdk/gdkwayland.h>
++#else
++#error "Wayland is not supported in GTK+"
++#endif
++
++GST_DEBUG_CATEGORY (gst_debug_gtk_wayland_sink);
++#define GST_CAT_DEFAULT gst_debug_gtk_wayland_sink
++
++#ifndef GST_CAPS_FEATURE_MEMORY_DMABUF
++#define GST_CAPS_FEATURE_MEMORY_DMABUF "memory:DMABuf"
++#endif
++
++#define WL_VIDEO_FORMATS \
++  "{ BGRx, BGRA, RGBx, xBGR, xRGB, RGBA, ABGR, ARGB, RGB, BGR, " \
++  "RGB16, BGR16, YUY2, YVYU, UYVY, AYUV, NV12, NV21, NV16, NV61, " \
++  "YUV9, YVU9, Y41B, I420, YV12, Y42B, v308 }"
++
++static GstStaticPadTemplate sink_template = GST_STATIC_PAD_TEMPLATE ("sink",
++    GST_PAD_SINK,
++    GST_PAD_ALWAYS,
++    GST_STATIC_CAPS (GST_VIDEO_CAPS_MAKE (WL_VIDEO_FORMATS) ";"
++        GST_VIDEO_CAPS_MAKE_WITH_FEATURES (GST_CAPS_FEATURE_MEMORY_DMABUF,
++            WL_VIDEO_FORMATS))
++    );
++
++static void
++gst_gtk_wayland_sink_navigation_interface_init (GstNavigationInterface * iface);
++
++static GstPadProbeReturn sink_pad_probe_cb (GstPad * pad,
++    GstPadProbeInfo * info, gpointer user_data);
++
++enum
++{
++  PROP_0,
++  PROP_WIDGET,
++};
++
++#define gst_gtk_wayland_sink_parent_class parent_class
++G_DEFINE_TYPE_WITH_CODE (GstGtkWaylandSink, gst_gtk_wayland_sink, GST_TYPE_BIN,
++    G_IMPLEMENT_INTERFACE (GST_TYPE_NAVIGATION,
++        gst_gtk_wayland_sink_navigation_interface_init);
++    GST_DEBUG_CATEGORY_INIT (gst_debug_gtk_wayland_sink, "gtkwaylandsink", 0,
++        "Gtk Wayland Video Sink"));
++
++static void
++gst_gtk_wayland_sink_init (GstGtkWaylandSink * self)
++{
++  self->waylandsink = gst_element_factory_make ("waylandsink", NULL);
++  if (self->waylandsink) {
++    GstPadTemplate *tmpl;
++    GstPad *pad;
++
++    gst_bin_add (GST_BIN (self), self->waylandsink);
++
++    tmpl = gst_static_pad_template_get (&sink_template);
++    pad = gst_element_get_static_pad (self->waylandsink, "sink");
++    self->ghostpad = gst_ghost_pad_new_from_template ("sink", pad, tmpl);
++
++    gst_pad_add_probe (self->ghostpad, GST_PAD_PROBE_TYPE_EVENT_DOWNSTREAM,
++        sink_pad_probe_cb, self, NULL);
++    gst_element_add_pad (GST_ELEMENT (self), self->ghostpad);
++
++    gst_object_unref (pad);
++    gst_object_unref (tmpl);
++  }
++}
++
++static void
++gst_gtk_wayland_sink_finalize (GObject * object)
++{
++  GstGtkWaylandSink *self = GST_GTK_WAYLAND_SINK (object);
++
++  g_clear_object (&self->widget);
++
++  G_OBJECT_CLASS (parent_class)->finalize (object);
++}
++
++static void
++widget_destroy_cb (GtkWidget * widget, GstGtkWaylandSink * self)
++{
++  GST_OBJECT_LOCK (self);
++  g_clear_object (&self->widget);
++  GST_OBJECT_UNLOCK (self);
++}
++
++static void
++window_destroy_cb (GtkWidget * widget, GstGtkWaylandSink * self)
++{
++  GST_OBJECT_LOCK (self);
++  self->window = NULL;
++  GST_OBJECT_UNLOCK (self);
++
++  GST_ELEMENT_ERROR (self, RESOURCE, NOT_FOUND, ("Window was closed"), (NULL));
++}
++
++/* We use the "draw" callback to change the size of the sink
++ * because the "configure-event" is only sent to top-level widgets. */
++static gboolean
++widget_draw_cb (GtkWidget * widget, cairo_t * cr, gpointer user_data)
++{
++  GstGtkWaylandSink *self = user_data;
++  GtkAllocation allocation;
++
++  gtk_widget_get_allocation (widget, &allocation);
++  gst_video_overlay_set_render_rectangle (GST_VIDEO_OVERLAY (self->waylandsink),
++      allocation.x, allocation.y, allocation.width, allocation.height);
++
++  return FALSE;
++}
++
++static GtkWidget *
++gst_gtk_wayland_sink_get_widget (GstGtkWaylandSink * self)
++{
++  if (self->widget != NULL)
++    return g_object_ref (self->widget);
++
++  /* Ensure GTK is initialized, this has no side effect if it was already
++   * initialized. Also, we do that lazily, so the application can be first */
++  if (!gtk_init_check (NULL, NULL)) {
++    GST_INFO_OBJECT (self, "Could not ensure GTK initialization.");
++    return NULL;
++  }
++
++  self->widget = gtk_gst_wayland_widget_new ();
++  g_signal_connect_object (self->widget, "draw",
++      G_CALLBACK (widget_draw_cb), self, 0);
++  gtk_gst_base_widget_set_element (GTK_GST_BASE_WIDGET (self->widget),
++      GST_ELEMENT (self));
++
++  /* Take the floating ref, other wise the destruction of the container will
++   * make this widget disappear possibly before we are done. */
++  g_object_ref_sink (self->widget);
++  g_signal_connect_object (self->widget, "destroy",
++      G_CALLBACK (widget_destroy_cb), self, 0);
++
++  return g_object_ref (self->widget);
++}
++
++static GtkWidget *
++gst_gtk_wayland_sink_acquire_widget (GstGtkWaylandSink * self)
++{
++  gpointer widget = NULL;
++
++  GST_OBJECT_LOCK (self);
++  if (self->widget != NULL)
++    widget = g_object_ref (self->widget);
++  GST_OBJECT_UNLOCK (self);
++
++  if (!widget)
++    widget =
++        gst_gtk_invoke_on_main ((GThreadFunc) gst_gtk_wayland_sink_get_widget,
++        self);
++
++  return widget;
++}
++
++static void
++gst_gtk_wayland_sink_get_property (GObject * object, guint prop_id,
++    GValue * value, GParamSpec * pspec)
++{
++  GstGtkWaylandSink *self = GST_GTK_WAYLAND_SINK (object);
++
++  switch (prop_id) {
++    case PROP_WIDGET:
++    {
++      g_value_take_object (value, gst_gtk_wayland_sink_acquire_widget (self));
++      break;
++    }
++    default:
++      G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
++      break;
++  }
++}
++
++static gboolean
++gst_gtk_wayland_sink_start_on_main (GstGtkWaylandSink * self)
++{
++  GtkWidget *toplevel;
++  GstContext *context;
++  GdkDisplay *display;
++  struct wl_display *display_handle;
++
++  if ((toplevel = gst_gtk_wayland_sink_get_widget (self)) == NULL) {
++    GST_ERROR_OBJECT (self, "Could not ensure GTK initialization.");
++    return FALSE;
++  }
++  g_object_unref (toplevel);
++
++  /* After this point, self->widget will always be set */
++
++  toplevel = gtk_widget_get_toplevel (GTK_WIDGET (self->widget));
++  if (!gtk_widget_is_toplevel (toplevel)) {
++    /* User did not add widget its own UI, let's popup a new GtkWindow to
++     * make gst-launch-1.0 work. */
++    self->window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
++    gtk_window_set_default_size (GTK_WINDOW (self->window), 640, 480);
++    gtk_window_set_title (GTK_WINDOW (self->window), "Gst GTK Wayland Sink");
++    gtk_container_add (GTK_CONTAINER (self->window), toplevel);
++    self->window_destroy_id = g_signal_connect (self->window, "destroy",
++        G_CALLBACK (window_destroy_cb), self);
++  }
++
++  display = gtk_widget_get_display (self->widget);
++  if (!GDK_IS_WAYLAND_DISPLAY (display)) {
++    GST_ERROR_OBJECT (self, "GDK is not using its wayland backend.");
++    return FALSE;
++  }
++  display_handle = gdk_wayland_display_get_wl_display (display);
++  context = gst_wayland_display_handle_context_new (display_handle);
++  gst_element_set_context (self->waylandsink, context);
++  gst_context_unref (context);
++
++  return TRUE;
++}
++
++static gboolean
++gst_gtk_wayland_sink_stop_on_main (GstGtkWaylandSink * self)
++{
++  if (self->window) {
++    if (self->window_destroy_id)
++      g_signal_handler_disconnect (self->window, self->window_destroy_id);
++    self->window_destroy_id = 0;
++    gtk_widget_destroy (self->window);
++    self->window = NULL;
++  }
++
++  return TRUE;
++}
++
++static void
++gst_gtk_widget_show_all_and_unref (GtkWidget * widget)
++{
++  gtk_widget_show_all (widget);
++  g_object_unref (widget);
++}
++
++static GstStateChangeReturn
++gst_gtk_wayland_sink_change_state (GstElement * element,
++    GstStateChange transition)
++{
++  GstGtkWaylandSink *self = GST_GTK_WAYLAND_SINK (element);
++  GstStateChangeReturn ret = GST_STATE_CHANGE_SUCCESS;
++
++  switch (transition) {
++    case GST_STATE_CHANGE_NULL_TO_READY:
++      if (!self->waylandsink) {
++        GST_ERROR_OBJECT (self, "Failed to load waylandsink");
++        return GST_STATE_CHANGE_FAILURE;
++      }
++      if (!gst_gtk_invoke_on_main ((GThreadFunc)
++              gst_gtk_wayland_sink_start_on_main, element))
++        return GST_STATE_CHANGE_FAILURE;
++      break;
++    case GST_STATE_CHANGE_READY_TO_PAUSED:
++    {
++      GtkWindow *window = NULL;
++
++      GST_OBJECT_LOCK (self);
++      if (self->window)
++        window = g_object_ref (GTK_WINDOW (self->window));
++      GST_OBJECT_UNLOCK (self);
++
++      if (window)
++        gst_gtk_invoke_on_main ((GThreadFunc) gst_gtk_widget_show_all_and_unref,
++            window);
++
++      break;
++    }
++    default:
++      break;
++  }
++
++  ret = GST_ELEMENT_CLASS (parent_class)->change_state (element, transition);
++  if (ret != GST_STATE_CHANGE_SUCCESS)
++    return ret;
++
++  switch (transition) {
++    case GST_STATE_CHANGE_READY_TO_NULL:
++    case GST_STATE_CHANGE_NULL_TO_NULL:
++      gst_gtk_invoke_on_main ((GThreadFunc)
++          gst_gtk_wayland_sink_stop_on_main, element);
++      break;
++    default:
++      break;
++  }
++
++  return ret;
++}
++
++static GstPadProbeReturn
++sink_pad_probe_cb (GstPad * pad, GstPadProbeInfo * info, gpointer user_data)
++{
++  GstGtkWaylandSink *self = GST_GTK_WAYLAND_SINK (user_data);
++  if (GST_IS_EVENT (info->data) &&
++      GST_EVENT_TYPE (info->data) == GST_EVENT_CAPS) {
++    GstVideoInfo v_info;
++    GstCaps *caps;
++    GtkWidget *widget;
++
++    widget = gst_gtk_wayland_sink_acquire_widget (self);
++    if (widget) {
++      gst_event_parse_caps (GST_EVENT (info->data), &caps);
++      gst_video_info_from_caps (&v_info, caps);
++      gtk_gst_base_widget_set_format (GTK_GST_BASE_WIDGET (widget), &v_info);
++      g_object_unref (widget);
++    }
++  }
++
++  return GST_PAD_PROBE_OK;
++}
++
++static void
++gst_gtk_wayland_sink_set_window_handle_on_main (GstGtkWaylandSink * self)
++{
++  GtkAllocation allocation;
++  GdkWindow *window;
++  struct wl_surface *window_handle;
++
++  gtk_widget_get_allocation (self->widget, &allocation);
++  window = gtk_widget_get_window (self->widget);
++  window_handle = gdk_wayland_window_get_wl_surface (window);
++
++  GST_INFO_OBJECT (self, "setting window handle and size (%d x %d)",
++      allocation.width, allocation.height);
++
++  gst_video_overlay_set_window_handle (GST_VIDEO_OVERLAY (self->waylandsink),
++      (guintptr) window_handle);
++  gst_video_overlay_set_render_rectangle (GST_VIDEO_OVERLAY (self->waylandsink),
++      allocation.x, allocation.y, allocation.width, allocation.height);
++}
++
++static void
++gst_gtk_wayland_sink_handle_message (GstBin * bin, GstMessage * message)
++{
++  GstGtkWaylandSink *self = GST_GTK_WAYLAND_SINK (bin);
++
++  if (gst_is_video_overlay_prepare_window_handle_message (message)) {
++    gst_gtk_invoke_on_main ((GThreadFunc)
++        gst_gtk_wayland_sink_set_window_handle_on_main, self);
++    gst_message_unref (message);
++    return;
++  }
++
++  GST_BIN_CLASS (parent_class)->handle_message (bin, message);
++}
++
++static void
++gst_gtk_wayland_sink_class_init (GstGtkWaylandSinkClass * klass)
++{
++  GObjectClass *gobject_class = (GObjectClass *) klass;
++  GstElementClass *gstelement_class = (GstElementClass *) klass;
++  GstBinClass *gstbin_class = (GstBinClass *) klass;
++
++  gobject_class->finalize = gst_gtk_wayland_sink_finalize;
++  gobject_class->get_property = gst_gtk_wayland_sink_get_property;
++  gstelement_class->change_state = gst_gtk_wayland_sink_change_state;
++  gstbin_class->handle_message = gst_gtk_wayland_sink_handle_message;
++
++  g_object_class_install_property (gobject_class, PROP_WIDGET,
++      g_param_spec_object ("widget", "Gtk Widget",
++          "The GtkWidget to place in the widget hierarchy "
++          "(must only be get from the GTK main thread)",
++          GTK_TYPE_WIDGET,
++          G_PARAM_READABLE | G_PARAM_STATIC_STRINGS));
++
++  gst_element_class_set_metadata (gstelement_class, "Gtk Wayland Video Sink",
++      "Sink/Video",
++      "A video sink that renders to a GtkWidget using Wayland API",
++      "George Kiagiadakis <george.kiagiadakis@collabora.com>");
++
++  gst_element_class_add_static_pad_template (gstelement_class, &sink_template);
++}
++
++static void
++gst_gtk_wayland_sink_navigation_send_event (GstNavigation * navigation,
++    GstStructure * structure)
++{
++  GstGtkWaylandSink *sink = GST_GTK_WAYLAND_SINK (navigation);
++  GstEvent *event;
++  GstPad *pad;
++  gdouble x, y;
++
++  if (gst_structure_get_double (structure, "pointer_x", &x) &&
++      gst_structure_get_double (structure, "pointer_y", &y)) {
++    GtkGstBaseWidget *widget =
++        (GtkGstBaseWidget *) gst_gtk_wayland_sink_acquire_widget (sink);
++    gdouble stream_x, stream_y;
++
++    if (widget == NULL) {
++      GST_ERROR_OBJECT (sink, "Could not ensure GTK initialization.");
++      return;
++    }
++
++    gtk_gst_base_widget_display_size_to_stream_size (widget,
++        x, y, &stream_x, &stream_y);
++    gst_structure_set (structure,
++        "pointer_x", G_TYPE_DOUBLE, (gdouble) stream_x,
++        "pointer_y", G_TYPE_DOUBLE, (gdouble) stream_y, NULL);
++
++    g_object_unref (widget);
++  }
++
++  event = gst_event_new_navigation (structure);
++  pad = gst_pad_get_peer (sink->ghostpad);
++
++  GST_TRACE_OBJECT (sink, "navigation event %" GST_PTR_FORMAT, structure);
++
++  if (GST_IS_PAD (pad) && GST_IS_EVENT (event)) {
++    if (!gst_pad_send_event (pad, gst_event_ref (event))) {
++      /* If upstream didn't handle the event we'll post a message with it
++       * for the application in case it wants to do something with it */
++      gst_element_post_message (GST_ELEMENT_CAST (sink),
++          gst_navigation_message_new_event (GST_OBJECT_CAST (sink), event));
++    }
++    gst_event_unref (event);
++    gst_object_unref (pad);
++  }
++}
++
++static void
++gst_gtk_wayland_sink_navigation_interface_init (GstNavigationInterface * iface)
++{
++  iface->send_event = gst_gtk_wayland_sink_navigation_send_event;
++}
+diff --git a/ext/gtk/gstgtkwaylandsink.h b/ext/gtk/gstgtkwaylandsink.h
+new file mode 100644
+index 0000000..33fc96f
+--- /dev/null
++++ b/ext/gtk/gstgtkwaylandsink.h
+@@ -0,0 +1,51 @@
++/*
++ * GStreamer
++ * Copyright (C) 2021 Collabora Ltd.
++ *   @author George Kiagiadakis <george.kiagiadakis@collabora.com>
++ *
++ * This library is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU Library General Public
++ * License as published by the Free Software Foundation; either
++ * version 2 of the License, or (at your option) any later version.
++ *
++ * This library is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * Library General Public License for more details.
++ *
++ * You should have received a copy of the GNU Library General Public
++ * License along with this library; if not, write to the
++ * Free Software Foundation, Inc., 51 Franklin St, Fifth Floor,
++ * Boston, MA 02110-1301, USA.
++ */
++
++#ifndef __GST_GTK_WAYLAND_SINK_H__
++#define __GST_GTK_WAYLAND_SINK_H__
++
++#include <gtk/gtk.h>
++#include <gst/gst.h>
++
++G_BEGIN_DECLS
++
++#define GST_TYPE_GTK_WAYLAND_SINK (gst_gtk_wayland_sink_get_type())
++G_DECLARE_FINAL_TYPE (GstGtkWaylandSink, gst_gtk_wayland_sink, GST, GTK_WAYLAND_SINK, GstBin)
++
++/**
++ * GstGtkWaylandSink:
++ *
++ * Opaque #GstGtkWaylandSink object
++ */
++struct _GstGtkWaylandSink
++{
++  /* <private> */
++  GstBin         parent;
++  GstElement    *waylandsink;
++  GstPad        *ghostpad;
++  GtkWidget     *widget;
++  GtkWidget     *window;
++  gulong         window_destroy_id;
++};
++
++G_END_DECLS
++
++#endif /* __GST_GTK_WAYLAND_SINK_H__ */
+diff --git a/ext/gtk/gstplugin.c b/ext/gtk/gstplugin.c
+new file mode 100644
+index 0000000..f154b08
+--- /dev/null
++++ b/ext/gtk/gstplugin.c
+@@ -0,0 +1,43 @@
++/*
++ * GStreamer
++ * Copyright (C) 2015 Matthew Waters <matthew@centricular.com>
++ *
++ * This library is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU Library General Public
++ * License as published by the Free Software Foundation; either
++ * version 2 of the License, or (at your option) any later version.
++ *
++ * This library is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * Library General Public License for more details.
++ *
++ * You should have received a copy of the GNU Library General Public
++ * License along with this library; if not, write to the
++ * Free Software Foundation, Inc., 51 Franklin St, Fifth Floor,
++ * Boston, MA 02110-1301, USA.
++ */
++
++#ifdef HAVE_CONFIG_H
++#include "config.h"
++#endif
++
++#include "gstgtkwaylandsink.h"
++
++static gboolean
++plugin_init (GstPlugin * plugin)
++{
++  gboolean ret = FALSE;
++
++  ret |= gst_element_register (plugin, "gtkwaylandsink", GST_RANK_NONE,
++      GST_TYPE_GTK_WAYLAND_SINK);
++
++  return ret;
++}
++
++GST_PLUGIN_DEFINE (GST_VERSION_MAJOR,
++    GST_VERSION_MINOR,
++    gtkwayland,
++    "Gtk+ wayland sink",
++    plugin_init, PACKAGE_VERSION, GST_LICENSE, GST_PACKAGE_NAME,
++    GST_PACKAGE_ORIGIN)
+diff --git a/ext/gtk/gtkgstbasewidget.c b/ext/gtk/gtkgstbasewidget.c
+new file mode 100644
+index 0000000..053640b
+--- /dev/null
++++ b/ext/gtk/gtkgstbasewidget.c
+@@ -0,0 +1,542 @@
++/*
++ * GStreamer
++ * Copyright (C) 2015 Matthew Waters <matthew@centricular.com>
++ *
++ * This library is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU Library General Public
++ * License as published by the Free Software Foundation; either
++ * version 2 of the License, or (at your option) any later version.
++ *
++ * This library is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * Library General Public License for more details.
++ *
++ * You should have received a copy of the GNU Library General Public
++ * License along with this library; if not, write to the
++ * Free Software Foundation, Inc., 51 Franklin St, Fifth Floor,
++ * Boston, MA 02110-1301, USA.
++ */
++
++#ifdef HAVE_CONFIG_H
++#include "config.h"
++#endif
++
++#include <stdio.h>
++
++#include "gtkgstbasewidget.h"
++
++GST_DEBUG_CATEGORY (gst_debug_gtk_base_widget);
++#define GST_CAT_DEFAULT gst_debug_gtk_base_widget
++
++#define DEFAULT_FORCE_ASPECT_RATIO  TRUE
++#define DEFAULT_PAR_N               0
++#define DEFAULT_PAR_D               1
++#define DEFAULT_IGNORE_ALPHA        TRUE
++
++enum
++{
++  PROP_0,
++  PROP_FORCE_ASPECT_RATIO,
++  PROP_PIXEL_ASPECT_RATIO,
++  PROP_IGNORE_ALPHA,
++};
++
++static void
++gtk_gst_base_widget_get_preferred_width (GtkWidget * widget, gint * min,
++    gint * natural)
++{
++  GtkGstBaseWidget *gst_widget = (GtkGstBaseWidget *) widget;
++  gint video_width = gst_widget->display_width;
++
++  if (!gst_widget->negotiated)
++    video_width = 10;
++
++  if (min)
++    *min = 1;
++  if (natural)
++    *natural = video_width;
++}
++
++static void
++gtk_gst_base_widget_get_preferred_height (GtkWidget * widget, gint * min,
++    gint * natural)
++{
++  GtkGstBaseWidget *gst_widget = (GtkGstBaseWidget *) widget;
++  gint video_height = gst_widget->display_height;
++
++  if (!gst_widget->negotiated)
++    video_height = 10;
++
++  if (min)
++    *min = 1;
++  if (natural)
++    *natural = video_height;
++}
++
++static void
++gtk_gst_base_widget_set_property (GObject * object, guint prop_id,
++    const GValue * value, GParamSpec * pspec)
++{
++  GtkGstBaseWidget *gtk_widget = GTK_GST_BASE_WIDGET (object);
++
++  switch (prop_id) {
++    case PROP_FORCE_ASPECT_RATIO:
++      gtk_widget->force_aspect_ratio = g_value_get_boolean (value);
++      break;
++    case PROP_PIXEL_ASPECT_RATIO:
++      gtk_widget->par_n = gst_value_get_fraction_numerator (value);
++      gtk_widget->par_d = gst_value_get_fraction_denominator (value);
++      break;
++    case PROP_IGNORE_ALPHA:
++      gtk_widget->ignore_alpha = g_value_get_boolean (value);
++      break;
++    default:
++      G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
++      break;
++  }
++}
++
++static void
++gtk_gst_base_widget_get_property (GObject * object, guint prop_id,
++    GValue * value, GParamSpec * pspec)
++{
++  GtkGstBaseWidget *gtk_widget = GTK_GST_BASE_WIDGET (object);
++
++  switch (prop_id) {
++    case PROP_FORCE_ASPECT_RATIO:
++      g_value_set_boolean (value, gtk_widget->force_aspect_ratio);
++      break;
++    case PROP_PIXEL_ASPECT_RATIO:
++      gst_value_set_fraction (value, gtk_widget->par_n, gtk_widget->par_d);
++      break;
++    case PROP_IGNORE_ALPHA:
++      g_value_set_boolean (value, gtk_widget->ignore_alpha);
++      break;
++    default:
++      G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
++      break;
++  }
++}
++
++static gboolean
++_calculate_par (GtkGstBaseWidget * widget, GstVideoInfo * info)
++{
++  gboolean ok;
++  gint width, height;
++  gint par_n, par_d;
++  gint display_par_n, display_par_d;
++
++  width = GST_VIDEO_INFO_WIDTH (info);
++  height = GST_VIDEO_INFO_HEIGHT (info);
++
++  par_n = GST_VIDEO_INFO_PAR_N (info);
++  par_d = GST_VIDEO_INFO_PAR_D (info);
++
++  if (!par_n)
++    par_n = 1;
++
++  /* get display's PAR */
++  if (widget->par_n != 0 && widget->par_d != 0) {
++    display_par_n = widget->par_n;
++    display_par_d = widget->par_d;
++  } else {
++    display_par_n = 1;
++    display_par_d = 1;
++  }
++
++
++  ok = gst_video_calculate_display_ratio (&widget->display_ratio_num,
++      &widget->display_ratio_den, width, height, par_n, par_d, display_par_n,
++      display_par_d);
++
++  if (ok) {
++    GST_LOG ("PAR: %u/%u DAR:%u/%u", par_n, par_d, display_par_n,
++        display_par_d);
++    return TRUE;
++  }
++
++  return FALSE;
++}
++
++static void
++_apply_par (GtkGstBaseWidget * widget)
++{
++  guint display_ratio_num, display_ratio_den;
++  gint width, height;
++
++  width = GST_VIDEO_INFO_WIDTH (&widget->v_info);
++  height = GST_VIDEO_INFO_HEIGHT (&widget->v_info);
++
++  display_ratio_num = widget->display_ratio_num;
++  display_ratio_den = widget->display_ratio_den;
++
++  if (height % display_ratio_den == 0) {
++    GST_DEBUG ("keeping video height");
++    widget->display_width = (guint)
++        gst_util_uint64_scale_int (height, display_ratio_num,
++        display_ratio_den);
++    widget->display_height = height;
++  } else if (width % display_ratio_num == 0) {
++    GST_DEBUG ("keeping video width");
++    widget->display_width = width;
++    widget->display_height = (guint)
++        gst_util_uint64_scale_int (width, display_ratio_den, display_ratio_num);
++  } else {
++    GST_DEBUG ("approximating while keeping video height");
++    widget->display_width = (guint)
++        gst_util_uint64_scale_int (height, display_ratio_num,
++        display_ratio_den);
++    widget->display_height = height;
++  }
++
++  GST_DEBUG ("scaling to %dx%d", widget->display_width, widget->display_height);
++}
++
++static gboolean
++_queue_draw (GtkGstBaseWidget * widget)
++{
++  GTK_GST_BASE_WIDGET_LOCK (widget);
++  widget->draw_id = 0;
++
++  if (widget->pending_resize) {
++    widget->pending_resize = FALSE;
++
++    widget->v_info = widget->pending_v_info;
++    widget->negotiated = TRUE;
++
++    _apply_par (widget);
++
++    gtk_widget_queue_resize (GTK_WIDGET (widget));
++  } else {
++    gtk_widget_queue_draw (GTK_WIDGET (widget));
++  }
++
++  GTK_GST_BASE_WIDGET_UNLOCK (widget);
++
++  return G_SOURCE_REMOVE;
++}
++
++static const gchar *
++_gdk_key_to_navigation_string (guint keyval)
++{
++  /* TODO: expand */
++  switch (keyval) {
++#define KEY(key) case GDK_KEY_ ## key: return G_STRINGIFY(key)
++      KEY (Up);
++      KEY (Down);
++      KEY (Left);
++      KEY (Right);
++      KEY (Home);
++      KEY (End);
++#undef KEY
++    default:
++      return NULL;
++  }
++}
++
++static gboolean
++gtk_gst_base_widget_key_event (GtkWidget * widget, GdkEventKey * event)
++{
++  GtkGstBaseWidget *base_widget = GTK_GST_BASE_WIDGET (widget);
++  GstElement *element;
++
++  if ((element = g_weak_ref_get (&base_widget->element))) {
++    if (GST_IS_NAVIGATION (element)) {
++      const gchar *str = _gdk_key_to_navigation_string (event->keyval);
++      const gchar *key_type =
++          event->type == GDK_KEY_PRESS ? "key-press" : "key-release";
++
++      if (!str)
++        str = event->string;
++
++      gst_navigation_send_key_event (GST_NAVIGATION (element), key_type, str);
++    }
++    g_object_unref (element);
++  }
++
++  return FALSE;
++}
++
++static void
++_fit_stream_to_allocated_size (GtkGstBaseWidget * base_widget,
++    GtkAllocation * allocation, GstVideoRectangle * result)
++{
++  if (base_widget->force_aspect_ratio) {
++    GstVideoRectangle src, dst;
++
++    src.x = 0;
++    src.y = 0;
++    src.w = base_widget->display_width;
++    src.h = base_widget->display_height;
++
++    dst.x = 0;
++    dst.y = 0;
++    dst.w = allocation->width;
++    dst.h = allocation->height;
++
++    gst_video_sink_center_rect (src, dst, result, TRUE);
++  } else {
++    result->x = 0;
++    result->y = 0;
++    result->w = allocation->width;
++    result->h = allocation->height;
++  }
++}
++
++void
++gtk_gst_base_widget_display_size_to_stream_size (GtkGstBaseWidget * base_widget,
++    gdouble x, gdouble y, gdouble * stream_x, gdouble * stream_y)
++{
++  gdouble stream_width, stream_height;
++  GtkAllocation allocation;
++  GstVideoRectangle result;
++
++  gtk_widget_get_allocation (GTK_WIDGET (base_widget), &allocation);
++  _fit_stream_to_allocated_size (base_widget, &allocation, &result);
++
++  stream_width = (gdouble) GST_VIDEO_INFO_WIDTH (&base_widget->v_info);
++  stream_height = (gdouble) GST_VIDEO_INFO_HEIGHT (&base_widget->v_info);
++
++  /* from display coordinates to stream coordinates */
++  if (result.w > 0)
++    *stream_x = (x - result.x) / result.w * stream_width;
++  else
++    *stream_x = 0.;
++
++  /* clip to stream size */
++  if (*stream_x < 0.)
++    *stream_x = 0.;
++  if (*stream_x > GST_VIDEO_INFO_WIDTH (&base_widget->v_info))
++    *stream_x = GST_VIDEO_INFO_WIDTH (&base_widget->v_info);
++
++  /* same for y-axis */
++  if (result.h > 0)
++    *stream_y = (y - result.y) / result.h * stream_height;
++  else
++    *stream_y = 0.;
++
++  if (*stream_y < 0.)
++    *stream_y = 0.;
++  if (*stream_y > GST_VIDEO_INFO_HEIGHT (&base_widget->v_info))
++    *stream_y = GST_VIDEO_INFO_HEIGHT (&base_widget->v_info);
++
++  GST_TRACE ("transform %fx%f into %fx%f", x, y, *stream_x, *stream_y);
++}
++
++static gboolean
++gtk_gst_base_widget_button_event (GtkWidget * widget, GdkEventButton * event)
++{
++  GtkGstBaseWidget *base_widget = GTK_GST_BASE_WIDGET (widget);
++  GstElement *element;
++
++  if ((element = g_weak_ref_get (&base_widget->element))) {
++    if (GST_IS_NAVIGATION (element)) {
++      const gchar *key_type =
++          event->type ==
++          GDK_BUTTON_PRESS ? "mouse-button-press" : "mouse-button-release";
++      gst_navigation_send_mouse_event (GST_NAVIGATION (element), key_type,
++          event->button, event->x, event->y);
++    }
++    g_object_unref (element);
++  }
++
++  return FALSE;
++}
++
++static gboolean
++gtk_gst_base_widget_motion_event (GtkWidget * widget, GdkEventMotion * event)
++{
++  GtkGstBaseWidget *base_widget = GTK_GST_BASE_WIDGET (widget);
++  GstElement *element;
++
++  if ((element = g_weak_ref_get (&base_widget->element))) {
++    if (GST_IS_NAVIGATION (element)) {
++      gst_navigation_send_mouse_event (GST_NAVIGATION (element), "mouse-move",
++          0, event->x, event->y);
++    }
++    g_object_unref (element);
++  }
++
++  return FALSE;
++}
++
++static gboolean
++gtk_gst_base_widget_scroll_event (GtkWidget * widget, GdkEventScroll * event)
++{
++#if GST_CHECK_VERSION(1, 18, 0)
++  GtkGstBaseWidget *base_widget = GTK_GST_BASE_WIDGET (widget);
++  GstElement *element;
++
++  if ((element = g_weak_ref_get (&base_widget->element))) {
++    if (GST_IS_NAVIGATION (element)) {
++      gdouble x, y, delta_x, delta_y;
++
++      gtk_gst_base_widget_display_size_to_stream_size (base_widget, event->x,
++          event->y, &x, &y);
++
++      if (!gdk_event_get_scroll_deltas ((GdkEvent *) event, &delta_x, &delta_y)) {
++        gdouble offset = 20;
++
++        delta_x = event->delta_x;
++        delta_y = event->delta_y;
++
++        switch (event->direction) {
++          case GDK_SCROLL_UP:
++            delta_y = offset;
++            break;
++          case GDK_SCROLL_DOWN:
++            delta_y = -offset;
++            break;
++          case GDK_SCROLL_LEFT:
++            delta_x = -offset;
++            break;
++          case GDK_SCROLL_RIGHT:
++            delta_x = offset;
++            break;
++          default:
++            break;
++        }
++      }
++      gst_navigation_send_mouse_scroll_event (GST_NAVIGATION (element),
++          x, y, delta_x, delta_y);
++    }
++    g_object_unref (element);
++  }
++#endif
++  return FALSE;
++}
++
++
++void
++gtk_gst_base_widget_class_init (GtkGstBaseWidgetClass * klass)
++{
++  GObjectClass *gobject_klass = (GObjectClass *) klass;
++  GtkWidgetClass *widget_klass = (GtkWidgetClass *) klass;
++
++  gobject_klass->set_property = gtk_gst_base_widget_set_property;
++  gobject_klass->get_property = gtk_gst_base_widget_get_property;
++
++  g_object_class_install_property (gobject_klass, PROP_FORCE_ASPECT_RATIO,
++      g_param_spec_boolean ("force-aspect-ratio",
++          "Force aspect ratio",
++          "When enabled, scaling will respect original aspect ratio",
++          DEFAULT_FORCE_ASPECT_RATIO,
++          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
++
++  g_object_class_install_property (gobject_klass, PROP_PIXEL_ASPECT_RATIO,
++      gst_param_spec_fraction ("pixel-aspect-ratio", "Pixel Aspect Ratio",
++          "The pixel aspect ratio of the device", DEFAULT_PAR_N, DEFAULT_PAR_D,
++          G_MAXINT, 1, 1, 1, G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
++
++  g_object_class_install_property (gobject_klass, PROP_IGNORE_ALPHA,
++      g_param_spec_boolean ("ignore-alpha", "Ignore Alpha",
++          "When enabled, alpha will be ignored and converted to black",
++          DEFAULT_IGNORE_ALPHA, G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
++
++  widget_klass->get_preferred_width = gtk_gst_base_widget_get_preferred_width;
++  widget_klass->get_preferred_height = gtk_gst_base_widget_get_preferred_height;
++  widget_klass->key_press_event = gtk_gst_base_widget_key_event;
++  widget_klass->key_release_event = gtk_gst_base_widget_key_event;
++  widget_klass->button_press_event = gtk_gst_base_widget_button_event;
++  widget_klass->button_release_event = gtk_gst_base_widget_button_event;
++  widget_klass->motion_notify_event = gtk_gst_base_widget_motion_event;
++  widget_klass->scroll_event = gtk_gst_base_widget_scroll_event;
++
++  GST_DEBUG_CATEGORY_INIT (gst_debug_gtk_base_widget, "gtkbasewidget", 0,
++      "Gtk Video Base Widget");
++}
++
++void
++gtk_gst_base_widget_init (GtkGstBaseWidget * widget)
++{
++  int event_mask;
++
++  widget->force_aspect_ratio = DEFAULT_FORCE_ASPECT_RATIO;
++  widget->par_n = DEFAULT_PAR_N;
++  widget->par_d = DEFAULT_PAR_D;
++  widget->ignore_alpha = DEFAULT_IGNORE_ALPHA;
++
++  gst_video_info_init (&widget->v_info);
++  gst_video_info_init (&widget->pending_v_info);
++
++  g_weak_ref_init (&widget->element, NULL);
++  g_mutex_init (&widget->lock);
++
++  gtk_widget_set_can_focus (GTK_WIDGET (widget), TRUE);
++  event_mask = gtk_widget_get_events (GTK_WIDGET (widget));
++  event_mask |= GDK_KEY_PRESS_MASK
++      | GDK_KEY_RELEASE_MASK
++      | GDK_BUTTON_PRESS_MASK
++      | GDK_BUTTON_RELEASE_MASK
++      | GDK_POINTER_MOTION_MASK | GDK_BUTTON_MOTION_MASK | GDK_SCROLL_MASK;
++  gtk_widget_set_events (GTK_WIDGET (widget), event_mask);
++}
++
++void
++gtk_gst_base_widget_finalize (GObject * object)
++{
++  GtkGstBaseWidget *widget = GTK_GST_BASE_WIDGET (object);
++
++  gst_buffer_replace (&widget->pending_buffer, NULL);
++  gst_buffer_replace (&widget->buffer, NULL);
++  g_mutex_clear (&widget->lock);
++  g_weak_ref_clear (&widget->element);
++
++  if (widget->draw_id)
++    g_source_remove (widget->draw_id);
++}
++
++void
++gtk_gst_base_widget_set_element (GtkGstBaseWidget * widget,
++    GstElement * element)
++{
++  g_weak_ref_set (&widget->element, element);
++}
++
++gboolean
++gtk_gst_base_widget_set_format (GtkGstBaseWidget * widget,
++    GstVideoInfo * v_info)
++{
++  GTK_GST_BASE_WIDGET_LOCK (widget);
++
++  if (gst_video_info_is_equal (&widget->pending_v_info, v_info)) {
++    GTK_GST_BASE_WIDGET_UNLOCK (widget);
++    return TRUE;
++  }
++
++  if (!_calculate_par (widget, v_info)) {
++    GTK_GST_BASE_WIDGET_UNLOCK (widget);
++    return FALSE;
++  }
++
++  widget->pending_resize = TRUE;
++  widget->pending_v_info = *v_info;
++
++  if (!widget->draw_id) {
++    widget->draw_id = g_idle_add_full (G_PRIORITY_DEFAULT,
++        (GSourceFunc) _queue_draw, widget, NULL);
++  }
++
++  GTK_GST_BASE_WIDGET_UNLOCK (widget);
++
++  return TRUE;
++}
++
++void
++gtk_gst_base_widget_set_buffer (GtkGstBaseWidget * widget, GstBuffer * buffer)
++{
++  /* As we have no type, this is better then no check */
++  g_return_if_fail (GTK_IS_WIDGET (widget));
++
++  GTK_GST_BASE_WIDGET_LOCK (widget);
++
++  gst_buffer_replace (&widget->pending_buffer, buffer);
++
++  if (!widget->draw_id) {
++    widget->draw_id = g_idle_add_full (G_PRIORITY_DEFAULT,
++        (GSourceFunc) _queue_draw, widget, NULL);
++  }
++
++  GTK_GST_BASE_WIDGET_UNLOCK (widget);
++}
+diff --git a/ext/gtk/gtkgstbasewidget.h b/ext/gtk/gtkgstbasewidget.h
+new file mode 100644
+index 0000000..c10ed38
+--- /dev/null
++++ b/ext/gtk/gtkgstbasewidget.h
+@@ -0,0 +1,100 @@
++/*
++ * GStreamer
++ * Copyright (C) 2015 Matthew Waters <matthew@centricular.com>
++ *
++ * This library is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU Library General Public
++ * License as published by the Free Software Foundation; either
++ * version 2 of the License, or (at your option) any later version.
++ *
++ * This library is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * Library General Public License for more details.
++ *
++ * You should have received a copy of the GNU Library General Public
++ * License along with this library; if not, write to the
++ * Free Software Foundation, Inc., 51 Franklin St, Fifth Floor,
++ * Boston, MA 02110-1301, USA.
++ */
++
++#ifndef __GTK_GST_BASE_WIDGET_H__
++#define __GTK_GST_BASE_WIDGET_H__
++
++#include <gtk/gtk.h>
++#include <gst/gst.h>
++#include <gst/video/video.h>
++
++#define GTK_GST_BASE_WIDGET(w)         ((GtkGstBaseWidget *)(w))
++#define GTK_GST_BASE_WIDGET_CLASS(k)   ((GtkGstBaseWidgetClass *)(k))
++#define GTK_GST_BASE_WIDGET_LOCK(w)    g_mutex_lock(&((GtkGstBaseWidget*)(w))->lock)
++#define GTK_GST_BASE_WIDGET_UNLOCK(w)  g_mutex_unlock(&((GtkGstBaseWidget*)(w))->lock)
++
++G_BEGIN_DECLS
++
++typedef struct _GtkGstBaseWidget GtkGstBaseWidget;
++typedef struct _GtkGstBaseWidgetClass GtkGstBaseWidgetClass;
++
++struct _GtkGstBaseWidget
++{
++  union {
++    GtkDrawingArea drawing_area;
++#if GTK_CHECK_VERSION(3, 15, 0)
++    GtkGLArea gl_area;
++#endif
++  } parent;
++
++  /* properties */
++  gboolean force_aspect_ratio;
++  gint par_n, par_d;
++  gboolean ignore_alpha;
++
++  gint display_width;
++  gint display_height;
++
++  gboolean negotiated;
++  GstBuffer *pending_buffer;
++  GstBuffer *buffer;
++  GstVideoInfo v_info;
++
++  /* resize */
++  gboolean pending_resize;
++  GstVideoInfo pending_v_info;
++  guint display_ratio_num;
++  guint display_ratio_den;
++
++  /*< private >*/
++  GMutex lock;
++  GWeakRef element;
++
++  /* Pending draw idles callback */
++  guint draw_id;
++};
++
++struct _GtkGstBaseWidgetClass
++{
++  union {
++    GtkDrawingAreaClass drawing_area_class;
++#if GTK_CHECK_VERSION(3, 15, 0)
++    GtkGLAreaClass gl_area_class;
++#endif
++  } parent_class;
++};
++
++/* For implementer */
++void            gtk_gst_base_widget_class_init           (GtkGstBaseWidgetClass * klass);
++void            gtk_gst_base_widget_init                 (GtkGstBaseWidget * widget);
++
++void            gtk_gst_base_widget_finalize             (GObject * object);
++
++/* API */
++gboolean        gtk_gst_base_widget_set_format           (GtkGstBaseWidget * widget, GstVideoInfo * v_info);
++void            gtk_gst_base_widget_set_buffer           (GtkGstBaseWidget * widget, GstBuffer * buffer);
++void            gtk_gst_base_widget_set_element          (GtkGstBaseWidget * widget, GstElement * element);
++void            gtk_gst_base_widget_display_size_to_stream_size (GtkGstBaseWidget * base_widget,
++                                                                 gdouble x, gdouble y,
++                                                                 gdouble * stream_x, gdouble * stream_y);
++
++G_END_DECLS
++
++#endif /* __GTK_GST_BASE_WIDGET_H__ */
+diff --git a/ext/gtk/gtkgstwaylandwidget.c b/ext/gtk/gtkgstwaylandwidget.c
+new file mode 100644
+index 0000000..df3d1d5
+--- /dev/null
++++ b/ext/gtk/gtkgstwaylandwidget.c
+@@ -0,0 +1,67 @@
++/*
++ * GStreamer
++ * Copyright (C) 2015 Matthew Waters <matthew@centricular.com>
++ *
++ * This library is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU Library General Public
++ * License as published by the Free Software Foundation; either
++ * version 2 of the License, or (at your option) any later version.
++ *
++ * This library is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * Library General Public License for more details.
++ *
++ * You should have received a copy of the GNU Library General Public
++ * License along with this library; if not, write to the
++ * Free Software Foundation, Inc., 51 Franklin St, Fifth Floor,
++ * Boston, MA 02110-1301, USA.
++ */
++
++#ifdef HAVE_CONFIG_H
++#include "config.h"
++#endif
++
++#include "gtkgstwaylandwidget.h"
++#include <gst/video/video.h>
++
++/**
++ * SECTION:gtkgstwidget
++ * @title: GtkGstWaylandWidget
++ * @short_description: a #GtkWidget that renders GStreamer video #GstBuffers
++ * @see_also: #GtkDrawingArea, #GstBuffer
++ *
++ * #GtkGstWaylandWidget is an #GtkWidget that renders GStreamer video buffers.
++ */
++
++G_DEFINE_TYPE (GtkGstWaylandWidget, gtk_gst_wayland_widget,
++    GTK_TYPE_DRAWING_AREA);
++
++static void
++gtk_gst_wayland_widget_finalize (GObject * object)
++{
++  gtk_gst_base_widget_finalize (object);
++
++  G_OBJECT_CLASS (gtk_gst_wayland_widget_parent_class)->finalize (object);
++}
++
++static void
++gtk_gst_wayland_widget_class_init (GtkGstWaylandWidgetClass * klass)
++{
++  GObjectClass *gobject_klass = (GObjectClass *) klass;
++
++  gtk_gst_base_widget_class_init (GTK_GST_BASE_WIDGET_CLASS (klass));
++  gobject_klass->finalize = gtk_gst_wayland_widget_finalize;
++}
++
++static void
++gtk_gst_wayland_widget_init (GtkGstWaylandWidget * widget)
++{
++  gtk_gst_base_widget_init (GTK_GST_BASE_WIDGET (widget));
++}
++
++GtkWidget *
++gtk_gst_wayland_widget_new (void)
++{
++  return (GtkWidget *) g_object_new (GTK_TYPE_GST_WAYLAND_WIDGET, NULL);
++}
+diff --git a/ext/gtk/gtkgstwaylandwidget.h b/ext/gtk/gtkgstwaylandwidget.h
+new file mode 100644
+index 0000000..48cfe9e
+--- /dev/null
++++ b/ext/gtk/gtkgstwaylandwidget.h
+@@ -0,0 +1,68 @@
++/*
++ * GStreamer
++ * Copyright (C) 2015 Matthew Waters <matthew@centricular.com>
++ *
++ * This library is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU Library General Public
++ * License as published by the Free Software Foundation; either
++ * version 2 of the License, or (at your option) any later version.
++ *
++ * This library is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * Library General Public License for more details.
++ *
++ * You should have received a copy of the GNU Library General Public
++ * License along with this library; if not, write to the
++ * Free Software Foundation, Inc., 51 Franklin St, Fifth Floor,
++ * Boston, MA 02110-1301, USA.
++ */
++
++#ifndef __GTK_GST_WAYLAND_WIDGET_H__
++#define __GTK_GST_WAYLAND_WIDGET_H__
++
++#include <gtk/gtk.h>
++#include <gst/gst.h>
++
++#include "gtkgstbasewidget.h"
++
++G_BEGIN_DECLS
++
++GType gtk_gst_wayland_widget_get_type (void);
++#define GTK_TYPE_GST_WAYLAND_WIDGET (gtk_gst_wayland_widget_get_type())
++#define GTK_GST_WAYLAND_WIDGET(obj) (G_TYPE_CHECK_INSTANCE_CAST((obj),GTK_TYPE_GST_WAYLAND_WIDGET,GtkGstWaylandWidget))
++#define GTK_GST_WAYLAND_WIDGET_CLASS(klass) (G_TYPE_CHECK_CLASS_CAST((klass),GTK_TYPE_GST_WAYLAND_WIDGET,GtkGstWaylandWidgetClass))
++#define GTK_IS_GST_WAYLAND_WIDGET(obj) (G_TYPE_CHECK_INSTANCE_TYPE((obj),GTK_TYPE_GST_WAYLAND_WIDGET))
++#define GTK_IS_GST_WAYLAND_WIDGET_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE((klass),GTK_TYPE_GST_WAYLAND_WIDGET))
++#define GTK_GST_WAYLAND_WIDGET_CAST(obj) ((GtkGstWaylandWidget*)(obj))
++
++typedef struct _GtkGstWaylandWidget GtkGstWaylandWidget;
++typedef struct _GtkGstWaylandWidgetClass GtkGstWaylandWidgetClass;
++
++/**
++ * GtkGstWaylandWidget:
++ *
++ * Opaque #GtkGstWaylandWidget object
++ */
++struct _GtkGstWaylandWidget
++{
++  /* <private> */
++  GtkGstBaseWidget base;
++};
++
++/**
++ * GtkGstWaylandWidgetClass:
++ *
++ * The #GtkGstWaylandWidgetClass struct only contains private data
++ */
++struct _GtkGstWaylandWidgetClass
++{
++  /* <private> */
++  GtkGstBaseWidgetClass base_class;
++};
++
++GtkWidget *     gtk_gst_wayland_widget_new (void);
++
++G_END_DECLS
++
++#endif /* __GTK_GST_WAYLAND_WIDGET_H__ */
+diff --git a/ext/gtk/meson.build b/ext/gtk/meson.build
+new file mode 100644
+index 0000000..199188d
+--- /dev/null
++++ b/ext/gtk/meson.build
+@@ -0,0 +1,22 @@
++gtkwayland_sources = [
++  'gstplugin.c',
++  'gstgtkutils.c',
++  'gstgtkwaylandsink.c',
++  'gtkgstbasewidget.c',
++  'gtkgstwaylandwidget.c',
++]
++
++gtk_dep = dependency('gtk+-3.0', required : get_option('gtk3'))
++gtk_wayland_dep = dependency('gtk+-wayland-3.0', required : get_option('gtk3'))
++
++if gtk_dep.found() and gtk_wayland_dep.found() and use_wayland
++  gstgtkwayland = library('gstgtkwayland',
++    gtkwayland_sources,
++    c_args :  gst_plugins_bad_args + ['-DGST_USE_UNSTABLE_API'],
++    include_directories : [configinc],
++    dependencies : [gtk_dep, gstvideo_dep, gstwayland_dep],
++    install : true,
++    install_dir : plugins_install_dir,
++  )
++  pkgconfig.generate(gstgtkwayland, install_dir : plugins_pkgconfig_install_dir)
++endif
+diff --git a/ext/meson.build b/ext/meson.build
+index 1e40ace..17195f8 100644
+--- a/ext/meson.build
++++ b/ext/meson.build
+@@ -21,6 +21,7 @@ subdir('fluidsynth')
+ subdir('gme')
+ subdir('gs')
+ subdir('gsm')
++subdir('gtk')
+ subdir('hls')
+ subdir('iqa')
+ subdir('isac')
+diff --git a/meson_options.txt b/meson_options.txt
+index b347dcb..c64f292 100644
+--- a/meson_options.txt
++++ b/meson_options.txt
+@@ -29,6 +29,7 @@ option('frei0r', type : 'feature', value : 'auto')
+ option('gaudieffects', type : 'feature', value : 'auto')
+ option('gdp', type : 'feature', value : 'auto')
+ option('geometrictransform', type : 'feature', value : 'auto')
++option('gtk3', type : 'feature', value : 'auto')
+ option('id3tag', type : 'feature', value : 'auto')
+ option('inter', type : 'feature', value : 'auto')
+ option('interlace', type : 'feature', value : 'auto')
+-- 
+2.34.1
+

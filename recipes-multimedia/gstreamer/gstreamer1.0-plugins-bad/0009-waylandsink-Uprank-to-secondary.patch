@@ -1,0 +1,26 @@
+From cf2dfe7a376d10a3d7815d29ffc1c9efb4d4f19e Mon Sep 17 00:00:00 2001
+From: Christophe Priouzeau <christophe.priouzeau@st.com>
+Date: Mon, 21 May 2018 14:26:47 +0200
+Subject: [PATCH 09/14] waylandsink: Uprank to secondary
+
+Signed-off-by: Christophe Priouzeau <christophe.priouzeau@st.com>
+---
+ ext/wayland/gstwaylandsink.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/ext/wayland/gstwaylandsink.c b/ext/wayland/gstwaylandsink.c
+index b97570e..0dc1f0d 100644
+--- a/ext/wayland/gstwaylandsink.c
++++ b/ext/wayland/gstwaylandsink.c
+@@ -126,7 +126,7 @@ G_DEFINE_TYPE_WITH_CODE (GstWaylandSink, gst_wayland_sink, GST_TYPE_VIDEO_SINK,
+         gst_wayland_sink_videooverlay_init)
+     G_IMPLEMENT_INTERFACE (GST_TYPE_WAYLAND_VIDEO,
+         gst_wayland_sink_waylandvideo_init));
+-GST_ELEMENT_REGISTER_DEFINE (waylandsink, "waylandsink", GST_RANK_MARGINAL,
++GST_ELEMENT_REGISTER_DEFINE (waylandsink, "waylandsink", GST_RANK_SECONDARY+1,
+     GST_TYPE_WAYLAND_SINK);
+ 
+ /* A tiny GstVideoBufferPool subclass that modify the options to remove
+-- 
+2.25.1
+

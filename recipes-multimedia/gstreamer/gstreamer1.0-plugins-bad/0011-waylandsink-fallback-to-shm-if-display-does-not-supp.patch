@@ -1,7 +1,7 @@
-From 4d7f46ab457197280f14260f5bd11601cadc9130 Mon Sep 17 00:00:00 2001
+From e46e02a4745e20b139a5834d235fe2eeb992be14 Mon Sep 17 00:00:00 2001
 From: Hugues Fruchet <hugues.fruchet@st.com>
 Date: Fri, 22 Mar 2019 15:40:03 +0100
-Subject: [PATCH 12/14] waylandsink: fallback to shm if display does not
+Subject: [PATCH 11/14] waylandsink: fallback to shm if display does not
  support dmabuf
 
 Fallback to shm if display does not support dmabuf.
@@ -12,10 +12,10 @@ Signed-off-by: Hugues Fruchet <hugues.fruchet@st.com>
  1 file changed, 3 insertions(+), 7 deletions(-)
 
 diff --git a/ext/wayland/gstwaylandsink.c b/ext/wayland/gstwaylandsink.c
-index dff8724..d53f8f7 100644
+index 0dc1f0d..e4952cb 100644
 --- a/ext/wayland/gstwaylandsink.c
 +++ b/ext/wayland/gstwaylandsink.c
-@@ -601,15 +601,11 @@ gst_wayland_sink_set_caps (GstBaseSink * bsink, GstCaps * caps)
+@@ -618,15 +618,11 @@ gst_wayland_sink_set_caps (GstBaseSink * bsink, GstCaps * caps)
     */
    /* use_dmabuf = gst_caps_features_contains (gst_caps_get_features (caps, 0),
        GST_CAPS_FEATURE_MEMORY_DMABUF); */
@@ -35,5 +35,5 @@ index dff8724..d53f8f7 100644
    /* create a new pool for the new caps */
    if (sink->pool)
 -- 
-2.7.4
+2.25.1
 

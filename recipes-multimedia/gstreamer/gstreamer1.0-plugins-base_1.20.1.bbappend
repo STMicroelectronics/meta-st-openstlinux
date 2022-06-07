@@ -1,7 +1,7 @@
-FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}/:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}/:"
 
-SRC_URI_append = " file://0001-playbin2-disable-any-default-video-processing.patch "
-SRC_URI_append = " file://0002-playbin3-disable-any-default-video-processing.patch "
+SRC_URI:append = " file://0001-playbin2-disable-any-default-video-processing.patch "
+SRC_URI:append = " file://0002-playbin3-disable-any-default-video-processing.patch "
 
 PACKAGECONFIG ?= " \
     ${GSTREAMER_ORC} \

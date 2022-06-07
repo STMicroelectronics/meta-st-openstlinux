@@ -1,7 +1,7 @@
-From f2ab87c14f43ea0b5c8a55cb7f546d38a2459876 Mon Sep 17 00:00:00 2001
+From 9eb8fcc53467a575dc3fba3bbeae26ed8752e639 Mon Sep 17 00:00:00 2001
 From: Hugues Fruchet <hugues.fruchet@st.com>
 Date: Mon, 11 Feb 2019 16:00:02 +0100
-Subject: [PATCH 11/14] waylandsink: set video alignment to 32 bytes
+Subject: [PATCH 10/14] waylandsink: set video alignment to 32 bytes
 
 Display subsystem requires at least 32 bytes alignment.
 
@@ -37,5 +37,5 @@ index 17a94f1..e04a459 100644
    gst_buffer_pool_set_config (GST_BUFFER_POOL_CAST (pool), s);
  
 -- 
-2.7.4
+2.25.1
 

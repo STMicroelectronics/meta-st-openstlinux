@@ -1,7 +1,7 @@
-From 10f7ad7be4d05a1a8dd294303cdde2f0cd7b5897 Mon Sep 17 00:00:00 2001
+From ddeb2fe4af5c62235c31bba257354258ad14d7a1 Mon Sep 17 00:00:00 2001
 From: Pierre-Yves MORDRET <pierre-yves.mordret@st.com>
 Date: Thu, 5 Sep 2019 16:19:22 +0200
-Subject: [PATCH 02/14] waylandsink: add dmabuf bufferpool
+Subject: [PATCH 01/14] waylandsink: add dmabuf bufferpool
 
 Add support of DMA-buf allocated buffers through use of
 drm/kms kernel driver ioctl DRM_IOCTL_MODE_CREATE_DUMB.
@@ -11,33 +11,20 @@ is set in caps.
 Change-Id: I0507752a1a64ee2c657b73d8c802c44fd707f49f
 Signed-off-by: Hugues Fruchet <hugues.fruchet@st.com>
 ---
- ext/wayland/Makefile.am      |   1 +
- ext/wayland/gstwaylandsink.c | 108 +++++++-
- ext/wayland/waylandpool.c    | 640 +++++++++++++++++++++++++++++++++++++++++++
- ext/wayland/waylandpool.h    | 105 +++++++
+ ext/wayland/gstwaylandsink.c | 108 +++++-
+ ext/wayland/waylandpool.c    | 640 +++++++++++++++++++++++++++++++++++
+ ext/wayland/waylandpool.h    | 105 ++++++
  ext/wayland/wldisplay.c      |   3 +
  ext/wayland/wldisplay.h      |   9 +-
- 6 files changed, 854 insertions(+), 12 deletions(-)
+ 5 files changed, 853 insertions(+), 12 deletions(-)
  create mode 100644 ext/wayland/waylandpool.c
  create mode 100644 ext/wayland/waylandpool.h
 
-diff --git a/ext/wayland/Makefile.am b/ext/wayland/Makefile.am
-index 95bb97e..824d86d 100644
---- a/ext/wayland/Makefile.am
-+++ b/ext/wayland/Makefile.am
-@@ -12,6 +12,7 @@ BUILT_SOURCES = \
- 
- libgstwaylandsink_la_SOURCES =  \
- 	gstwaylandsink.c \
-+	waylandpool.c \
- 	wlshmallocator.c \
- 	wlbuffer.c \
- 	wldisplay.c \
 diff --git a/ext/wayland/gstwaylandsink.c b/ext/wayland/gstwaylandsink.c
-index 78dd294..d431bd2 100644
+index 0761304..20df1bf 100644
 --- a/ext/wayland/gstwaylandsink.c
 +++ b/ext/wayland/gstwaylandsink.c
-@@ -46,6 +46,7 @@
+@@ -47,6 +47,7 @@
  #include "wlbuffer.h"
  #include "wlshmallocator.h"
  #include "wllinuxdmabuf.h"
@@ -45,7 +32,7 @@ index 78dd294..d431bd2 100644
  
  #include <gst/wayland/wayland.h>
  #include <gst/video/videooverlay.h>
-@@ -540,6 +541,36 @@ gst_wayland_create_pool (GstWaylandSink * sink, GstCaps * caps)
+@@ -557,6 +558,36 @@ gst_wayland_create_pool (GstWaylandSink * sink, GstCaps * caps)
    return pool;
  }
  
@@ -82,7 +69,7 @@ index 78dd294..d431bd2 100644
  static gboolean
  gst_wayland_sink_set_caps (GstBaseSink * bsink, GstCaps * caps)
  {
-@@ -558,15 +589,9 @@ gst_wayland_sink_set_caps (GstBaseSink * bsink, GstCaps * caps)
+@@ -575,15 +606,9 @@ gst_wayland_sink_set_caps (GstBaseSink * bsink, GstCaps * caps)
    format = GST_VIDEO_INFO_FORMAT (&sink->video_info);
    sink->video_info_changed = TRUE;
  
@@ -98,7 +85,7 @@ index 78dd294..d431bd2 100644
    if (use_dmabuf) {
      if (!gst_wl_display_check_format_for_dmabuf (sink->display, format))
        goto unsupported_format;
-@@ -574,6 +599,14 @@ gst_wayland_sink_set_caps (GstBaseSink * bsink, GstCaps * caps)
+@@ -591,6 +616,14 @@ gst_wayland_sink_set_caps (GstBaseSink * bsink, GstCaps * caps)
      goto unsupported_format;
    }
  
@@ -113,7 +100,7 @@ index 78dd294..d431bd2 100644
    sink->use_dmabuf = use_dmabuf;
  
    return TRUE;
-@@ -593,7 +626,7 @@ unsupported_format:
+@@ -610,7 +643,7 @@ unsupported_format:
  }
  
  static gboolean
@@ -122,7 +109,7 @@ index 78dd294..d431bd2 100644
  {
    GstWaylandSink *sink = GST_WAYLAND_SINK (bsink);
    GstCaps *caps;
-@@ -618,6 +651,67 @@ gst_wayland_sink_propose_allocation (GstBaseSink * bsink, GstQuery * query)
+@@ -635,6 +668,67 @@ gst_wayland_sink_propose_allocation (GstBaseSink * bsink, GstQuery * query)
    return TRUE;
  }
  
@@ -948,7 +935,7 @@ index 0000000..4afd683
 +G_END_DECLS
 +#endif /*__GST_WAYLAND_BUFFER_POOL_H__*/
 diff --git a/ext/wayland/wldisplay.c b/ext/wayland/wldisplay.c
-index 9400095..56ff412 100644
+index f326091..b2e1359 100644
 --- a/ext/wayland/wldisplay.c
 +++ b/ext/wayland/wldisplay.c
 @@ -50,6 +50,9 @@ gst_wl_display_init (GstWlDisplay * self)
@@ -962,7 +949,7 @@ index 9400095..56ff412 100644
  
  static void
 diff --git a/ext/wayland/wldisplay.h b/ext/wayland/wldisplay.h
-index 4ecc0d6..45c37d7 100644
+index f2025a6..65c754a 100644
 --- a/ext/wayland/wldisplay.h
 +++ b/ext/wayland/wldisplay.h
 @@ -29,15 +29,15 @@
@@ -1001,12 +988,12 @@ index 4ecc0d6..45c37d7 100644
      gboolean take_ownership, GError ** error);
  
  /* see wlbuffer.c for explanation */
-@@ -94,5 +94,4 @@ gboolean gst_wl_display_check_format_for_dmabuf (GstWlDisplay * display,
+@@ -96,5 +96,4 @@ gboolean gst_wl_display_check_format_for_dmabuf (GstWlDisplay * display,
      GstVideoFormat format);
  
  G_END_DECLS
 -
  #endif /* __GST_WL_DISPLAY_H__ */
 -- 
-2.7.4
+2.25.1
 

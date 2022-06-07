@@ -1,0 +1,56 @@
+From 105576bd522f3a751fda51ea35da2147b1adcfe7 Mon Sep 17 00:00:00 2001
+From: Pierre-Yves MORDRET <pierre-yves.mordret@st.com>
+Date: Fri, 4 Oct 2019 09:47:43 +0200
+Subject: [PATCH 12/14] waylandsink: XDG protocol does not work in fullscreen
+
+Using new XDG protocol, it turns out to be not working when enabling
+fullscreen support.
+This patch avoids to over commit surface during configuration and takes
+into account render region when provided within wayland callback.
+
+Signed-off-by: Pierre-Yves MORDRET <pierre-yves.mordret@st.com>
+---
+ ext/wayland/wlwindow.c | 19 +++++++++++++++----
+ 1 file changed, 15 insertions(+), 4 deletions(-)
+
+diff --git a/ext/wayland/wlwindow.c b/ext/wayland/wlwindow.c
+index 66df0fc..cc5de26 100644
+--- a/ext/wayland/wlwindow.c
++++ b/ext/wayland/wlwindow.c
+@@ -325,10 +325,18 @@ gst_wl_window_new_toplevel (GstWlDisplay * display, const GstVideoInfo * info,
+   /* render_rectangle is already set via toplevel_configure in
+    * xdg_shell fullscreen mode */
+   if (!(display->xdg_wm_base && fullscreen)) {
++    gint width, height;
++
+     /* set the initial size to be the same as the reported video size */
+-    gint width =
+-        gst_util_uint64_scale_int_round (info->width, info->par_n, info->par_d);
+-    gst_wl_window_set_render_rectangle (window, 0, 0, width, info->height);
++    if ( window->render_rectangle.w == 0 || window->render_rectangle.h == 0) {
++      width =
++          gst_util_uint64_scale_int_round (info->width, info->par_n, info->par_d);
++      height = info->height;
++    } else {
++      width = window->render_rectangle.w;
++      height = window->render_rectangle.h;
++    }
++    gst_wl_window_set_render_rectangle (window, 0, 0, width, height);
+   }
+ 
+   return window;
+@@ -567,7 +575,10 @@ gst_wl_window_set_render_rectangle (GstWlWindow * window, gint x, gint y,
+     gst_wl_window_resize_video_surface (window, TRUE);
+   }
+ 
+-  wl_surface_commit (window->area_surface_wrapper);
++  if (window->xdg_surface && window->configured) {
++    wl_surface_damage (window->area_surface_wrapper, 0, 0, w, h);
++    wl_surface_commit (window->area_surface_wrapper);
++  }
+ 
+   if (window->video_width != 0)
+     wl_subsurface_set_desync (window->video_subsurface);
+-- 
+2.25.1
+
