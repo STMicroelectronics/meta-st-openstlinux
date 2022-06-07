@@ -14,7 +14,7 @@ PACKAGES = "\
             packagegroup-framework-sample-qt-examples   \
             "
 
-RDEPENDS_packagegroup-framework-sample-qt = "\
+RDEPENDS:packagegroup-framework-sample-qt = "\
     qtbase                          \
     liberation-fonts                \
     qtbase-plugins                  \
@@ -33,7 +33,7 @@ RDEPENDS_packagegroup-framework-sample-qt = "\
     qtscript                        \
     "
 
-SUMMARY_packagegroup-framework-sample-qt-examples = "Framework sample qt components for examples"
-RDEPENDS_packagegroup-framework-sample-qt-examples = "\
+SUMMARY:packagegroup-framework-sample-qt-examples = "Framework sample qt components for examples"
+RDEPENDS:packagegroup-framework-sample-qt-examples = "\
     qtbase-examples         \
 "

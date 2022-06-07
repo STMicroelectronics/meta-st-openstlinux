@@ -6,7 +6,7 @@ inherit packagegroup features_check
 
 REQUIRED_DISTRO_FEATURES = "wayland"
 
-RDEPENDS_${PN} = "\
+RDEPENDS:${PN} = "\
     packagegroup-framework-sample-qt    \
     \
     qtwayland                           \

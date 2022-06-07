@@ -1,7 +1,7 @@
 SUMMARY = "Information for support"
 
-LICENSE = "GPLv2+"
-LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/GPL-2.0;md5=801f80980d171dd6425610833a22dbe6"
+LICENSE = "GPL-2.0-or-later"
+LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/GPL-2.0-or-later;md5=fed54355545ffd980b814dab4a3b312c"
 
 PACKAGE_ARCH = "${MACHINE_ARCH}"
 
@@ -18,5 +18,5 @@ do_install() {
 # Make sure to update package as soon as EULA is accepted or not
 do_install[vardeps] += "${@d.getVar('ACCEPT_EULA_'+d.getVar('MACHINE'))}"
 
-FILES_${PN} = "${sysconfdir}/st-info.d"
-ALLOW_EMPTY_${PN} = "1"
+FILES:${PN} = "${sysconfdir}/st-info.d"
+ALLOW_EMPTY:${PN} = "1"

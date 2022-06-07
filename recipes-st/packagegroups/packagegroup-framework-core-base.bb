@@ -15,24 +15,24 @@ PACKAGES = "\
             "
 
 # Manage to provide all framework core base packages with overall one
-RDEPENDS_packagegroup-framework-core-base = "\
+RDEPENDS:packagegroup-framework-core-base = "\
     packagegroup-framework-core-base-display    \
     packagegroup-framework-core-base-mm         \
     packagegroup-framework-core-base-fs         \
     "
 
-SUMMARY_packagegroup-framework-core-base-display = "Framework core base components for display"
-RDEPENDS_packagegroup-framework-core-base-display = "\
+SUMMARY:packagegroup-framework-core-base-display = "Framework core base components for display"
+RDEPENDS:packagegroup-framework-core-base-display = "\
     libdrm          \
     libdrm-tests    \
     "
 
-SUMMARY_packagegroup-framework-core-base-mm = "Framework core base components for multimedia"
-RDEPENDS_packagegroup-framework-core-base-mm = "\
+SUMMARY:packagegroup-framework-core-base-mm = "Framework core base components for multimedia"
+RDEPENDS:packagegroup-framework-core-base-mm = "\
     "
 
-SUMMARY_packagegroup-framework-core-base-fs = "Framework core base components for filesystem"
-RDEPENDS_packagegroup-framework-core-base-fs = "\
+SUMMARY:packagegroup-framework-core-base-fs = "Framework core base components for filesystem"
+RDEPENDS:packagegroup-framework-core-base-fs = "\
     ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'systemd-mount-partitions', '', d)} \
     ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'userfs-cleanup-package', '', d)} \
     "

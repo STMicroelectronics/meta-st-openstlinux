@@ -16,7 +16,7 @@ image_copy_image_license() {
         bbwarn "Missing 'EULA_FILE_ST' var : no image license copied..."
     fi
 }
-IMAGE_POSTPROCESS_COMMAND_prepend = "image_copy_image_license;"
+IMAGE_POSTPROCESS_COMMAND:prepend = "image_copy_image_license;"
 
 sdk_copy_image_license() {
     mkdir -p ${SDKDEPLOYDIR}
@@ -26,7 +26,7 @@ sdk_copy_image_license() {
         bbwarn "Missing 'EULA_FILE_ST' var : no image license copied..."
     fi
 }
-SDK_POSTPROCESS_COMMAND_prepend = "sdk_copy_image_license;"
+SDK_POSTPROCESS_COMMAND:prepend = "sdk_copy_image_license;"
 
 LSB_RELASE_TIMESTAMP = "${DATE}-${TIME}"
 LSB_RELASE_TIMESTAMP[vardepsexclude] += "DATE"
@@ -38,4 +38,11 @@ update_lsbreleasedate() {
         sed -i 's/^DISTRIB_DESCRIPTION=\(.*\)-snapshot-.*\"/DISTRIB_DESCRIPTION=\1-snapshot-'"${LSB_RELASE_TIMESTAMP}"'\"/' ${IMAGE_ROOTFS}${sysconfdir}/lsb-release
     fi
 }
-ROOTFS_POSTPROCESS_COMMAND_append = "update_lsbreleasedate;"
+ROOTFS_POSTPROCESS_COMMAND:append = "update_lsbreleasedate;"
+
+zap_empty_weston_password () {
+    if [ -e ${IMAGE_ROOTFS}/etc/shadow ]; then
+        sed -i 's%^weston:!:%weston::%' ${IMAGE_ROOTFS}/etc/shadow
+    fi
+}
+ROOTFS_POSTPROCESS_COMMAND:append = "zap_empty_weston_password;"

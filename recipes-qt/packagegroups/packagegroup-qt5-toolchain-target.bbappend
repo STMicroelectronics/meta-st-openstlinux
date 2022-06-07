@@ -1,4 +1,4 @@
-RDEPENDS_${PN}_remove += "\
+RDEPENDS:${PN}:remove = " \
    qtenginio-dev \
    qtenginio-mkspecs \
    ${@bb.utils.contains('DISTRO_FEATURES', 'opengl', 'qtenginio-qmlplugins', '', d)} \

@@ -452,7 +452,7 @@ def license_sdk_create_summary(d):
                 if len(package_file_content) == 0:
                     package_file = pkgdata_dir + "/runtime-reverse/" + package_name
                     package_file_content = private_open(package_file)
-                r = re.compile("([^:]+):\s*(.*)")
+                r = re.compile(r"(^.+?):\s+(.*)")
                 for line in package_file_content:
                     m = r.match(line)
                     if m:
@@ -528,4 +528,4 @@ def license_sdk_create_summary(d):
     html.endHtml()
     html.closefile()
 
-SDK_POSTPROCESS_COMMAND_append = "do_write_sdk_license_create_summary;"
+SDK_POSTPROCESS_COMMAND:append = "do_write_sdk_license_create_summary;"

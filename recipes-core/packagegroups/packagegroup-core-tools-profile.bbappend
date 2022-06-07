@@ -1,5 +1,5 @@
-RDEPENDS_${PN}_remove = "${LTTNGMODULES}"
+RDEPENDS:${PN}:remove = "${LTTNGMODULES}"
 
-RRECOMMENDS_${PN}_remove = "${@bb.utils.contains('DISTRO_FEATURES', 'gplv3', '', '${PERF}', d)}"
+RRECOMMENDS:${PN}:remove = "${@bb.utils.contains('DISTRO_FEATURES', 'gplv3', '', '${PERF}', d)}"
 
-#RDEPENDS_append += "oprofile"
+#RDEPENDS:append += "oprofile"

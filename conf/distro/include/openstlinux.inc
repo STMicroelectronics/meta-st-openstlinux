@@ -46,41 +46,41 @@ DISTRO_FEATURES += "bluetooth"
 DISTRO_FEATURES += "bluez5"
 
 # add support of gstreamer
-DISTRO_FEATURES_append = " gstreamer "
+DISTRO_FEATURES:append = " gstreamer "
 
 # add support of optee
-DISTRO_FEATURES_append = " optee "
+DISTRO_FEATURES:append = " optee "
 
 # add support of splashscreen
-DISTRO_FEATURES_append = " splashscreen "
+DISTRO_FEATURES:append = " splashscreen "
 
 # add support of wayland
-DISTRO_FEATURES_append = " wayland pam "
+DISTRO_FEATURES:append = " wayland pam "
 
 # add support of X11
-DISTRO_FEATURES_append = " x11 "
+DISTRO_FEATURES:append = " x11 "
 
 # add support of KDE (since OE thud version)
-DISTRO_FEATURES_append = " kde "
+DISTRO_FEATURES:append = " kde "
 
 # add support of systemd
-DISTRO_FEATURES_append = " systemd polkit "
+DISTRO_FEATURES:append = " systemd polkit "
 
 # add support of efi
-DISTRO_FEATURES_append = " efi "
+DISTRO_FEATURES:append = " efi "
 
 # add support of InitRD installation package
-DISTRO_FEATURES_append = " initrd "
+DISTRO_FEATURES:append = " initrd "
 
 # add support of autoresize through InitRD
-DISTRO_FEATURES_append = " autoresize "
+DISTRO_FEATURES:append = " autoresize "
 
 # add support of tpm2
-#DISTRO_FEATURES_append = " tpm2 "
+#DISTRO_FEATURES:append = " tpm2 "
 
 # Disabling pulseaudio
 #DISTRO_FEATURES_BACKFILL_CONSIDERED += "pulseaudio"
-DISTRO_FEATURES_append = "pulseaudio"
+DISTRO_FEATURES:append = "pulseaudio"
 
 # Disabling sysvinit
 DISTRO_FEATURES_BACKFILL_CONSIDERED += "sysvinit"
@@ -100,10 +100,10 @@ VIRTUAL-RUNTIME_initscripts = "systemd-compat-units"
 # =========================================================================
 IMAGE_LINGUAS = "en-us en-gb"
 
-LICENSE_FLAGS_WHITELIST += " non-commercial commercial"
+LICENSE_FLAGS_ACCEPTED += " non-commercial commercial"
 
 # X11 addons
-DISTRO_EXTRA_RDEPENDS_append = " ${@bb.utils.contains('DISTRO_FEATURES', 'x11', 'xf86-video-modesetting', '', d)} "
+DISTRO_EXTRA_RDEPENDS:append = " ${@bb.utils.contains('DISTRO_FEATURES', 'x11', 'xf86-video-modesetting', '', d)} "
 
 # INITRD addons to image
-DISTRO_EXTRA_RRECOMMENDS_append = " ${@bb.utils.contains('COMBINED_FEATURES', 'initrd', '${INITRD_PACKAGE}', '', d)} "
+DISTRO_EXTRA_RRECOMMENDS:append = " ${@bb.utils.contains('COMBINED_FEATURES', 'initrd', '${INITRD_PACKAGE}', '', d)} "

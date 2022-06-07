@@ -32,5 +32,5 @@ do_install() {
     install -m 0644 ${WORKDIR}/ST2297_visionv3.webm ${D}${prefix}/local/demo/media
 }
 
-FILES_${PN} += "${prefix}/local/demo/application/ ${prefix}/local/demo/media"
-RDEPENDS_${PN} += "demo-launcher event-gtk-player"
+FILES:${PN} += "${prefix}/local/demo/application/ ${prefix}/local/demo/media"
+RDEPENDS:${PN} += "demo-launcher event-gtk-player"

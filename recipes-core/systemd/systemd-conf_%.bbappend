@@ -1,10 +1,10 @@
-FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
-SRC_URI_append = " \
+SRC_URI:append = " \
     file://coredump-custom.conf \
     "
 
-do_install_prepend() {
+do_install:prepend() {
     install -d ${D}${sysconfdir}/systemd/coredump.conf.d/
     install -m 644 ${WORKDIR}/coredump-custom.conf ${D}${sysconfdir}/systemd/coredump.conf.d/
 
@@ -18,4 +18,4 @@ do_install_prepend() {
     echo "[Journal]" > ${D}${systemd_unitdir}/journald.conf.d/01-openstlinux.conf
     echo "Storage=volatile" >> ${D}${systemd_unitdir}/journald.conf.d/01-openstlinux.conf
 }
-FILES_${PN} += " ${sysconfdir}/systemd/coredump.conf.d/ "
+FILES:${PN} += " ${sysconfdir}/systemd/coredump.conf.d/ "

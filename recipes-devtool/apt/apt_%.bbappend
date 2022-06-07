@@ -1,2 +1,2 @@
-RDEPENDS_${PN} += " gnupg "
+RDEPENDS:${PN} += " gnupg "
 

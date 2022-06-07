@@ -1,4 +1,4 @@
-DESCRIPTION = "Add support of 3d Cube application on Demo Launcher"
+SUMMARY = "Add support of 3d Cube application on Demo Launcher"
 HOMEPAGE = "wiki.st.com"
 LICENSE = "BSD-3-Clause"
 LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/BSD-3-Clause;md5=550794465ba0ec5312d6919e203a55f9"
@@ -50,13 +50,13 @@ do_install() {
 }
 
 PACKAGES += "${PN}-extra"
-FILES_${PN} = " \
+FILES:${PN} = " \
     ${prefix}/local/demo/application/3d-cube \
     ${prefix}/local/demo/application/040-3d_cube.yaml \
     "
-RDEPENDS_${PN} = "weston-cube demo-launcher"
+RDEPENDS:${PN} = "weston-cube demo-launcher"
 
-FILES_${PN}-extra = " \
+FILES:${PN}-extra = " \
     ${prefix}/local/demo/application/3d-cube-extra \
     ${prefix}/local/demo/application/100-3d-cube.yaml \
     ${prefix}/local/demo/application/101-3d-cube-shader.yaml \
@@ -67,4 +67,4 @@ FILES_${PN}-extra = " \
     ${prefix}/local/demo/application/116-3d_cube_camera_shader.yaml \
     ${prefix}/local/demo/application/120-3d-cube-pictures-shader.yaml \
     "
-RDEPENDS_${PN}-extra = "${PN} weston-cube demo-launcher"
+RDEPENDS:${PN}-extra = "${PN} weston-cube demo-launcher"

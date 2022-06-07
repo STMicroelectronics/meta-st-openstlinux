@@ -14,7 +14,7 @@ PACKAGES = "\
             packagegroup-framework-sample-qt-extra-examples \
             "
 
-RDEPENDS_packagegroup-framework-sample-qt-extra = "\
+RDEPENDS:packagegroup-framework-sample-qt-extra = "\
     \
     qt3d                        \
     qt3d-qmlplugins             \
@@ -44,8 +44,8 @@ RDEPENDS_packagegroup-framework-sample-qt-extra = "\
     qtlocation-qmlplugins       \
     "
 
-SUMMARY_packagegroup-framework-sample-qt-extra-examples = "Framework sample qt extra components for examples"
-RDEPENDS_packagegroup-framework-sample-qt-extra-examples = "\
+SUMMARY:packagegroup-framework-sample-qt-extra-examples = "Framework sample qt extra components for examples"
+RDEPENDS:packagegroup-framework-sample-qt-extra-examples = "\
     qt5nmapcarousedemo          \
     cinematicexperience         \
     qtsmarthome                 \

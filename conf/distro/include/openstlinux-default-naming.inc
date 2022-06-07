@@ -22,7 +22,7 @@ MAINTAINER = "Christophe Priouzeau <christophe.priouzeau@st.com>"
 TARGET_VENDOR = "-ostl"
 
 # Append distro name to each image name
-IMAGE_BASENAME_append = "-${DISTRO}"
+IMAGE_BASENAME:append = "-${DISTRO}"
 
 # Add image name for generated SDK and set default SDK install folder
 SDK_NAME = "${IMAGE_LINK_NAME}-${SDK_ARCH}"

@@ -44,8 +44,8 @@ do_install() {
     install -m 0755 ${WORKDIR}/start_up_demo_launcher.sh ${D}${prefix}/local/weston-start-at-startup/
 }
 
-FILES_${PN} += "${prefix}/local/demo/ ${prefix}/local/weston-start-at-startup/"
+FILES:${PN} += "${prefix}/local/demo/ ${prefix}/local/weston-start-at-startup/"
 
-RDEPENDS_${PN} += "python3-pygobject gtk+3 python3-resource python3-threading"
+RDEPENDS:${PN} += "python3-pygobject gtk+3 python3-resource python3-threading"
 #since zeus
-RDEPENDS_${PN} += " python3-core "
+RDEPENDS:${PN} += " python3-core "

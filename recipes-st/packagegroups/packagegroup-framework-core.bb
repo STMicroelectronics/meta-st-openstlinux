@@ -14,19 +14,19 @@ PACKAGES = "\
             "
 
 # Manage to provide all framework core packages with overall one
-RDEPENDS_packagegroup-framework-core = "\
+RDEPENDS:packagegroup-framework-core = "\
     packagegroup-framework-core-display \
     packagegroup-framework-core-mm      \
     infos-openstlinux \
     "
 
-SUMMARY_packagegroup-framework-core-display = "Framework core components for display"
-RDEPENDS_packagegroup-framework-core-display = "\
+SUMMARY:packagegroup-framework-core-display = "Framework core components for display"
+RDEPENDS:packagegroup-framework-core-display = "\
     fb-test \
     "
 
-SUMMARY_packagegroup-framework-core-mm = "Framework core components for multimedia"
-RDEPENDS_packagegroup-framework-core-mm = "\
+SUMMARY:packagegroup-framework-core-mm = "Framework core components for multimedia"
+RDEPENDS:packagegroup-framework-core-mm = "\
     tiff        \
     libv4l      \
     rc-keymaps  \

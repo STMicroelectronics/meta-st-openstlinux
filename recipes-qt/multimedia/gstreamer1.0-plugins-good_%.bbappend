@@ -1,1 +1,1 @@
-PACKAGECONFIG_remove = " qt5"
+PACKAGECONFIG:remove = " qt5"

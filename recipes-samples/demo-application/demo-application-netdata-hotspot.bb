@@ -1,4 +1,4 @@
-DESCRIPTION = "Add support of netdata/hotspot wifi on Demo Launcher"
+SUMMARY = "Add support of netdata/hotspot wifi on Demo Launcher"
 HOMEPAGE = "wiki.st.com"
 LICENSE = "BSD-3-Clause"
 LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/BSD-3-Clause;md5=550794465ba0ec5312d6919e203a55f9"
@@ -36,5 +36,5 @@ do_install() {
     install -d ${D}${sysconfdir}/default
     install -m 0644 ${WORKDIR}/hostapd ${D}${sysconfdir}/default
 }
-RDEPENDS_${PN} += "python3-core python3-pygobject gtk+3 python3-threading demo-launcher demo-hotspot-wifi qrenc"
-FILES_${PN} += "${sysconfdir}/default ${prefix}/local/demo/application/"
+RDEPENDS:${PN} += "python3-core python3-pygobject gtk+3 python3-threading demo-launcher demo-hotspot-wifi qrenc"
+FILES:${PN} += "${sysconfdir}/default ${prefix}/local/demo/application/"

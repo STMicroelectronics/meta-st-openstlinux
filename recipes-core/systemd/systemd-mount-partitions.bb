@@ -5,7 +5,7 @@ SUMMARY = "Mount partitions"
 LICENSE = "MIT"
 LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/MIT;md5=0835ade698e0bcf8506ecda2f7b4f302"
 
-RDEPENDS_${PN} += " util-linux "
+RDEPENDS:${PN} += " util-linux "
 
 MOUNT_BASENAME = "mount-partitions"
 
@@ -20,8 +20,8 @@ INITSCRIPT_NAME = "${MOUNT_BASENAME}.sh"
 INITSCRIPT_PARAMS = "start 22 5 3 ."
 
 SYSTEMD_PACKAGES = "${@bb.utils.contains('DISTRO_FEATURES','systemd','${PN}','',d)}"
-SYSTEMD_SERVICE_${PN} = "${MOUNT_BASENAME}.service"
-SYSTEMD_AUTO_ENABLE_${PN} = "enable"
+SYSTEMD_SERVICE:${PN} = "${MOUNT_BASENAME}.service"
+SYSTEMD_AUTO_ENABLE:${PN} = "enable"
 
 # This list should be set with partition label and associated mountpoint
 # <partition_label1>,<partition_mountpoint1> <partition_label2>,<partition_mountpoint2>
@@ -77,4 +77,4 @@ do_install() {
     fi
 }
 
-FILES_${PN} += " ${systemd_unitdir} ${base_sbindir} ${INIT_D_DIR}"
+FILES:${PN} += " ${systemd_unitdir} ${base_sbindir} ${INIT_D_DIR}"

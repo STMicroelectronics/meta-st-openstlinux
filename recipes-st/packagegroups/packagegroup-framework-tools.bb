@@ -18,7 +18,7 @@ PACKAGES = "\
             "
 
 # Manage to provide all framework tools packages with overall one
-RDEPENDS_packagegroup-framework-tools = "\
+RDEPENDS:packagegroup-framework-tools = "\
     packagegroup-framework-tools-core       \
     packagegroup-framework-tools-kernel     \
     packagegroup-framework-tools-network    \
@@ -27,8 +27,8 @@ RDEPENDS_packagegroup-framework-tools = "\
     packagegroup-framework-tools-python3    \
     "
 
-SUMMARY_packagegroup-framework-tools-core = "Framework tools components for core"
-RDEPENDS_packagegroup-framework-tools-core = "\
+SUMMARY:packagegroup-framework-tools-core = "Framework tools components for core"
+RDEPENDS:packagegroup-framework-tools-core = "\
     grep            \
     util-linux      \
     util-linux-lscpu\
@@ -56,8 +56,8 @@ RDEPENDS_packagegroup-framework-tools-core = "\
     stm32-ddr-tools \
     "
 
-SUMMARY_packagegroup-framework-tools-kernel = "Framework tools components for kernel"
-RDEPENDS_packagegroup-framework-tools-kernel = "\
+SUMMARY:packagegroup-framework-tools-kernel = "Framework tools components for kernel"
+RDEPENDS:packagegroup-framework-tools-kernel = "\
     cpufrequtils    \
     sysfsutils      \
     dosfstools      \
@@ -67,8 +67,8 @@ RDEPENDS_packagegroup-framework-tools-kernel = "\
     sysprof         \
     "
 
-SUMMARY_packagegroup-framework-tools-network = "Framework tools components for network"
-RDEPENDS_packagegroup-framework-tools-network = "\
+SUMMARY:packagegroup-framework-tools-network = "Framework tools components for network"
+RDEPENDS:packagegroup-framework-tools-network = "\
     tcpdump         \
     packagegroup-core-full-cmdline-extended \
     ${@bb.utils.contains('DISTRO_FEATURES', 'wifi', 'iw', '', d)}                       \
@@ -76,14 +76,13 @@ RDEPENDS_packagegroup-framework-tools-network = "\
     ${@bb.utils.contains('DISTRO_FEATURES', 'wifi', 'hostapd', '', d)}                  \
     ${@bb.utils.contains('DISTRO_FEATURES', 'wifi', 'wireless-regdb-static', '', d)}    \
     openssh-sftp    \
-    ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'dhcp-client', '', d)}                       \
     ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'systemd-networkd-configuration', '', d)}    \
     usbip uhubctl   \
     bridge-utils    \
     "
 
-SUMMARY_packagegroup-framework-tools-audio = "Framework tools components for audio"
-RDEPENDS_packagegroup-framework-tools-audio = "\
+SUMMARY:packagegroup-framework-tools-audio = "Framework tools components for audio"
+RDEPENDS:packagegroup-framework-tools-audio = "\
     ${@bb.utils.contains('DISTRO_FEATURES', 'pulseaudio', 'pulseaudio', '', d)}                     \
     ${@bb.utils.contains('DISTRO_FEATURES', 'pulseaudio', 'pulseaudio-server', '', d)}              \
     ${@bb.utils.contains('DISTRO_FEATURES', 'pulseaudio', 'pulseaudio-misc', '', d)}                \
@@ -94,16 +93,16 @@ RDEPENDS_packagegroup-framework-tools-audio = "\
     ${@bb.utils.contains('DISTRO_FEATURES', 'pulseaudio bluetooth', 'pulseaudio-module-bluez5-discover', '', d)}    \
     "
 
-SUMMARY_packagegroup-framework-tools-ui = "Framework tools components for ui"
-RDEPENDS_packagegroup-framework-tools-ui = "\
+SUMMARY:packagegroup-framework-tools-ui = "Framework tools components for ui"
+RDEPENDS:packagegroup-framework-tools-ui = "\
     ${@bb.utils.contains('DISTRO_FEATURES', 'x11', 'xvinfo', '', d)}    \
     ${@bb.utils.contains('DISTRO_FEATURES', 'gplv3', 'glmark2', '', d)} \
     ${@bb.utils.contains('DISTRO_FEATURES', 'gplv3', 'netdata', '', d)} \
     ${@bb.utils.contains('DISTRO_FEATURES', 'gplv3', 'lmsensors-libsensors lmsensors-sensors', '', d)} \
     "
 
-SUMMARY_packagegroup-framework-tools-python3 = "Framework tools components for python3"
-RDEPENDS_packagegroup-framework-tools-python3 = "\
+SUMMARY:packagegroup-framework-tools-python3 = "Framework tools components for python3"
+RDEPENDS:packagegroup-framework-tools-python3 = "\
     python3-datetime    \
     python3-dateutil    \
     python3-distutils   \

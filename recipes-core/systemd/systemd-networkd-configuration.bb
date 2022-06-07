@@ -1,7 +1,7 @@
 # Copyright (C) 2017, STMicroelectronics - All Rights Reserved
 # Released under the MIT license (see COPYING.MIT for the terms)
 
-DESCRIPTION = "Basic networkd configuration"
+SUMMARY = "Basic networkd configuration"
 LICENSE = "MIT"
 LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/MIT;md5=0835ade698e0bcf8506ecda2f7b4f302"
 DEPENDS = "systemd"
@@ -29,4 +29,4 @@ do_install() {
 
 }
 
-FILES_${PN} += "${systemd_unitdir}/network"
+FILES:${PN} += "${systemd_unitdir}/network"

@@ -1,7 +1,7 @@
 SUMMARY = "qrenc which uses libqrencode to generate QR-code"
 
-LICENSE = "LGPLv2.1"
-LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/LGPL-2.1;md5=1a6d268fd218675ffea8be556788b780"
+LICENSE = "LGPL-2.1-only"
+LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/LGPL-2.1-only;md5=1a6d268fd218675ffea8be556788b780"
 
 DEPENDS += "qrencode"
 DEPENDS += "libpng"
@@ -19,6 +19,6 @@ do_install() {
     install -m 0755 ${B}/qrencode  ${D}${prefix}/bin/
 }
 
-FILES_${PN} += "${prefix}/bin/"
+FILES:${PN} += "${prefix}/bin/"
 
-RDEPENDS_${PN} += "qrencode libpng"
+RDEPENDS:${PN} += "qrencode libpng"

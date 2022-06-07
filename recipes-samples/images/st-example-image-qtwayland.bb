@@ -50,7 +50,7 @@ CORE_IMAGE_EXTRA_INSTALL += " \
     packagegroup-framework-sample-qt-examples   \
     "
 
-# IMAGE_INSTALL_append += "qtbase qtwayland qtbase-plugins qtwayland-plugins"
+# IMAGE_INSTALL:append = " qtbase qtwayland qtbase-plugins qtwayland-plugins "
 
 # NOTE:
 #   packagegroup-st-demo are installed on rootfs to populate the package

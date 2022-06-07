@@ -1,4 +1,4 @@
-FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
 SRC_URI += " \
             file://weston.ini \
@@ -21,9 +21,9 @@ FILES_${PN} += " ${datadir}/weston \
          /home/root \
          "
 
-CONFFILES_${PN} += "${sysconfdir}/xdg/weston/weston.ini"
+CONFFILES:${PN} += "${sysconfdir}/xdg/weston/weston.ini"
 
-do_install_append() {
+do_install:append() {
     install -d ${D}${sysconfdir}/xdg/weston/
     install -d ${D}${datadir}/weston/backgrounds
     install -d ${D}${datadir}/weston/icon

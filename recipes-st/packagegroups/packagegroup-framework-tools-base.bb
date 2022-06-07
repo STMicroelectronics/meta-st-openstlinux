@@ -18,7 +18,7 @@ PACKAGES = "\
             "
 
 # Manage to provide all framework tools base packages with overall one
-RDEPENDS_packagegroup-framework-tools-base = "\
+RDEPENDS:packagegroup-framework-tools-base = "\
     packagegroup-framework-tools-base-core      \
     packagegroup-framework-tools-base-kernel    \
     packagegroup-framework-tools-base-network   \
@@ -27,8 +27,8 @@ RDEPENDS_packagegroup-framework-tools-base = "\
     packagegroup-framework-tools-base-python3   \
     "
 
-SUMMARY_packagegroup-framework-tools-base-core = "Framework tools base components for core"
-RDEPENDS_packagegroup-framework-tools-base-core = "\
+SUMMARY:packagegroup-framework-tools-base-core = "Framework tools base components for core"
+RDEPENDS:packagegroup-framework-tools-base-core = "\
     ckermit         \
     coreutils       \
     libiio-iiod     \
@@ -36,11 +36,12 @@ RDEPENDS_packagegroup-framework-tools-base-core = "\
     lrzsz           \
     libgpiod        \
     libgpiod-tools  \
+    openssl-engines \
     ${@bb.utils.contains('DISTRO_FEATURES', 'usbgadget', 'usbotg-gadget-config', '', d)} \
     "
 
-SUMMARY_packagegroup-framework-tools-base-kernel = "Framework tools base components for kernel"
-RDEPENDS_packagegroup-framework-tools-base-kernel = "\
+SUMMARY:packagegroup-framework-tools-base-kernel = "Framework tools base components for kernel"
+RDEPENDS:packagegroup-framework-tools-base-kernel = "\
     can-utils       \
     i2c-tools       \
     strace          \
@@ -55,24 +56,24 @@ RDEPENDS_packagegroup-framework-tools-base-kernel = "\
     pciutils        \
     "
 
-SUMMARY_packagegroup-framework-tools-base-network = "Framework tools base components for network"
-RDEPENDS_packagegroup-framework-tools-base-network = "\
+SUMMARY:packagegroup-framework-tools-base-network = "Framework tools base components for network"
+RDEPENDS:packagegroup-framework-tools-base-network = "\
     ethtool         \
     iproute2        \
     curl            \
     "
 
-SUMMARY_packagegroup-framework-tools-base-audio = "Framework tools base components for audio"
-RDEPENDS_packagegroup-framework-tools-base-audio = "\
+SUMMARY:packagegroup-framework-tools-base-audio = "Framework tools base components for audio"
+RDEPENDS:packagegroup-framework-tools-base-audio = "\
     ${@bb.utils.contains('DISTRO_FEATURES', 'alsa', 'libasound alsa-conf', '', d)}  \
     ${@bb.utils.contains('DISTRO_FEATURES', 'alsa', 'alsa-utils', '', d)}           \
     ${@bb.utils.contains('DISTRO_FEATURES', 'alsa', 'alsa-plugins', '', d)}         \
     "
 
-SUMMARY_packagegroup-framework-tools-base-ui = "Framework tools base components for ui"
-RDEPENDS_packagegroup-framework-tools-base-ui = "\
+SUMMARY:packagegroup-framework-tools-base-ui = "Framework tools base components for ui"
+RDEPENDS:packagegroup-framework-tools-base-ui = "\
     "
 
-SUMMARY_packagegroup-framework-tools-base-python3 = "Framework tools base components for python3"
-RDEPENDS_packagegroup-framework-tools-base-python3 = "\
+SUMMARY:packagegroup-framework-tools-base-python3 = "Framework tools base components for python3"
+RDEPENDS:packagegroup-framework-tools-base-python3 = "\
     "

@@ -51,7 +51,7 @@ def license_create_summary(d):
             mount_list.append(img_mount)
         for fi in os.listdir(target_deploydir):
             if fi.startswith(img_name) and fi.endswith(".ext4"):
-                r = re.compile("(.*)-(\d\d\d\d+)")
+                r = re.compile(r"(.*)-(\d\d\d\d+)")
                 mi = r.match(os.path.basename(fi))
                 if mi:
                     image_list_arrray.append([mi.group(1), mi.group(2), img_name, img_mount, filter])
@@ -63,7 +63,7 @@ def license_create_summary(d):
         filter = False
         for fi in os.listdir(deploy_image_dir):
             if fi.startswith(img_name) and fi.endswith(img_ext):
-                r = re.compile("(.*)-(\d\d\d\d+)")
+                r = re.compile(r"(.*)-(\d\d\d\d+)")
                 mi = r.match(os.path.basename(fi))
                 if mi:
                     image_list_arrray.append([mi.group(1), mi.group(2), img_name, img_mount, filter])
@@ -506,7 +506,7 @@ def license_create_summary(d):
         html.addColumnHeaderContent("License", html.bold)
         html.stopRow()
 
-        r = re.compile("([^:]+):\s*(.*)")
+        r = re.compile(r"(^.+?):\s+(.*)")
         new_boot = 0
         boot_recipe = None
         boot_license = None
@@ -591,7 +591,7 @@ def license_create_summary(d):
                 package_file = pkgdata_dir + "/runtime-reverse/" + package_name
                 package_file_content = private_open(package_file)
                 file_info = None
-                r = re.compile("([^:]+):\s*(.*)")
+                r = re.compile(r"(^.+?):\s+(.*)")
                 for line in package_file_content:
                     m = r.match(line)
                     if m:

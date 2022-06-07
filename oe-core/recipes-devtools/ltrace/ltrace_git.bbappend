@@ -1,3 +1,3 @@
-FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
-SRC_URI_append = " file://0001-Add-support-for-ARM-Thumb-branches-with-instruction-.patch "
+SRC_URI:append = " file://0001-Add-support-for-ARM-Thumb-branches-with-instruction-.patch "

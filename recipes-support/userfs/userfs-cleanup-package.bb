@@ -1,12 +1,12 @@
 # Copyright (C) 2019, STMicroelectronics - All Rights Reserved
 # Released under the MIT license (see COPYING.MIT for the terms)
 
-DESCRIPTION = "Tools for cleaning apt databse"
+SUMMARY = "Tools for cleaning apt databse"
 SECTION = "devel"
 LICENSE = "BSD-3-Clause"
 LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/BSD-3-Clause;md5=550794465ba0ec5312d6919e203a55f9"
 
-RDEPENDS_${PN} += " apt "
+RDEPENDS:${PN} += " apt "
 
 SRC_URI = " file://userfs-cleanup-package.service  file://userfs-cleanup-package.sh"
 
@@ -17,8 +17,8 @@ inherit systemd update-rc.d
 ST_USERFS ?= "1"
 
 SYSTEMD_PACKAGES += "${PN}"
-SYSTEMD_SERVICE_${PN} = "userfs-cleanup-package.service"
-SYSTEMD_AUTO_ENABLE_${PN} = "${@bb.utils.contains('ST_USERFS', '1', 'enable', 'disable', d)}"
+SYSTEMD_SERVICE:${PN} = "userfs-cleanup-package.service"
+SYSTEMD_AUTO_ENABLE:${PN} = "${@bb.utils.contains('ST_USERFS', '1', 'enable', 'disable', d)}"
 
 do_install() {
     install -d ${D}${systemd_unitdir}/system ${D}${base_sbindir}

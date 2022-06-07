@@ -29,5 +29,5 @@ do_install() {
     # python script
     install -m 0755 ${WORKDIR}/*.py ${D}${prefix}/local/demo/application/bluetooth/
 }
-RDEPENDS_${PN} += "python3-core python3-pexpect python3-pickle python3-pygobject gtk+3 demo-launcher"
-FILES_${PN} += "${prefix}/local/demo/application/"
+RDEPENDS:${PN} += "python3-core python3-pexpect python3-pickle python3-pygobject gtk+3 demo-launcher"
+FILES:${PN} += "${prefix}/local/demo/application/"

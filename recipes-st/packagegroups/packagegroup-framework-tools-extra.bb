@@ -18,7 +18,7 @@ PACKAGES = "\
             "
 
 # Manage to provide all framework tools extra packages with overall one
-RDEPENDS_packagegroup-framework-tools-extra = "\
+RDEPENDS:packagegroup-framework-tools-extra = "\
     packagegroup-framework-tools-extra-core     \
     packagegroup-framework-tools-extra-kernel   \
     packagegroup-framework-tools-extra-network  \
@@ -27,8 +27,8 @@ RDEPENDS_packagegroup-framework-tools-extra = "\
     packagegroup-framework-tools-extra-python3  \
     "
 
-SUMMARY_packagegroup-framework-tools-extra-core = "Framework tools extra components for core"
-RDEPENDS_packagegroup-framework-tools-extra-core = "\
+SUMMARY:packagegroup-framework-tools-extra-core = "Framework tools extra components for core"
+RDEPENDS:packagegroup-framework-tools-extra-core = "\
     tslib-calibrate \
     pointercal      \
     \
@@ -38,8 +38,8 @@ RDEPENDS_packagegroup-framework-tools-extra-core = "\
     ltrace          \
     "
 
-SUMMARY_packagegroup-framework-tools-extra-kernel = "Framework tools extra components for kernel"
-RDEPENDS_packagegroup-framework-tools-extra-kernel = "\
+SUMMARY:packagegroup-framework-tools-extra-kernel = "Framework tools extra components for kernel"
+RDEPENDS:packagegroup-framework-tools-extra-kernel = "\
     powertop        \
     fio             \
     \
@@ -57,12 +57,15 @@ RDEPENDS_packagegroup-framework-tools-extra-kernel = "\
     dhrystone       \
     "
 
-RDEPENDS_packagegroup-framework-tools-extra-kernel_append_arm = "\
+RDEPENDS:packagegroup-framework-tools-extra-kernel:append:arm = "\
+    cpuburn-arm     \
+    "
+RDEPENDS:packagegroup-framework-tools-extra-kernel:append:aarch64 = "\
     cpuburn-arm     \
     "
 
-SUMMARY_packagegroup-framework-tools-extra-network = "Framework tools extra components for network"
-RDEPENDS_packagegroup-framework-tools-extra-network = "\
+SUMMARY:packagegroup-framework-tools-extra-network = "Framework tools extra components for network"
+RDEPENDS:packagegroup-framework-tools-extra-network = "\
     iperf3          \
     netperf         \
     bridge-utils    \
@@ -75,19 +78,19 @@ RDEPENDS_packagegroup-framework-tools-extra-network = "\
     neard           \
     "
 
-SUMMARY_packagegroup-framework-tools-extra-audio = "Framework tools extra components for audio"
-RDEPENDS_packagegroup-framework-tools-extra-audio = "\
+SUMMARY:packagegroup-framework-tools-extra-audio = "Framework tools extra components for audio"
+RDEPENDS:packagegroup-framework-tools-extra-audio = "\
     ${@bb.utils.contains('DISTRO_FEATURES', 'alsa', 'alsa-utils-aplay', '', d)} \
     "
 
-SUMMARY_packagegroup-framework-tools-extra-ui = "Framework tools extra components for ui"
-RDEPENDS_packagegroup-framework-tools-extra-ui = "\
+SUMMARY:packagegroup-framework-tools-extra-ui = "Framework tools extra components for ui"
+RDEPENDS:packagegroup-framework-tools-extra-ui = "\
     ${@bb.utils.contains('DISTRO_FEATURES', 'x11', 'x11perf', '', d)}       \
     ${@bb.utils.contains('DISTRO_FEATURES', 'x11', 'gtkperf', '', d)}       \
     "
 
-SUMMARY_packagegroup-framework-tools-extra-python3 = "Framework tools extra components for python3"
-RDEPENDS_packagegroup-framework-tools-extra-python3 = "\
+SUMMARY:packagegroup-framework-tools-extra-python3 = "Framework tools extra components for python3"
+RDEPENDS:packagegroup-framework-tools-extra-python3 = "\
     python3-pip         \
     python3-pytest      \
     python3-lxml        \

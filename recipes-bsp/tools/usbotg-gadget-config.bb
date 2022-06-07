@@ -37,5 +37,5 @@ do_install() {
 INITSCRIPT_NAME = "stm32_usbotg_eth_config.sh"
 INITSCRIPT_PARAMS = "start 22 5 3 ."
 
-FILES_${PN} += "${systemd_unitdir}/network"
+FILES:${PN} += "${systemd_unitdir}/network ${sysconfdir}/udev"
 

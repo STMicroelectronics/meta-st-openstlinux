@@ -1,5 +1,5 @@
 # Copyright (C) 2020, STMicroelectronics - All Rights Reserved
-DESCRIPTION = "add script and material to help with qt-wayland configuration"
+SUMMARY = "add script and material to help with qt-wayland configuration"
 HOMEPAGE = "www.st.com"
 LICENSE = "MIT"
 LIC_FILES_CHKSUM = "file://${COREBASE}/meta/COPYING.MIT;md5=3da9cfbcb788c80a0384361b4de20420"
@@ -18,5 +18,5 @@ do_install() {
 
     install -m 0755 ${WORKDIR}/qt-wayland.sh ${D}/${sysconfdir}/profile.d/
 }
-RDEPENDS_${PN} = "qtwayland"
-FILES_${PN} += "${datadir}/qt5"
+RDEPENDS:${PN} = "qtwayland"
+FILES:${PN} += "${datadir}/qt5"

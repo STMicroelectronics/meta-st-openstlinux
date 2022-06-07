@@ -33,5 +33,5 @@ do_install() {
     install -m 0644 ${WORKDIR}/*.fs ${D}${prefix}/local/demo/application/camera/shaders
 }
 
-FILES_${PN} += "${prefix}/local/demo/application/"
-RDEPENDS_${PN} += "event-gtk-player demo-launcher"
+FILES:${PN} += "${prefix}/local/demo/application/"
+RDEPENDS:${PN} += "event-gtk-player demo-launcher"

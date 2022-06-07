@@ -38,7 +38,7 @@ do_deploy() {
 }
 addtask deploy before do_build after do_compile
 
-FILES_${PN} += "/boot"
+FILES:${PN} += "/boot"
 
 # Provide empty package to allow direct use on image side even with none InitRD
-ALLOW_EMPTY_${PN} = "1"
+ALLOW_EMPTY:${PN} = "1"
