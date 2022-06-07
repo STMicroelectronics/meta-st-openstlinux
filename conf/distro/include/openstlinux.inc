@@ -10,7 +10,7 @@
 #      DISTRO_EXTRA_RRECOMMENDS [optional]
 #      TCLIBC [required if creating from scratch]
 
-LOCALCONF_VERSION = "1"
+LOCALCONF_VERSION = "2"
 LAYER_CONF_VERSION ?= "7"
 
 # =========================================================================
@@ -36,6 +36,7 @@ DISTRO_FEATURES += "largefile"
 DISTRO_FEATURES += "ipv4"
 DISTRO_FEATURES += "ipv6"
 DISTRO_FEATURES += "multiarch"
+DISTRO_FEATURES += "pci"
 DISTRO_FEATURES += "wifi"
 DISTRO_FEATURES += "nfs"
 DISTRO_FEATURES += "usbgadget"
