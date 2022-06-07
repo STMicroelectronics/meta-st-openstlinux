@@ -1,5 +1,5 @@
 PACKAGECONFIG = "udev bat"
-FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
 do_add_audio_sample_files() {
     cp ${S}/speaker-test/samples/Side_Left.wav ${S}/speaker-test/samples/Channel_12.wav
