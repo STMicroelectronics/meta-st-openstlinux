@@ -1,3 +1,0 @@
-SRCREV = "6ecff5d46e1b12c2859f0b63a73282940e3402bb"
-PV = "0.15+git${SRCPV}"
-
