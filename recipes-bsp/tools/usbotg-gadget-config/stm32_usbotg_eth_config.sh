@@ -63,7 +63,7 @@ do_start() {
     mkdir -p "${d}/configs/${c}"
     mkdir -p "${d}/configs/${c}/strings/0x409"
     echo "Config 1: RNDIS" > "${d}/configs/${c}/strings/0x409/configuration"
-    echo 250 > "${d}/configs/${c}/MaxPower"
+    echo 0 > "${d}/configs/${c}/MaxPower"
     echo 0xC0 > "${d}/configs/${c}/bmAttributes" # self powered device
 
     # Windows extension to force RNDIS config
@@ -131,13 +131,20 @@ do_stop() {
 case $1 in
     start)
         echo "Start usb gadget"
-        do_start $2
+        do_start
         ;;
     stop)
         echo "Stop usb gadget"
         do_stop
         ;;
+    restart)
+        echo "Stop usb gadget"
+        do_stop
+        sleep 1
+        echo "Start usb gadget"
+        do_start
+        ;;
     *)
-        echo "Usage: $0 (stop | start)"
+        echo "Usage: $0 (stop | start | restart)"
         ;;
 esac

@@ -1,0 +1,2 @@
+ACTION=="add", SUBSYSTEM=="udc", RUN+="/sbin/stm32_usbotg_eth_config.sh restart"
+
