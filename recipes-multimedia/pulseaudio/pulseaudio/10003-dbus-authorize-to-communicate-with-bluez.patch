@@ -1,7 +1,7 @@
-From fe772309be267d118ddc5c6ba60b12803691d1a0 Mon Sep 17 00:00:00 2001
+From ef0c24aa3f734ceca2b712be771db272dc3bee3e Mon Sep 17 00:00:00 2001
 From: Christophe Priouzeau <christophe.priouzeau@st.com>
 Date: Thu, 25 Oct 2018 17:51:20 +0200
-Subject: [PATCH 3/3] dbus: authorize to communicate with bluez
+Subject: [PATCH 2/2] dbus: authorize to communicate with bluez
 
 ---
  src/daemon/pulseaudio-system.conf | 5 ++++-
@@ -24,5 +24,5 @@ index 2eb342e..a0ba05e 100644
  
  </busconfig>
 -- 
-2.7.4
+2.25.1
 

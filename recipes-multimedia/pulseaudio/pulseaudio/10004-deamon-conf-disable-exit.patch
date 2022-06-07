@@ -1,0 +1,35 @@
+From dbbd2fca9c9770d3d572c515493a3f26596d8bc2 Mon Sep 17 00:00:00 2001
+From: Christophe Priouzeau <christophe.priouzeau@foss.st.com>
+Date: Tue, 1 Mar 2022 16:56:35 +0100
+Subject: [PATCH 3/3] deamon-conf: disable exit
+
+Signed-off-by: Christophe Priouzeau <christophe.priouzeau@foss.st.com>
+---
+ src/daemon/daemon.conf.in | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/daemon/daemon.conf.in b/src/daemon/daemon.conf.in
+index 9004c8b..6a6f4c3 100644
+--- a/src/daemon/daemon.conf.in
++++ b/src/daemon/daemon.conf.in
+@@ -21,7 +21,7 @@ changequote(`[', `]')dnl Set up m4 quoting
+ ; daemonize = no
+ ; fail = yes
+ ; allow-module-loading = yes
+-; allow-exit = yes
++allow-exit = no
+ ; use-pid-file = yes
+ ; system-instance = no
+ ifelse(@HAVE_DBUS@, 1, [dnl
+@@ -39,7 +39,7 @@ ifelse(@HAVE_DBUS@, 1, [dnl
+ ; realtime-scheduling = yes
+ ; realtime-priority = 5
+ 
+-; exit-idle-time = 20
++exit-idle-time = -1
+ ; scache-idle-time = 20
+ 
+ ; dl-search-path = (depends on architecture)
+-- 
+2.25.1
+
