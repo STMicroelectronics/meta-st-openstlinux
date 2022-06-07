@@ -12,7 +12,7 @@ audio() {
 
 picture() {
     echo "Display picture"
-    gst-launch-1.0 filesrc location=/usr/local/demo/media/stm32cubeai.png ! pngdec ! videoconvert ! imagefreeze ! waylandsink &
+    gst-launch-1.0 filesrc location=/usr/local/demo/media/stm32cubeai.png ! pngdec !  videoconvert ! imagefreeze ! glimagesink &
 }
 
 camera() {

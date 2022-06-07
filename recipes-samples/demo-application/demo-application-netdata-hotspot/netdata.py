@@ -245,11 +245,12 @@ class NetdataWebserver(Gtk.Dialog):
         self.set_wifi_config(self.wifi_ssid, self.wifi_passwd)
 
     def set_wifi_config(self, ssid, password):
-        filepath = "/etc/default/hostapd"
+        filepath = "/tmp/hostapd"
         file = open(filepath, "w")
         print ("[Wifi: set hostapd config: ssid=%s, passwd=%s]" %(ssid, password))
         file.write('HOSTAPD_SSID=%s\nHOSTAPD_PASSWD=%s\n' %(ssid, password))
         file.close()
+        os.system('su -c \"cp /tmp/hostapd /etc/default/hostapd\"')
 
 
     def refresh_network_page(self):
@@ -265,6 +266,11 @@ class NetdataWebserver(Gtk.Dialog):
         if self.is_wifi_available():
             print ("wlan0 is available")
             ip_wlan0 = get_ip_address('wlan0')
+            print("Ip address of Wlan0 are: ", ip_wlan0)
+            if ip_wlan0 == "NA":
+                sleep(1)
+                ip_wlan0 = get_ip_address('wlan0')
+                print("Ip address of Wlan0 are: ", ip_wlan0)
             if ip_wlan0 == "NA":
                 hotspot_status = "<span font='%d' color='#FF0000FF'>  Wifi not started</span>" % self.font_size
                 self.info_grid.remove_row(6)
@@ -324,16 +330,12 @@ class NetdataWebserver(Gtk.Dialog):
         self.refresh_network_page()
 
     def wifi_hotspot_start(self):
-        cmd = ["%s/bin/st-hotspot-wifi-service.sh" % DEMO_PATH, "start"]
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        result = proc.stdout.read().decode('utf-8')
-        return result
+        print('[DEBUG]: su -c \"%s/bin/st-hotspot-wifi-service.sh start\"' % DEMO_PATH)
+        os.system('su -c \"%s/bin/st-hotspot-wifi-service.sh start\"' % DEMO_PATH)
 
     def wifi_hotspot_stop(self):
-        cmd = ["%s/bin/st-hotspot-wifi-service.sh" % DEMO_PATH, "stop"]
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        result = proc.stdout.read().decode('utf-8')
-        return result
+        print('[DEBUG]:su -c \"%s/bin/st-hotspot-wifi-service.sh stop\"' % DEMO_PATH)
+        os.system('su -c \"%s/bin/st-hotspot-wifi-service.sh stop\"' % DEMO_PATH)
 
 def create_subdialogwindow(parent):
     _window = NetdataWebserver(parent)

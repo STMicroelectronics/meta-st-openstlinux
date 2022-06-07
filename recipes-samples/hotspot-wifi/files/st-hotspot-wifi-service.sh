@@ -57,7 +57,7 @@ wpa_pairwise=TKIP
 rsn_pairwise=CCMP
 EOF
 }
-network_hotspot_remove() {
+network_hotspot_erase() {
     rm -f /lib/systemd/network/hostapd.network
     rm -f /etc/hostapd.conf
 }
@@ -89,7 +89,7 @@ stop)
     systemctl stop hostapd
     /sbin/ip link set wlan0 down
     # remove file
-    network_hotspot_remove
+    network_hotspot_erase
     systemctl restart systemd-networkd.service
     systemctl daemon-reload
     ;;

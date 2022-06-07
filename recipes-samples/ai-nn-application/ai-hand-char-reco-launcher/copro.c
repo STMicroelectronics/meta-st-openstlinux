@@ -45,7 +45,13 @@ int copro_isFwRunning(void)
 	size_t byte_read;
 	int result = 0;
 	unsigned char bufRead[MAX_BUF];
-	fd = open("/sys/class/remoteproc/remoteproc0/state", O_RDWR);
+	char *user  = getenv("USER");
+	if (user && strncmp(user, "root", 4)) {
+		system("XTERM=xterm su root -c 'cat /sys/class/remoteproc/remoteproc0/state' > /tmp/remoteproc0_state");
+		fd = open("/tmp/remoteproc0_state", O_RDONLY);
+	} else {
+		fd = open("/sys/class/remoteproc/remoteproc0/state", O_RDONLY);
+	}
 	if (fd < 0) {
 		printf("Error opening remoteproc0/state, err=-%d\n", errno);
 		return (errno * -1);
@@ -64,6 +70,11 @@ int copro_isFwRunning(void)
 int copro_stopFw(void)
 {
 	int fd;
+	char *user  = getenv("USER");
+	if (user && strncmp(user, "root",4)) {
+		system("su root -c 'echo stop > /sys/class/remoteproc/remoteproc0/state'");
+		return 0;
+	}
 	fd = open("/sys/class/remoteproc/remoteproc0/state", O_RDWR);
 	if (fd < 0) {
 		printf("Error opening remoteproc0/state, err=-%d\n", errno);
@@ -77,6 +88,11 @@ int copro_stopFw(void)
 int copro_startFw(void)
 {
 	int fd;
+	char *user  = getenv("USER");
+	if (user && strncmp(user, "root",4)) {
+		system("su root -c 'echo start > /sys/class/remoteproc/remoteproc0/state'");
+		return 0;
+	}
 	fd = open("/sys/class/remoteproc/remoteproc0/state", O_RDWR);
 	if (fd < 0) {
 		printf("Error opening remoteproc0/state, err=-%d\n", errno);
@@ -91,7 +107,13 @@ int copro_getFwPath(char* pathStr)
 {
 	int fd;
 	int byte_read;
-	fd = open("/sys/module/firmware_class/parameters/path", O_RDWR);
+	char *user  = getenv("USER");
+	if (user && strncmp(user, "root",4)) {
+		system("XTERM=xterm su root -c 'cat /sys/module/firmware_class/parameters/path' > /tmp/parameters_path");
+		fd = open("/tmp/parameters_path", O_RDONLY);
+	} else {
+		fd = open("/sys/module/firmware_class/parameters/path", O_RDONLY);
+	}
 	if (fd < 0) {
 		printf("Error opening firmware_class/parameters/path, err=-%d\n", errno);
 		return (errno * -1);
@@ -105,6 +127,13 @@ int copro_setFwPath(char* pathStr)
 {
 	int fd;
 	int result = 0;
+	char *user  = getenv("USER");
+	if (user && strncmp(user, "root",4)) {
+		char cmd[1024];
+		snprintf(cmd, 1024, "su root -c 'echo %s > /sys/module/firmware_class/parameters/path'", pathStr);
+		system(cmd);
+		return strlen(pathStr);
+	}
 	fd = open("/sys/module/firmware_class/parameters/path", O_RDWR);
 	if (fd < 0) {
 		printf("Error opening firmware_class/parameters/path, err=-%d\n", errno);
@@ -119,7 +148,13 @@ int copro_getFwName(char* name)
 {
 	int fd;
 	int byte_read;
-	fd = open("/sys/class/remoteproc/remoteproc0/firmware", O_RDWR);
+	char *user  = getenv("USER");
+	if (user && strncmp(user, "root",4)) {
+		system("XTERM=xterm su root -c 'cat /sys/class/remoteproc/remoteproc0/firmware' > /tmp/remoteproc0_firmware");
+		fd = open("/tmp/remoteproc0_firmware", O_RDONLY);
+	} else {
+		fd = open("/sys/class/remoteproc/remoteproc0/firmware", O_RDWR);
+	}
 	if (fd < 0) {
 		printf("Error opening remoteproc0/firmware, err=-%d\n", errno);
 		return (errno * -1);
@@ -134,6 +169,13 @@ int copro_setFwName(char* nameStr)
 {
 	int fd;
 	int result = 0;
+	char *user  = getenv("USER");
+	if (user && strncmp(user, "root",4)) {
+		char cmd[1024];
+		snprintf(cmd, 1024, "su root -c 'echo %s > /sys/class/remoteproc/remoteproc0/firmware'", nameStr);
+		system(cmd);
+		return strlen(nameStr);
+	}
 	fd = open("/sys/class/remoteproc/remoteproc0/firmware", O_RDWR);
 	if (fd < 0) {
 		printf("Error opening remoteproc0/firmware, err=-%d\n", errno);

@@ -7,7 +7,7 @@ Application:
         List: all
     Python:
         Exist:
-            Command: hciconfig hci0 up
+            Command: /usr/local/demo/application/bluetooth/bin/check_ble.sh
             Msg_false: Please connect a bluetooth controller on the board
         Module: application.bluetooth.bluetooth_audio
     Action:

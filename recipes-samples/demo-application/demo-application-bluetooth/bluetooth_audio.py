@@ -408,7 +408,7 @@ class BluetoothWindow(Gtk.Dialog):
         self.show_all()
 
         # enable bluetooth
-        os.system('hciconfig hci0 up')
+        os.system('su -c \"hciconfig hci0 up\"')
         #self.bluetooth_state = os.system('hciconfig hci0 up')
         self.bl = Bluetoothctl()
 

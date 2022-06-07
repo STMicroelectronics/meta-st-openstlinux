@@ -1,4 +1,4 @@
-DESCRIPTION = "Add support of camera preview on Demo Launcher"
+SUMMARY = "Add support of camera preview on Demo Launcher"
 HOMEPAGE = "wiki.st.com"
 LICENSE = "BSD-3-Clause"
 LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/BSD-3-Clause;md5=550794465ba0ec5312d6919e203a55f9"
@@ -13,6 +13,7 @@ SRC_URI = " \
     file://edge_InvertLuma.fs \
     file://ST1077_webcam_dark_blue.png \
     file://010-camera.yaml \
+    file://check_camera_preview.sh \
     "
 
 do_configure[noexec] = "1"

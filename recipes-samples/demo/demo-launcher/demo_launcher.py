@@ -127,6 +127,11 @@ class InfoWindow(Gtk.Dialog):
         self.maximize()
         self.set_decorated(False)
         self.set_name("backed_bg")
+        try:
+            self.font_size = parent.font_size
+        except:
+            print("DEBUG take default font size")
+            self.font_size = 15
 
         mainvbox = self.get_content_area()
 
@@ -134,11 +139,11 @@ class InfoWindow(Gtk.Dialog):
         page_info.set_border_width(10)
 
         title = Gtk.Label()
-        title.set_markup("<span font='30' color='#FFFFFFFF'><b>About the application</b></span>")
+        title.set_markup("<span font='%d' color='#FFFFFFFF'><b>About the application</b></span>" % (self.font_size+5))
         page_info.add(title)
 
         label1 = Gtk.Label()
-        label1.set_markup("<span font='15' color='#FFFFFFFF'>\n\nTo get control of video playback and camera preview,\nSimple tap: pause/resume\nDouble tap: exit from demos\n\nAI demo: draw character on touchscreen to launch action</span>")
+        label1.set_markup("<span font='%d' color='#FFFFFFFF'>\n\nTo get control of video playback and camera preview,\nSimple tap: pause/resume\nDouble tap: exit from demos\n\nAI demo: draw character on touchscreen to launch action</span>" % self.font_size)
         label1.set_justify(Gtk.Justification.LEFT)
         page_info.add(label1)
 
@@ -789,7 +794,7 @@ class MainUIWindow(Gtk.Window):
 # -------------------------------------------------------------------
 # Managment of lock file to have only excution of this script as same time
 lock_handle = None
-lock_file_path = '/var/lock/demo_launcher.lock'
+lock_file_path = '/tmp/demo_launcher.lock'
 
 def file_is_locked(file_path):
     global lock_handle

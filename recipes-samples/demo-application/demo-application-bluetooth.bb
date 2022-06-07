@@ -1,4 +1,4 @@
-DESCRIPTION = "Add support of audio bluetooth speaker on Demo Launcher"
+SUMMARY = "Add support of audio bluetooth speaker on Demo Launcher"
 HOMEPAGE = "wiki.st.com"
 LICENSE = "BSD-3-Clause"
 LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/BSD-3-Clause;md5=550794465ba0ec5312d6919e203a55f9"
@@ -13,6 +13,7 @@ SRC_URI = " \
     file://wrap_blctl.py \
     file://__init__.py \
     file://ST11012_bluetooth_speaker_light_green.png \
+    file://check_ble.sh \
     "
 
 do_configure[noexec] = "1"
@@ -28,6 +29,8 @@ do_install() {
     install -m 0644 ${WORKDIR}/*.png ${D}${prefix}/local/demo/application/bluetooth/pictures
     # python script
     install -m 0755 ${WORKDIR}/*.py ${D}${prefix}/local/demo/application/bluetooth/
+    # install check script
+    install -m 0755 ${WORKDIR}/*.sh ${D}${prefix}/local/demo/application/bluetooth/bin/
 }
 RDEPENDS:${PN} += "python3-core python3-pexpect python3-pickle python3-pygobject gtk+3 demo-launcher"
 FILES:${PN} += "${prefix}/local/demo/application/"

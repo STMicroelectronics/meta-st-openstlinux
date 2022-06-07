@@ -577,10 +577,10 @@ static void *read_touch_event_thread(void *arg)
 
 	printf("create read touch event thread\n");
 
-	if ((getuid ()) != 0) {
-		fprintf(stderr, "You are not root! This may not work...\n");
-		return NULL;
-	}
+/*        if ((getuid ()) != 0) {*/
+/*                fprintf(stderr, "You are not root! This may not work...\n");*/
+/*                return NULL;*/
+/*        }*/
 
 	getDisplayName(display_name);
 	getResolution(display_name, &displayWidth, &displayHeight);
@@ -839,7 +839,14 @@ static int copro_start(void)
 	else
 		sprintf(symlink1, "%s/%s", FIRMWARE_PATH_DK2, FIRMWARE_NAME);
 	sprintf(symlink2, "/lib/firmware/%s", FIRMWARE_NAME);
-	symlink(symlink1, symlink2);
+	char *user  = getenv("USER");
+	if (user && strncmp(user, "root", 4)) {
+		char cmd[1024];
+		snprintf(cmd, 1024, "XTERM=xterm su root -c 'ln -sf %s %s'", symlink1, symlink2);
+		system(cmd);
+	} else {
+		symlink(symlink1, symlink2);
+	}
 
 	/* set the firmware name to load */
 	ret = copro_setFwName(FIRMWARE_NAME);

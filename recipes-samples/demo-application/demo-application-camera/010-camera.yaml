@@ -7,9 +7,8 @@ Application:
     Type: script
     Script:
         Exist:
-            File: /dev/video0
-            Msg_false: Webcam is not connected,
-                    /dev/video0 doesn't exist
+            Command: /usr/local/demo/application/camera/bin/check_camera_preview.sh
+            Msg_false: Webcam or camera is not connected
         Start: application/camera/bin/launch_camera_preview.sh
     Action:
         button_release_event: script_management
