@@ -1,0 +1,11 @@
+[Unit]
+Description=Hold until boot process finishes up
+
+[Service]
+ExecStart=-/usr/bin/psplash-drm-quit
+Type=oneshot
+RemainAfterExit=yes
+TimeoutSec=0
+
+[Install]
+WantedBy=multi-user.target

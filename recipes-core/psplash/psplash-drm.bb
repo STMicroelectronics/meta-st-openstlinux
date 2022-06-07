@@ -1,7 +1,7 @@
 # Copyright (C) 2014, STMicroelectronics - All Rights Reserved
 # Released under the MIT license (see COPYING.MIT for the terms)
 
-DESCRIPTION = "Basic splash screen which display a picture on DRM/KMS"
+SUMMARY = "Basic splash screen which display a picture on DRM/KMS"
 LICENSE = "MIT"
 DEPENDS = "libdrm pkgconfig-native"
 LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/MIT;md5=0835ade698e0bcf8506ecda2f7b4f302"
@@ -13,12 +13,15 @@ SRC_URI = " \
         file://psplash-drm-quit \
     "
 
-SRC_URI += " file://psplash-drm-start.service "
+SRC_URI += " file://psplash-drm-start.service file://psplash-drm-wait.service"
+
+PROVIDES = "virtual/psplash"
+RPROVIDES:${PN} = "virtual-psplash virtual-psplash-support"
 
 inherit systemd
 
 SYSTEMD_PACKAGES = "${@bb.utils.contains('DISTRO_FEATURES','systemd','${PN}','',d)}"
-SYSTEMD_SERVICE_${PN} = "${@bb.utils.contains('DISTRO_FEATURES','systemd','psplash-drm-start.service','',d)}"
+SYSTEMD_SERVICE:${PN} = "${@bb.utils.contains('DISTRO_FEATURES','systemd','psplash-drm-start.service psplash-drm-wait.service','',d)}"
 
 S = "${WORKDIR}"
 
@@ -41,4 +44,4 @@ do_install() {
         install -m 644 ${WORKDIR}/*.service ${D}/${systemd_unitdir}/system
     fi
 }
-
+FILES:${PN} += "${systemd_unitdir}/system "

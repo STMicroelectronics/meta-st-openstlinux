@@ -595,14 +595,25 @@ splash_processing ()
 
     return;
 }
+int get_valid_dri_card() {
+    int ind = 0;
+    char buf_name[32];
 
+    for (ind = 0; ind < 8; ind++) {
+        snprintf(buf_name, 32, "/dev/dri/card%d", ind);
+        if (access(buf_name, F_OK) == 0) {
+            return ind;
+        }
+    }
+    return -1;
+}
 //-------------------------------
 // Main function
 int
 main (int argc, char **argv)
 {
     int ret;
-    const char *card;
+    char card[32];
     struct modeset_dev *iter;
     char *tmpdir;
 
@@ -610,7 +621,12 @@ main (int argc, char **argv)
     //if (argc > 1)
     //    card = argv[1];
     //else
-    card = "/dev/dri/card0";
+    ret = get_valid_dri_card();
+    if (ret < 0) {
+        perror("There is no dri card arvaible (/dev/dri/cardX)");
+        exit(-1);
+    }
+    sprintf(card, "/dev/dri/card%d", ret);
     fprintf (stderr, "using card '%s'\n", card);
 
     wait = 0;
@@ -651,7 +667,7 @@ main (int argc, char **argv)
     }
 
     /* open the DRM device */
-    ret = modeset_open (&drm_fd, card);
+    ret = modeset_open (&drm_fd, (const char*)card);
     if (ret)
         goto out_return;
 
