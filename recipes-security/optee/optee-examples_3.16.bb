@@ -1,15 +1,18 @@
 SUMMARY = "OP-TEE examples"
 HOMEPAGE = "https://github.com/linaro-swg/optee_examples"
 
-LICENSE = "GPLv2"
+LICENSE = "GPL-2.0-only"
 LIC_FILES_CHKSUM = "file://${S}/LICENSE;md5=cd95ab417e23b94f381dafc453d70c30"
 
-DEPENDS = "optee-client virtual/optee-os python3-pycryptodomex-native python3-pycrypto-native"
+DEPENDS = "optee-client virtual/optee-os python3-pycryptodomex-native"
+DEPENDS += "python3-cryptography-native"
 
 inherit python3native
 
-SRC_URI = "git://github.com/linaro-swg/optee_examples.git"
-SRCREV = "9a755dcf4d8ef6117af59dfd1b1a82315cee58ca"
+SRC_URI = "git://github.com/linaro-swg/optee_examples.git;branch=master;protocol=https"
+SRCREV = "65fc74309e12189ad5b6ce3ffec37c8011088a5a"
+
+PV = "3.16.0+git${SRCPV}"
 
 S = "${WORKDIR}/git"
 
@@ -23,10 +26,10 @@ EXTRA_OEMAKE = " TA_DEV_KIT_DIR=${TA_DEV_KIT_DIR} \
                  HOST_CROSS_COMPILE=${TARGET_PREFIX} \
                  TA_CROSS_COMPILE=${TARGET_PREFIX} \
                  V=1 \
-                 LIBGCC_LOCATE_CFLAGS='--sysroot=${STAGING_DIR_HOST}' \
                "
 
 do_compile() {
+    export CFLAGS="${CFLAGS} --sysroot=${STAGING_DIR_HOST}"
     oe_runmake
 }
 
