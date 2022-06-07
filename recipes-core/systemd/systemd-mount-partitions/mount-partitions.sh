@@ -67,12 +67,14 @@ found_devices() {
     local _option=" "
     case $_type in
         nand)
+            # for the nand, fs can be not present in partition name
+            _search="($_search|$(echo $_search | sed 's,fs$,,'))"
             local ubi_volumes=$(ls -1 -d /sys/class/ubi/ubi0_*)
             for f in $ubi_volumes;
             do
                 if [ -r $f/name ];
                 then
-                    cat $f/name | grep -sq "^${_search}"
+                    cat $f/name | grep -sq -E "^${_search}$"
                     if [ "$?" -eq 0 ];
                     then
                         _device="/dev/$(basename $f)"

@@ -28,7 +28,7 @@ Before=rescue.service
 
 [Service]
 Environment="TERM=xterm"
-ExecStart=-/sbin/agetty -8 --autologin root -L %I @BAUDRATE@ $TERM
+ExecStart=-/sbin/agetty -8 --autologin root -L --keep-baud %I @BAUDRATE@ $TERM
 Type=idle
 Restart=always
 RestartSec=0

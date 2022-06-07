@@ -1,0 +1,42 @@
+From 42ae45c1764fa5ca0f5c6428103b8bf8ca4da728 Mon Sep 17 00:00:00 2001
+From: Lei YU <yulei.sh@bytedance.com>
+Date: Thu, 19 Aug 2021 18:58:21 +0800
+Subject: [PATCH] timesyncd: Use recvmsg() instead of recvmsg_safe()
+
+The timesyncd gets below error on IPv6 NTP server:
+
+ systemd-timesyncd[534]: Error receiving message, disconnecting: Exchange full
+
+This is returned by recvmsg_safe() when the MSG_CTRUNC is set.
+In my case it occurs everytime when the system tries to sync time from
+NTP with IPv6.
+Before 3691bcf3c5e the code works fine. So revert the piece of code to
+use recvmsg() and the issue is gone.
+
+Signed-off-by: Lei YU <yulei.sh@bytedance.com>
+---
+ src/timesync/timesyncd-manager.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/src/timesync/timesyncd-manager.c b/src/timesync/timesyncd-manager.c
+index cb5d42b1d3..2df1b3eadb 100644
+--- a/src/timesync/timesyncd-manager.c
++++ b/src/timesync/timesyncd-manager.c
+@@ -440,10 +440,11 @@ static int manager_receive_response(sd_event_source *source, int fd, uint32_t re
+                 return manager_connect(m);
+         }
+ 
+-        len = recvmsg_safe(fd, &msghdr, MSG_DONTWAIT);
+-        if (len == -EAGAIN)
+-                return 0;
++        len = recvmsg(fd, &msghdr, MSG_DONTWAIT);
++
+         if (len < 0) {
++                if (len == -EAGAIN)
++                        return 0;
+                 log_warning_errno(len, "Error receiving message, disconnecting: %m");
+                 return manager_connect(m);
+         }
+-- 
+2.25.1
+
