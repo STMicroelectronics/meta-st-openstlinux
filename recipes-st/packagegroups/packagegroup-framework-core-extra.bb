@@ -44,7 +44,7 @@ RDEPENDS:packagegroup-framework-core-extra-display = "\
     ${@bb.utils.contains('DISTRO_FEATURES', 'x11 wayland', 'xorg-minimal-fonts', '', d)}    \
     ${@bb.utils.contains('DISTRO_FEATURES', 'x11 wayland', 'xterm', '', d)}                 \
     \
-    ${@bb.utils.contains('MACHINE_FEATURES', 'opengl', 'kmscube', '', d)} \
+    ${@bb.utils.contains('DISTRO_FEATURES', 'opengl', 'kmscube', '', d)} \
     "
 
 SUMMARY:packagegroup-framework-core-extra-mm = "Framework core extra components for multimedia"
