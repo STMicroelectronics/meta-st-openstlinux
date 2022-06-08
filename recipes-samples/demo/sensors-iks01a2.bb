@@ -15,7 +15,6 @@ do_configure[noexec] = "1"
 do_compile[noexec] = "1"
 
 do_install() {
-    install -d ${D}${bindir}
     install -d ${D}${prefix}/local/demo/pictures
 
 
@@ -25,5 +24,5 @@ do_install() {
     install -m 0644 ${WORKDIR}/README.txt ${D}${prefix}/local/demo/README_sensor_iks01a2.txt
 }
 
-FILES:${PN} += "${datadir}/sensors_temperature/"
-RDEPENDS:${PN} += "python3 python3-pygobject python3-pycairo gtk+3 "
+FILES:${PN} += "${prefix}/local/demo/"
+RDEPENDS:${PN} += "python3-core python3-pygobject python3-pycairo gtk+3 "
