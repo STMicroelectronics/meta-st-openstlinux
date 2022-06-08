@@ -50,7 +50,6 @@ BUILDCFG_VARS += "DISTRO_CODENAME"
 BUILDCFG_VARS += "${@'ACCEPT_EULA_' + d.getVar('MACHINE')}"
 BUILDCFG_VARS += "GCCVERSION"
 BUILDCFG_VARS += "PREFERRED_PROVIDER_virtual/kernel"
-BUILDCFG_VARS += "PREFERRED_VERSION_${PREFERRED_PROVIDER_virtual/kernel}"
 
 #--------------------------
 # Configure build info file for rootfs availability
