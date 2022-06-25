@@ -40,7 +40,6 @@ RDEPENDS:packagegroup-framework-tools-core = "\
     e2fsprogs-resize2fs \
     sysstat         \
     minicom         \
-    ntp             \
     systemtap       \
     gptfdisk        \
     rng-tools       \

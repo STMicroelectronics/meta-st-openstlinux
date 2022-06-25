@@ -30,6 +30,7 @@ RDEPENDS:packagegroup-framework-tools-base = "\
 SUMMARY:packagegroup-framework-tools-base-core = "Framework tools base components for core"
 RDEPENDS:packagegroup-framework-tools-base-core = "\
     ckermit         \
+    ntp             \
     coreutils       \
     libiio-iiod     \
     libiio-tests    \
