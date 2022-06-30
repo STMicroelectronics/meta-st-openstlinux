@@ -1,0 +1,32 @@
+From 910ed327bcd3c25d251123ad5da77473932f49c4 Mon Sep 17 00:00:00 2001
+From: Christophe Priouzeau <christophe.priouzeau@foss.st.com>
+Date: Tue, 7 Jun 2022 14:25:10 +0200
+Subject: [PATCH] Correction of bad dlopen for libEGL
+
+Signed-off-by: Christophe Priouzeau <christophe.priouzeau@foss.st.com>
+---
+ src/loadso/dlopen/SDL_sysloadso.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/src/loadso/dlopen/SDL_sysloadso.c b/src/loadso/dlopen/SDL_sysloadso.c
+index e5abe85..70dcdbc 100644
+--- a/src/loadso/dlopen/SDL_sysloadso.c
++++ b/src/loadso/dlopen/SDL_sysloadso.c
+@@ -46,8 +46,13 @@ SDL_LoadObject(const char *sofile)
+         return NULL;
+     }
+ #endif
++    // SDL will skip dlopen'ing libEGL.so after it spots EGL symbols on our
++    // wrapper, so force loading it here.
++    if (strncmp(sofile, "libEGL.so", 9) != 0)
++        handle = dlopen(sofile, RTLD_NOW|RTLD_LOCAL | RTLD_GLOBAL | RTLD_LAZY);
++    else
++        handle = dlopen(sofile, RTLD_NOW|RTLD_LOCAL);
+ 
+-    handle = dlopen(sofile, RTLD_NOW|RTLD_LOCAL);
+     loaderror = dlerror();
+     if (handle == NULL) {
+         SDL_SetError("Failed loading %s: %s", sofile, loaderror);
+-- 
+2.25.1
+
