@@ -330,12 +330,13 @@ class NetdataWebserver(Gtk.Dialog):
         self.refresh_network_page()
 
     def wifi_hotspot_start(self):
-        print('[DEBUG]: su -c \"%s/bin/st-hotspot-wifi-service.sh start\"' % DEMO_PATH)
-        os.system('su -c \"%s/bin/st-hotspot-wifi-service.sh start\"' % DEMO_PATH)
+        print('[DEBUG]: %s/application/netdata/bin/wifi_start.sh' % DEMO_PATH)
+        os.system('%s/application/netdata/bin/wifi_start.sh' % DEMO_PATH)
+
 
     def wifi_hotspot_stop(self):
-        print('[DEBUG]:su -c \"%s/bin/st-hotspot-wifi-service.sh stop\"' % DEMO_PATH)
-        os.system('su -c \"%s/bin/st-hotspot-wifi-service.sh stop\"' % DEMO_PATH)
+        print('[DEBUG]:%s/application/netdata/bin/wifi_start.sh\"' % DEMO_PATH)
+        os.system('%s/application/netdata/bin/wifi_stop.sh' % DEMO_PATH)
 
 def create_subdialogwindow(parent):
     _window = NetdataWebserver(parent)

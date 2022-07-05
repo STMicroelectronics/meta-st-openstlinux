@@ -14,6 +14,8 @@ SRC_URI = " \
     file://netdata.py \
     file://netdata-icon-192x192.png \
     file://hostapd \
+    file://wifi_start.sh \
+    file://wifi_stop.sh \
     "
 
 do_configure[noexec] = "1"
