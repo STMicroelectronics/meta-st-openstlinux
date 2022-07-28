@@ -5,7 +5,6 @@ SRC_URI:append:stm32mpcommon = " \
     file://0002-Force-to-close-all-output.patch \
     file://0003-Disable-gles3.patch \
     file://0004-Revert-gl-renderer-Add-EGL_IMAGE_PRESERVED_KHR-to-ou.patch \
-    file://0001-Remove-useless-code-from-new-Fragment-Shader.patch \
     "
 SIMPLECLIENTS="egl,touch,dmabuf-v4l,dmabuf-egl"
 
