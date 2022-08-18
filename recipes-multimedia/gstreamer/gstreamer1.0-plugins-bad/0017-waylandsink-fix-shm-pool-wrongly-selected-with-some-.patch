@@ -1,0 +1,51 @@
+From 2eb1cc3d1af83020cfbce5193b1a273078257668 Mon Sep 17 00:00:00 2001
+From: Hugues Fruchet <hugues.fruchet@foss.st.com>
+Date: Tue, 11 Oct 2022 12:26:15 +0200
+Subject: [PATCH] waylandsink: fix shm pool wrongly selected with some
+ GStreamer elements
+
+With some GStreamer elements, and depending on their position in
+pipeline, propose_allocation() may be called right before set_caps(),
+leading to use sink->use_dmabuf while not being set.
+Fix this by checking for dmabuf format also in propose_allocation()
+instead of relying on sink->use_dmabuf.
+
+Example of pipeline which underline the problem:
+gst-launch-1.0 filesrc location=<png> ! pngdec ! videoconvert ! imagefreeze ! waylandsink
+Problem is not reproduced with this pipeline:
+gst-launch-1.0 filesrc location=<png> ! pngdec ! imagefreeze ! videoconvert ! waylandsink
+
+Signed-off-by: Hugues Fruchet <hugues.fruchet@st.com>
+---
+ ext/wayland/gstwaylandsink.c | 14 +++++++++++++-
+ 1 file changed, 13 insertions(+), 1 deletion(-)
+
+diff --git a/ext/wayland/gstwaylandsink.c b/ext/wayland/gstwaylandsink.c
+index 1f68546..3bbb736 100644
+--- a/ext/wayland/gstwaylandsink.c
++++ b/ext/wayland/gstwaylandsink.c
+@@ -688,8 +688,20 @@ gst_wayland_sink_propose_allocation (GstBaseSink * bsink, GstQuery * query)
+   GstAllocator *alloc;
+   GstCaps *pcaps;
+   guint config_min_buf, config_max_buf;
++  gboolean use_dmabuf;
++  GstVideoFormat format;
++
++  format = GST_VIDEO_INFO_FORMAT (&sink->video_info);
+ 
+-  if (!sink->use_dmabuf)
++  /* Force usage of dmabuf buffer pool by default, ie
++   * even if video/x-raw(memory:DMABuf) is not set in caps.
++   * This allows 0-copy path with software downstream elements
++   * (use of dmabuf buffers mmapped memory directly instead
++   * of copying)
++   */
++  use_dmabuf = gst_wl_display_check_format_for_dmabuf (sink->display, format);
++
++  if (!use_dmabuf)
+     return gst_wayland_sink_propose_shm_allocation(bsink, query);
+ 
+   /*
+-- 
+2.25.1
+

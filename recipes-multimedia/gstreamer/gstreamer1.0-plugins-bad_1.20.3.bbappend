@@ -17,6 +17,7 @@ SRC_URI:append = " \
     file://0014-waylandsink-add-waylandpool-on-meson-build.patch \
     \
     file://0016-Add-new-gtkwaylandsink-element.patch \
+    file://0017-waylandsink-fix-shm-pool-wrongly-selected-with-some-.patch \
 "
 
 PACKAGECONFIG_GL ?= "${@bb.utils.contains('DISTRO_FEATURES', 'opengl', 'gles2 egl', '', d)}"
@@ -31,6 +32,7 @@ PACKAGECONFIG ?= " \
     bz2 closedcaption curl dash dtls hls rsvg sbc smoothstreaming sndfile \
     ttml uvch264 webp \
     faac kms \
+    v4l2codecs \
 "
 
 do_install:append() {
