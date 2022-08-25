@@ -1,0 +1,44 @@
+From 328bc39f84c5b036ba4eaac19952f515e2c16c4e Mon Sep 17 00:00:00 2001
+From: Erik Kurzinger <ekurzinger@nvidia.com>
+Date: Fri, 12 Aug 2022 08:22:26 -0700
+Subject: [PATCH] clients/simple-egl: call eglSwapInterval after eglMakeCurrent
+
+If weston-simple-egl is run with the "-b" flag, it will attempt to set
+the swap interval to 0 during create_surface. However, at that point, it
+will not have made its EGLContext current yet, causing the
+eglSwapInterval call to have no effect. To fix this, wait until the
+EGLContext has been made current in init_gl before updating the swap
+interval.
+
+Signed-off-by: Erik Kurzinger <ekurzinger@nvidia.com>
+---
+ clients/simple-egl.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/clients/simple-egl.c b/clients/simple-egl.c
+index 2c7059c0..79d296a9 100644
+--- a/clients/simple-egl.c
++++ b/clients/simple-egl.c
+@@ -276,6 +276,9 @@ init_gl(struct window *window)
+ 			     window->egl_surface, window->display->egl.ctx);
+ 	assert(ret == EGL_TRUE);
+ 
++	if (!window->frame_sync)
++		eglSwapInterval(window->display->egl.dpy, 0);
++
+ 	frag = create_shader(window, frag_shader_text, GL_FRAGMENT_SHADER);
+ 	vert = create_shader(window, vert_shader_text, GL_VERTEX_SHADER);
+ 
+@@ -399,9 +402,6 @@ create_surface(struct window *window)
+ 
+ 	window->wait_for_configure = true;
+ 	wl_surface_commit(window->surface);
+-
+-	if (!window->frame_sync)
+-		eglSwapInterval(display->egl.dpy, 0);
+ }
+ 
+ static void
+-- 
+2.17.1
+
