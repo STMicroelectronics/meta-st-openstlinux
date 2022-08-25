@@ -25,6 +25,8 @@ SUMMARY:packagegroup-framework-core-base-display = "Framework core base componen
 RDEPENDS:packagegroup-framework-core-base-display = "\
     libdrm          \
     libdrm-tests    \
+    \
+    ${@bb.utils.contains('DISTRO_FEATURES', 'opengl', 'libsdl2', '', d)} \
     "
 
 SUMMARY:packagegroup-framework-core-base-mm = "Framework core base components for multimedia"
