@@ -18,6 +18,7 @@ RDEPENDS:packagegroup-framework-core = "\
     packagegroup-framework-core-display \
     packagegroup-framework-core-mm      \
     infos-openstlinux \
+    gpio-udev \
     "
 
 SUMMARY:packagegroup-framework-core-display = "Framework core components for display"
