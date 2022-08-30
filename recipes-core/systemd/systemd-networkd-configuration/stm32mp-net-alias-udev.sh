@@ -27,8 +27,11 @@ store)
         interface_path=$(grep -l "$devpath" /tmp/net_interface/*)
         if [ $(echo $interface_path | wc -l) -eq 1 ]; then
             interface=$(basename $interface_path)
+            soc_interface=$(basename $devpath |  sed 's/\(.*\)\.\(.*\)/\2/' )
             debug "ip link property add dev $interface altname $param1"
             ip link property add dev $interface altname $param1
+            debug "ip link property add dev $interface altname $param1.$soc_interface"
+            ip link property add dev $interface altname $param1.$soc_interface
         fi
     fi
     ;;
