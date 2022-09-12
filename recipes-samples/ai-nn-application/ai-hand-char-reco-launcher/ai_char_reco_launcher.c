@@ -524,7 +524,6 @@ int set_cursor_position(int x, int y)
 	sleep(2);
 
 	memset(&ev, 0, sizeof(struct input_event));
-	gettimeofday(&ev.time,NULL);
 	ev.type = EV_ABS;
 	ev.code = ABS_X;
 	ev.value = x;
