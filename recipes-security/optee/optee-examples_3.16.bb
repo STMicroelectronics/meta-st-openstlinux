@@ -30,6 +30,7 @@ EXTRA_OEMAKE = " TA_DEV_KIT_DIR=${TA_DEV_KIT_DIR} \
 
 do_compile() {
     export CFLAGS="${CFLAGS} --sysroot=${STAGING_DIR_HOST}"
+    export OPENSSL_MODULES=${STAGING_LIBDIR_NATIVE}/ossl-modules/
     oe_runmake
 }
 
@@ -41,9 +42,9 @@ do_install () {
 }
 
 # Avoid QA Issue: No GNU_HASH in the elf binary
-INSANE_SKIP_${PN} += "ldflags"
+INSANE_SKIP:${PN} += "ldflags"
 
-FILES_${PN} += "${nonarch_base_libdir}/optee_armtz/"
+FILES:${PN} += "${nonarch_base_libdir}/optee_armtz/"
 
 # Imports machine specific configs from staging to build
 PACKAGE_ARCH = "${MACHINE_ARCH}"
