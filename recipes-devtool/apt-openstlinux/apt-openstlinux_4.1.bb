@@ -6,7 +6,7 @@ DESCRIPTION = "Add apt configuration files for OpenSTLinux"
 LICENSE = "MIT"
 LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda2f7b4f302"
 
-RDEPENDS_${PN} += " gnupg "
+RDEPENDS:${PN} += " gnupg "
 
 SRC_URI = "file://packages.openstlinux.st.com.list \
            file://packages.openstlinux.st.com.gpg \
