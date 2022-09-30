@@ -208,77 +208,104 @@ def license_sdk_create_summary(d):
 
     def generate_spdx_license_sheet(html):
         SRC_DISTRIBUTE_LICENSES = ""
-        SRC_DISTRIBUTE_LICENSES += "AAL Adobe AFL-1.2 AFL-2.0 AFL-2.1 AFL-3.0"
-        SRC_DISTRIBUTE_LICENSES += " AGPL-3.0 ANTLR-PD Apache-1.0 Apache-1.1 Apache-2.0"
-        SRC_DISTRIBUTE_LICENSES += " APL-1.0 APSL-1.0 APSL-1.1 APSL-1.2 APSL-2.0"
-        SRC_DISTRIBUTE_LICENSES += " Artistic-1.0 Artistic-2.0 BitstreamVera BSD"
-        SRC_DISTRIBUTE_LICENSES += " BSD-2-Clause BSD-3-Clause BSD-4-Clause BSL-1.0"
-        SRC_DISTRIBUTE_LICENSES += " CATOSL-1.1 CC0-1.0 CC-BY-1.0 CC-BY-2.0 CC-BY-2.5"
-        SRC_DISTRIBUTE_LICENSES += " CC-BY-3.0 CC-BY-NC-1.0 CC-BY-NC-2.0 CC-BY-NC-2.5"
-        SRC_DISTRIBUTE_LICENSES += " CC-BY-NC-3.0 CC-BY-NC-ND-1.0 CC-BY-NC-ND-2.0"
-        SRC_DISTRIBUTE_LICENSES += " CC-BY-NC-ND-2.5 CC-BY-NC-ND-3.0 CC-BY-NC-SA-1.0"
-        SRC_DISTRIBUTE_LICENSES += " CC-BY-NC-SA-2.0 CC-BY-NC-SA-2.5 CC-BY-NC-SA-3.0"
-        SRC_DISTRIBUTE_LICENSES += " CC-BY-ND-1.0 CC-BY-ND-2.0 CC-BY-ND-2.5 CC-BY-ND-3.0"
-        SRC_DISTRIBUTE_LICENSES += " CC-BY-SA-1.0 CC-BY-SA-2.0 CC-BY-SA-2.5 CC-BY-SA-3.0"
-        SRC_DISTRIBUTE_LICENSES += " CDDL-1.0 CECILL-1.0 CECILL-2.0 CECILL-B CECILL-C"
-        SRC_DISTRIBUTE_LICENSES += " ClArtistic CPAL-1.0 CPL-1.0 CUA-OPL-1.0 DSSSL"
-        SRC_DISTRIBUTE_LICENSES += " ECL-1.0 ECL-2.0 eCos-2.0 EDL-1.0 EFL-1.0 EFL-2.0"
-        SRC_DISTRIBUTE_LICENSES += " Elfutils-Exception Entessa EPL-1.0 ErlPL-1.1"
-        SRC_DISTRIBUTE_LICENSES += " EUDatagrid EUPL-1.0 EUPL-1.1 Fair Frameworx-1.0"
-        SRC_DISTRIBUTE_LICENSES += " FreeType GFDL-1.1 GFDL-1.2 GFDL-1.3 GPL-1.0"
-        SRC_DISTRIBUTE_LICENSES += " GPL-2.0 GPL-2.0-with-autoconf-exception"
-        SRC_DISTRIBUTE_LICENSES += " GPL-2.0-with-classpath-exception"
-        SRC_DISTRIBUTE_LICENSES += " GPL-2.0-with-font-exception"
-        SRC_DISTRIBUTE_LICENSES += " GPL-2.0-with-GCC-exception"
-        SRC_DISTRIBUTE_LICENSES += " GPL-2-with-bison-exception GPL-3.0"
-        SRC_DISTRIBUTE_LICENSES += " GPL-3.0-with-autoconf-exception"
-        SRC_DISTRIBUTE_LICENSES += " GPL-3.0-with-GCC-exception"
-        SRC_DISTRIBUTE_LICENSES += " gSOAP-1 gSOAP-1.3b HPND IPA IPL-1.0 ISC LGPL-2.0"
-        SRC_DISTRIBUTE_LICENSES += " LGPL-2.1 LGPL-3.0 Libpng LPL-1.02 LPPL-1.0 LPPL-1.1"
-        SRC_DISTRIBUTE_LICENSES += " LPPL-1.2 LPPL-1.3c MirOS MIT Motosoto MPL-1.0"
-        SRC_DISTRIBUTE_LICENSES += " MPL-1.1 MS-PL MS-RL Multics NASA-1.3 Nauman NCSA"
-        SRC_DISTRIBUTE_LICENSES += " NGPL Nokia NPOSL-3.0 NTP OASIS OCLC-2.0 ODbL-1.0"
-        SRC_DISTRIBUTE_LICENSES += " OFL-1.1 OGTSL OLDAP-2.8 OpenSSL OSL-1.0 OSL-2.0"
-        SRC_DISTRIBUTE_LICENSES += " OSL-3.0 PD PHP-3.0 PostgreSQL Proprietary"
-        SRC_DISTRIBUTE_LICENSES += " Python-2.0 QPL-1.0 RHeCos-1 RHeCos-1.1 RPL-1.5"
-        SRC_DISTRIBUTE_LICENSES += " RPSL-1.0 RSCPL Ruby SAX-PD SGI-1 Simple-2.0 Sleepycat"
-        SRC_DISTRIBUTE_LICENSES += " SPL-1.0 SugarCRM-1 SugarCRM-1.1.3 UCB VSL-1.0 W3C"
-        SRC_DISTRIBUTE_LICENSES += " Watcom-1.0 WXwindows XFree86-1.0 XFree86-1.1 Xnet XSL YPL-1.1"
-        SRC_DISTRIBUTE_LICENSES += " Zimbra-1.3 Zlib ZPL-1.1 ZPL-2.0 ZPL-2.1"
-
-        ''' AGPL variations '''
-        SPDXLICENSEMAP = [
-            ["AGPL-3.0", ['AGPL-3', 'AGPLv3', 'AGPLv3.0'] ],
-            # GPL variations
-            ["GPL-1.0", ['GPL-1', 'GPLv1', 'GPLv1.0'] ],
-            ["GPL-2.0", ['GPL-2', 'GPLv2', 'GPLv2.0'] ],
-            ["GPL-3.0", ['GPL-3', 'GPLv3', 'GPLv3.0'] ],
-            # LGPL variations
-            ["LGPL-2.0", ['LGPLv2', 'LGPLv2.0'] ],
-            ["LGPL-2.1", ['LGPL2.1', 'LGPLv2.1'] ],
-            ["LGPL-3.0", ['LGPLv3']],
-            # MPL variations
-            ["MPL-1.0", ['MPL-1', 'MPLv1'] ],
-            ["MPL-1.1", ['MPLv1.1'] ],
-            ["MPL-2.0", ['MPLv2'] ],
-            # MIT variations
-            ["MIT", ['MIT-X', 'MIT-style'] ],
-            # Openssl variations
-            ["OpenSSL", ['openssl'] ],
-            # Python variations
-            ["Python-2.0", ['PSF', 'PSFv2', 'Python-2'] ],
-            # Apache variations
-            ["Apache-2.0", ['Apachev2', 'Apache-2'] ],
-            # Artistic variations
-            ["Artistic-1.0", ['Artisticv1', 'Artistic-1'] ],
-            # Academic variations
-            ["AFL-2.0", ['AFL-2', 'AFLv2'] ],
-            ["AFL-1.2", ['AFL-1', 'AFLv1'] ],
-            # Other variations
-            ["EPL-1.0", ['EPLv1.0'] ],
-            # Silicon Graphics variations
-            ["SGI-1", ['SGIv1'] ]
-        ];
+        SRC_DISTRIBUTE_LICENSES += "0BSD"
+        SRC_DISTRIBUTE_LICENSES += "AAL Abstyles Adobe Adobe-2006 Adobe-Glyph ADSL"
+        SRC_DISTRIBUTE_LICENSES += "AFL-1.1 AFL-1.2 AFL-2.0 AFL-2.1 AFL-3.0"
+        SRC_DISTRIBUTE_LICENSES += "Afmparse AGPL-1.0-only AGPL-1.0-or-later AGPL-3.0-only "
+        SRC_DISTRIBUTE_LICENSES += "AGPL-3.0-or-later Aladdin AMDPLPA AML AMPAS ANTLR-PD"
+        SRC_DISTRIBUTE_LICENSES += "ANTLR-PD-fallback Apache-1.0 Apache-1.1 Apache-2.0"
+        SRC_DISTRIBUTE_LICENSES += "Apache-2.0-with-LLVM-exception APAFML APL-1.0 APSL-1.0"
+        SRC_DISTRIBUTE_LICENSES += "APSL-1.1 APSL-1.2 APSL-2.0"
+        SRC_DISTRIBUTE_LICENSES += "Artistic-1.0 Artistic-1.0-cl8 Artistic-1.0-Perl Artistic-2.0"
+        SRC_DISTRIBUTE_LICENSES += "Bahyph Barr Beerware BitstreamVera BitTorrent-1.0 BitTorrent-1.1"
+        SRC_DISTRIBUTE_LICENSES += "blessing BlueOak-1.0.0 Borceux BSD-1-Clause BSD-2-Clause "
+        SRC_DISTRIBUTE_LICENSES += "BSD-2-Clause-Patent BSD-2-Clause-Views BSD-3-Clause "
+        SRC_DISTRIBUTE_LICENSES += "BSD-3-Clause-Attribution BSD-3-Clause-Clear BSD-3-Clause-LBNL"
+        SRC_DISTRIBUTE_LICENSES += "BSD-3-Clause-Modification BSD-3-Clause-No-Military-License "
+        SRC_DISTRIBUTE_LICENSES += "BSD-3-Clause-No-Nuclear-License BSD-3-Clause-No-Nuclear-License-2014"
+        SRC_DISTRIBUTE_LICENSES += "BSD-3-Clause-No-Nuclear-Warranty BSD-3-Clause-Open-MPI"
+        SRC_DISTRIBUTE_LICENSES += "BSD-4-Clause BSD-4-Clause-Shortened BSD-4-Clause-UC"
+        SRC_DISTRIBUTE_LICENSES += "BSD-Protection BSD-Source-Code"
+        SRC_DISTRIBUTE_LICENSES += "BSL-1.0 BUSL-1.1 bzip2-1.0.4 bzip2-1.0.5 bzip2-1.0.6"
+        SRC_DISTRIBUTE_LICENSES += "CAL-1.0 CAL-1.0-Combined-Work-Exception Caldera CATOSL-1.1"
+        SRC_DISTRIBUTE_LICENSES += "CC0-1.0 CC-BY-1.0 CC-BY-2.0 CC-BY-2.5 CC-BY-2.5-AU CC-BY-3.0"
+        SRC_DISTRIBUTE_LICENSES += "CC-BY-3.0-AT CC-BY-3.0-DE CC-BY-3.0-NL CC-BY-3.0-US CC-BY-4.0"
+        SRC_DISTRIBUTE_LICENSES += "CC-BY-NC-1.0 CC-BY-NC-2.0 CC-BY-NC-2.5 CC-BY-NC-3.0 "
+        SRC_DISTRIBUTE_LICENSES += "CC-BY-NC-3.0-DE CC-BY-NC-4.0 CC-BY-NC-ND-1.0 CC-BY-NC-ND-2.0"
+        SRC_DISTRIBUTE_LICENSES += "CC-BY-NC-ND-2.5 CC-BY-NC-ND-3.0 CC-BY-NC-ND-3.0-DE "
+        SRC_DISTRIBUTE_LICENSES += "CC-BY-NC-ND-3.0-IGO CC-BY-NC-ND-4.0 CC-BY-NC-SA-1.0"
+        SRC_DISTRIBUTE_LICENSES += "CC-BY-NC-SA-2.0 CC-BY-NC-SA-2.0-FR CC-BY-NC-SA-2.0-UK"
+        SRC_DISTRIBUTE_LICENSES += "CC-BY-NC-SA-2.5 CC-BY-NC-SA-3.0 CC-BY-NC-SA-3.0-DE "
+        SRC_DISTRIBUTE_LICENSES += "CC-BY-NC-SA-3.0-IGO CC-BY-NC-SA-4.0 CC-BY-ND-1.0"
+        SRC_DISTRIBUTE_LICENSES += "CC-BY-ND-2.0 CC-BY-ND-2.5 CC-BY-ND-3.0 CC-BY-ND-3.0-DE "
+        SRC_DISTRIBUTE_LICENSES += "CC-BY-ND-4.0 CC-BY-SA-1.0 CC-BY-SA-2.0 CC-BY-SA-2.0-UK"
+        SRC_DISTRIBUTE_LICENSES += "CC-BY-SA-2.1-JP CC-BY-SA-2.5 CC-BY-SA-3.0 CC-BY-SA-3.0-AT"
+        SRC_DISTRIBUTE_LICENSES += "CC-BY-SA-3.0-DE CC-BY-SA-4.0 CC-PDDC CDDL-1.0 CDDL-1.1"
+        SRC_DISTRIBUTE_LICENSES += "CDL-1.0 CDLA-Permissive-1.0 CDLA-Permissive-2.0 CDLA-Sharing-1.0"
+        SRC_DISTRIBUTE_LICENSES += "CECILL-1.0 CECILL-1.1 CECILL-2.0 CECILL-2.1 CECILL-B CECILL-C"
+        SRC_DISTRIBUTE_LICENSES += "CERN-OHL-1.1 CERN-OHL-1.2 CERN-OHL-P-2.0 CERN-OHL-S-2.0 CERN-OHL-W-2.0"
+        SRC_DISTRIBUTE_LICENSES += "ClArtistic CNRI-Jython CNRI-Python CNRI-Python-GPL-Compatible"
+        SRC_DISTRIBUTE_LICENSES += "Condor-1.1 copyleft-next-0.3.0 copyleft-next-0.3.1 CPAL-1.0"
+        SRC_DISTRIBUTE_LICENSES += "CPL-1.0 CPOL-1.02 Crossword CrystalStacker CUA-OPL-1.0 Cube"
+        SRC_DISTRIBUTE_LICENSES += "C-UDA-1.0 curl D-FSL-1.0 diffmark DOC Dotseqn DRL-1.0 DSDP"
+        SRC_DISTRIBUTE_LICENSES += "DSSSL dvipdfm ECL-1.0 ECL-2.0 eCos-2.0 EDL-1.0 EFL-1.0"
+        SRC_DISTRIBUTE_LICENSES += "EFL-2.0 eGenix Entessa EPICS EPL-1.0 EPL-2.0 ErlPL-1.1 etalab-2.0"
+        SRC_DISTRIBUTE_LICENSES += "EUDatagrid EUPL-1.0 EUPL-1.1 EUPL-1.2 urosym Fair Frameworx-1.0"
+        SRC_DISTRIBUTE_LICENSES += "FreeBSD-DOC FreeImage FSFAP FSFUL FSFULLR FSF-Unlimited"
+        SRC_DISTRIBUTE_LICENSES += "FTL GD GFDL-1.1 GFDL-1.1-invariants-only GFDL-1.1-invariants-or-later"
+        SRC_DISTRIBUTE_LICENSES += "GFDL-1.1-no-invariants-only GFDL-1.1-no-invariants-or-later"
+        SRC_DISTRIBUTE_LICENSES += "GFDL-1.1-only GFDL-1.1-or-later GFDL-1.2 GFDL-1.2-invariants-only"
+        SRC_DISTRIBUTE_LICENSES += "GFDL-1.2-invariants-or-later GFDL-1.2-no-invariants-only"
+        SRC_DISTRIBUTE_LICENSES += "GFDL-1.2-no-invariants-or-later GFDL-1.2-only GFDL-1.2-or-later"
+        SRC_DISTRIBUTE_LICENSES += "GFDL-1.3 GFDL-1.3-invariants-only GFDL-1.3-invariants-or-later"
+        SRC_DISTRIBUTE_LICENSES += "GFDL-1.3-no-invariants-only GFDL-1.3-no-invariants-or-later"
+        SRC_DISTRIBUTE_LICENSES += "GFDL-1.3-only GFDL-1.3-or-later Giftware GL2PS Glide Glulxe"
+        SRC_DISTRIBUTE_LICENSES += "GLWTPL gnuplot GPL-1.0-only GPL-1.0-or-later GPL-2.0-only"
+        SRC_DISTRIBUTE_LICENSES += "GPL-2.0-or-later GPL-2.0-with-autoconf-exception "
+        SRC_DISTRIBUTE_LICENSES += "GPL-2.0-with-classpath-exception GPL-2.0-with-font-exception"
+        SRC_DISTRIBUTE_LICENSES += " GPL-2.0-with-GCC-exception GPL-2.0-with-OpenSSL-exception"
+        SRC_DISTRIBUTE_LICENSES += "GPL-2-with-bison-exception GPL-3.0-only GPL-3.0-or-later"
+        SRC_DISTRIBUTE_LICENSES += "GPL-3.0-with-autoconf-exception GPL-3.0-with-GCC-exception"
+        SRC_DISTRIBUTE_LICENSES += "GPL-3-with-bison-exception gSOAP-1 gSOAP-1.3b HaskellReport"
+        SRC_DISTRIBUTE_LICENSES += "Hippocratic-2.1 HPND HPND-sell-variant HTMLTIDY IBM-pibs"
+        SRC_DISTRIBUTE_LICENSES += "ICU IJG ImageMagick iMatix Imlib2 Info-ZIP Intel Intel-ACPI"
+        SRC_DISTRIBUTE_LICENSES += "Interbase-1.0 IPA IPL-1.0 ISC JasPer-2.0 JPNIC JSON"
+        SRC_DISTRIBUTE_LICENSES += "LAL-1.2 LAL-1.3 Latex2e Leptonica LGPL-2.0-only"
+        SRC_DISTRIBUTE_LICENSES += "LGPL-2.0-or-later LGPL-2.1-only LGPL-2.1-or-later LGPL-3.0-only"
+        SRC_DISTRIBUTE_LICENSES += "LGPL-3.0-or-later LGPLLR Libpng libpng-2.0 libselinux-1.0 libtiff"
+        SRC_DISTRIBUTE_LICENSES += "LiLiQ-P-1.1 LiLiQ-R-1.1 LiLiQ-Rplus-1.1 Linux-OpenIB"
+        SRC_DISTRIBUTE_LICENSES += "LPL-1.0 LPL-1.02 LPPL-1.0 LPPL-1.1 LPPL-1.2 LPPL-1.3a LPPL-1.3c"
+        SRC_DISTRIBUTE_LICENSES += "MakeIndex MirOS MIT MIT-0 MIT-advertising MIT-CMU MIT-enna"
+        SRC_DISTRIBUTE_LICENSES += "MIT-feh MIT-Modern-Variant MITNFA MIT-open-group Motosoto"
+        SRC_DISTRIBUTE_LICENSES += "mpich2 MPL-1.0 MPL-1.1 MPL-2.0 MPL-2.0-no-copyleft-exception"
+        SRC_DISTRIBUTE_LICENSES += "MS-PL MS-RL MTLL MulanPSL-1.0 MulanPSL-2.0 Multics Mup"
+        SRC_DISTRIBUTE_LICENSES += "NAIST-2003 NASA-1.3 Naumen NBPL-1.0 NCGL-UK-2.0 NCSA NetCDF"
+        SRC_DISTRIBUTE_LICENSES += "Net-SNMP Newsletr NGPL NIST-PD NIST-PD-fallback NLOD-1.0"
+        SRC_DISTRIBUTE_LICENSES += "NLOD-2.0 NLPL Nokia NOSL Noweb NPL-1.0 NPL-1.1 NPOSL-3.0"
+        SRC_DISTRIBUTE_LICENSES += "NRL NTP NTP-0 OASIS OCCT-PL OCLC-2.0 ODbL-1.0 ODC-By-1.0"
+        SRC_DISTRIBUTE_LICENSES += "OFL-1.0 OFL-1.0-no-RFN OFL-1.0-RFN OFL-1.1 OFL-1.1-no-RFN"
+        SRC_DISTRIBUTE_LICENSES += "OFL-1.1-RFN OGC-1.0 OGDL-Taiwan-1.0 OGL-Canada-2.0 OGL-UK-1.0"
+        SRC_DISTRIBUTE_LICENSES += "OGL-UK-2.0 OGL-UK-3.0 OGTSL OLDAP-1.1 OLDAP-1.2 OLDAP-1.3"
+        SRC_DISTRIBUTE_LICENSES += "OLDAP-1.4 OLDAP-2.0 OLDAP-2.0.1 OLDAP-2.1 OLDAP-2.2 OLDAP-2.2.1"
+        SRC_DISTRIBUTE_LICENSES += "OLDAP-2.2.2 OLDAP-2.3 OLDAP-2.4 OLDAP-2.5 OLDAP-2.6 OLDAP-2.7"
+        SRC_DISTRIBUTE_LICENSES += "OLDAP-2.8 OML OpenSSL OPL-1.0 OPUBL-1.0 OSET-PL-2.1 OSL-1.0"
+        SRC_DISTRIBUTE_LICENSES += "OSL-1.1 OSL-2.0 OSL-2.1 OSL-3.0 O-UDA-1.0 ParaTypeFFL-1.3"
+        SRC_DISTRIBUTE_LICENSES += "Parity-6.0.0 Parity-7.0.0 PD PDDL-1.0 PHP-3.0 PHP-3.01 pkgconf"
+        SRC_DISTRIBUTE_LICENSES += "Plexus PolyForm-Noncommercial-1.0.0 PolyForm-Small-Business-1.0.0"
+        SRC_DISTRIBUTE_LICENSES += "PostgreSQL Proprietary PSF-2.0 psfrag psutils Python-2.0"
+        SRC_DISTRIBUTE_LICENSES += "Qhull QPL-1.0 Rdisc RHeCos-1 RHeCos-1.1 RPL-1.1 RPL-1.5"
+        SRC_DISTRIBUTE_LICENSES += "RPSL-1.0 RSA-MD RSCPL Ruby Saxpath SAX-PD SCEA Sendmail"
+        SRC_DISTRIBUTE_LICENSES += "Sendmail-8.23 SGI-1 SGI-B-1.0 SGI-B-1.1 SGI-B-2.0 SHL-0.5"
+        SRC_DISTRIBUTE_LICENSES += "SHL-0.51 SimPL-2.0 Simple-2.0 SISSL SISSL-1.2 Sleepycat"
+        SRC_DISTRIBUTE_LICENSES += "SMAIL_GPL SMLNJ SMPPL SNIA Spencer-86 Spencer-94 Spencer-99"
+        SRC_DISTRIBUTE_LICENSES += "SPL-1.0 SSH-OpenSSH SSH-short SSPL-1.0 SugarCRM-1 SugarCRM-1.1.3"
+        SRC_DISTRIBUTE_LICENSES += "SWL TAPR-OHL-1.0 TCL TCP-wrappers TMate TORQUE-1.1 TOSL"
+        SRC_DISTRIBUTE_LICENSES += "TU-Berlin-1.0 TU-Berlin-2.0 UCB UCL-1.0 unfs3 Unicode-DFS-2015"
+        SRC_DISTRIBUTE_LICENSES += "Unicode-DFS-2016 Unicode-TOU Unlicense UPL-1.0  Vim VOSTROM"
+        SRC_DISTRIBUTE_LICENSES += "VSL-1.0 W3C W3C-19980720 W3C-20150513 Watcom-1.0 Wsuipa"
+        SRC_DISTRIBUTE_LICENSES += "WTFPL WXwindows X11 Xerox XFree86-1.0 Free86-1.1 xinetd"
+        SRC_DISTRIBUTE_LICENSES += "Xnet xpp XSkat XSL YPL-1.0 YPL-1.1 Zed Zend-2.0 Zimbra-1.3"
+        SRC_DISTRIBUTE_LICENSES += "Zimbra-1.4 Zlib zlib-acknowledgement ZPL-1.1 ZPL-2.0 ZPL-2.1"
 
         html.startDiv("OE_SPDX_LICENSE", "OE SPDX LICENSE")
         html.addAnchor("OE_SPDX_LICENSE")
@@ -305,27 +332,6 @@ def license_sdk_create_summary(d):
             html.startRow()
             html.addColumnContent(lic)
             html.addColumnURLOUTContent('['+lic+']', "http://git.openembedded.org/openembedded-core/tree/meta/files/common-licenses/" + lic )
-            html.stopRow()
-        html.stopTable()
-
-        html.addNewLine()
-
-        html.startTable()
-        html.startRow()
-        html.addColumnHeaderContent("License name", html.bold)
-        html.addColumnHeaderContent("Authorized variations names", html.bold)
-        html.stopRow()
-        for lic in SPDXLICENSEMAP:
-            html.startRow()
-            html.addColumnContent(lic[0])
-            html.startColumn()
-            html.startTable("border: 0;")
-            for auth_lic in lic[1]:
-                html.startRow()
-                html.addColumnContent(auth_lic)
-                html.stopRow()
-            html.stopTable()
-            html.stopColumn()
             html.stopRow()
         html.stopTable()
 
