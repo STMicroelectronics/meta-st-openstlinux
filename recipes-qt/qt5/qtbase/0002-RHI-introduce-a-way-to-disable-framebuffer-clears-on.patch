@@ -1,0 +1,49 @@
+From 1fd34b01b3844e54d0d61c2d56a4e05051d03f76 Mon Sep 17 00:00:00 2001
+From: Giuseppe D'Angelo <giuseppe.dangelo@kdab.com>
+Date: Thu, 30 Sep 2021 01:11:10 +0200
+Subject: [PATCH 2/2] RHI: introduce a way to disable framebuffer clears on GL
+
+On low-end hardware without fast framebuffer clears one can
+significantly reduce the fill rate by disabling framebuffer clears
+(provided, as it's usually the case, that the application has content
+filling the entire framebuffer).
+
+Add a couple of environment variables to do so, one to disable all
+clears and one to disable only color clears (in case the surface is
+requested without a depth buffer). Note that disabling all clears
+on a surface *with* a depth buffer still requires
+QSG_NO_DEPTH_BUFFER to be set, otherwise QtQuick is going to assume
+that there is a clean usable depth buffer.
+
+Change-Id: I96ad0a3d28dd0ab65cc960fb7cb2e0a8b6f35628
+Reviewed-by: Laszlo Agocs <laszlo.agocs@qt.io>
+---
+ src/gui/rhi/qrhigles2.cpp | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/src/gui/rhi/qrhigles2.cpp b/src/gui/rhi/qrhigles2.cpp
+index ca1549daad..2c3abbaae5 100644
+--- a/src/gui/rhi/qrhigles2.cpp
++++ b/src/gui/rhi/qrhigles2.cpp
+@@ -2786,13 +2786,16 @@ QGles2RenderTargetData *QRhiGles2::enqueueBindFramebuffer(QRhiRenderTarget *rt,
+     QGles2CommandBuffer::Command fbCmd;
+     fbCmd.cmd = QGles2CommandBuffer::Command::BindFramebuffer;
+ 
++    static const bool doClearBuffers = qEnvironmentVariableIntValue("QT_GL_NO_CLEAR_BUFFERS") == 0;
++    static const bool doClearColorBuffer = qEnvironmentVariableIntValue("QT_GL_NO_CLEAR_COLOR_BUFFER") == 0;
++
+     switch (rt->resourceType()) {
+     case QRhiResource::RenderTarget:
+         rtD = &QRHI_RES(QGles2ReferenceRenderTarget, rt)->d;
+         if (wantsColorClear)
+-            *wantsColorClear = true;
++            *wantsColorClear = doClearBuffers && doClearColorBuffer;
+         if (wantsDsClear)
+-            *wantsDsClear = true;
++            *wantsDsClear = doClearBuffers;
+         fbCmd.args.bindFramebuffer.fbo = 0;
+         fbCmd.args.bindFramebuffer.colorAttCount = 1;
+         break;
+-- 
+2.37.2
+
