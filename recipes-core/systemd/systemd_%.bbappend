@@ -2,9 +2,9 @@ PACKAGECONFIG:append = " \
     firstboot \
     coredump \
     iptc \
-    oomd \
     "
 
+WATCHDOG_TIMEOUT = "32"
 
 NTP_SERVERS ??= ""
 EXTRA_OEMESON += " ${@ '-Dntp-servers="${NTP_SERVERS}"' if '${NTP_SERVERS}' else ''}"
