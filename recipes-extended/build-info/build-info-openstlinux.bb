@@ -5,9 +5,11 @@ PACKAGE_ARCH = "${MACHINE_ARCH}"
 
 inherit image-buildinfo
 
+IMAGE_BUILDINFO_FILE = "${sysconfdir}/build"
 do_install(){
     install -d ${D}/$(dirname "${IMAGE_BUILDINFO_FILE}")
 }
+BUILDINFODEST = "${D}"
 # Configure buildinfo() from image-buildinfo class to generate expected info
 IMAGE_BUILDINFO_VARS = "${BUILDCFG_VARS}"
 # Set path to output build info file on image dir
