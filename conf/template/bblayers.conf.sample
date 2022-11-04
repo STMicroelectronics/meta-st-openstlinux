@@ -17,7 +17,6 @@ POKY  = "${POKY_NON_REMOVABLE}"
 POKY += "${OEROOT}/layers/poky/meta-yocto-bsp"
 
 POKY_NON_REMOVABLE  = "${OEROOT}/layers/poky/meta"
-POKY_NON_REMOVABLE += "${OEROOT}/layers/poky/meta-yocto"
 
 #--------------------------
 #
