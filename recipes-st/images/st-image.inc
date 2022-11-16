@@ -4,6 +4,8 @@ LIC_FILES_CHKSUM[vardepsexclude] += "EULA_FILE_ST"
 
 inherit st-image-license-summary
 inherit st-sdk-license-summary
+inherit st-image-cve-summary
+
 
 EULA_FILE_ST ?= "${OPENSTLINUX_BASE}/files/licenses/ST-Proprietary"
 EULA_FILE_ST_MD5SUM ?= "7cb1e55a9556c7dd1a3cae09db9cc85f"

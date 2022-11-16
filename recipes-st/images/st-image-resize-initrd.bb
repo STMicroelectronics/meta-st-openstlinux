@@ -22,6 +22,7 @@ ENABLE_FLASHLAYOUT_CONFIG = "0"
 # Disable image license summary generation for this particular image as this is
 # supposed to be done only for complete image
 ENABLE_IMAGE_LICENSE_SUMMARY = "0"
+ENABLE_IMAGE_CVE_SUMMARY = "0"
 
 # Disable generation of multi volume ubifs  for this particular image as this is
 # supposed to be done only for complete image
