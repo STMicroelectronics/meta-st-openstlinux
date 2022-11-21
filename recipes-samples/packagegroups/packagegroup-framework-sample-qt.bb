@@ -26,6 +26,8 @@ RDEPENDS:packagegroup-framework-sample-qt = "\
     \
     qtgraphicaleffects-qmlplugins   \
     \
+    qtquickcontrols2-qmlplugins     \
+    \
     qtmultimedia                    \
     qtmultimedia-plugins            \
     qtmultimedia-qmlplugins         \
