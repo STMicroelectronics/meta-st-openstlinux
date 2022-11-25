@@ -10,9 +10,9 @@ DEPENDS += "python3-cryptography-native"
 inherit python3native
 
 SRC_URI = "git://github.com/linaro-swg/optee_examples.git;branch=master;protocol=https"
-SRCREV = "65fc74309e12189ad5b6ce3ffec37c8011088a5a"
+SRCREV = "f301ee9df2129c0db683e726c91dc2cefe4cdb65"
 
-PV = "3.16.0+git${SRCPV}"
+PV = "3.19.0+git${SRCPV}"
 
 S = "${WORKDIR}/git"
 

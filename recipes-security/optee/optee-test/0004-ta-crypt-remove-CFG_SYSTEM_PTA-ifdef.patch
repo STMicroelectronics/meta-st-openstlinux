@@ -1,0 +1,53 @@
+From 96a4d8a63b1b75a3fee92f5d10566437d8b2acd5 Mon Sep 17 00:00:00 2001
+From: Jens Wiklander <jens.wiklander@linaro.org>
+Date: Tue, 6 Dec 2022 12:38:59 +0100
+Subject: [PATCH 1/3] ta/crypt: remove CFG_SYSTEM_PTA ifdef
+
+Removes the CFG_SYSTEM_PTA ifdef, the TA returns a useful error code
+,TEE_ERROR_ITEM_NOT_FOUND, if the System PTA isn't available.
+
+Change-Id: I1824056210bf27ce52c21d3d547cffea8754213c
+Reviewed-by: Jerome Forissier <jerome.forissier@linaro.org>
+Signed-off-by: Jens Wiklander <jens.wiklander@linaro.org>
+[etienne: picked from d09b2ea799c7e8c7a843d5e3b59854be364087f5]
+Signed-off-by: Etienne Carriere <etienne.carriere@foss.st.com>
+---
+ ta/crypt/sub.mk     | 2 +-
+ ta/crypt/ta_entry.c | 2 --
+ 2 files changed, 1 insertion(+), 3 deletions(-)
+
+diff --git a/ta/crypt/sub.mk b/ta/crypt/sub.mk
+index 187cbfb..6e4debf 100644
+--- a/ta/crypt/sub.mk
++++ b/ta/crypt/sub.mk
+@@ -5,7 +5,7 @@ srcs-y += cryp_taf.c
+ srcs-y += derive_key_taf.c
+ srcs-y += sha2_impl.c
+ srcs-y += sha2_taf.c
+-srcs-$(CFG_SYSTEM_PTA) += seed_rng_taf.c
++srcs-y += seed_rng_taf.c
+ srcs-y += ta_entry.c
+ srcs-$(CFG_TA_MBEDTLS) += mbedtls_taf.c
+ srcs-y += arith_taf.c
+diff --git a/ta/crypt/ta_entry.c b/ta/crypt/ta_entry.c
+index 17612a1..769ae1f 100644
+--- a/ta/crypt/ta_entry.c
++++ b/ta/crypt/ta_entry.c
+@@ -210,14 +210,12 @@ TEE_Result TA_InvokeCommandEntryPoint(void *pSessionContext,
+ 	case TA_CRYPT_CMD_MBEDTLS_SIGN_CERT:
+ 		return ta_entry_mbedtls_sign_cert(nParamTypes, pParams);
+ #endif
+-#ifdef CFG_SYSTEM_PTA
+ 	case TA_CRYPT_CMD_SEED_RNG_POOL:
+ 		return seed_rng_pool(nParamTypes, pParams);
+ 	case TA_CRYPT_CMD_DERIVE_TA_UNIQUE_KEY:
+ 		return derive_ta_unique_key_test(nParamTypes, pParams);
+ 	case TA_CRYPT_CMD_DERIVE_TA_UNIQUE_KEY_SHM:
+ 		return derive_ta_unique_key_test_shm(nParamTypes, pParams);
+-#endif
+ 	case TA_CRYPT_CMD_ARITH_NEW_VAR:
+ 		return ta_entry_arith_new_var(nParamTypes, pParams);
+ 	case TA_CRYPT_CMD_ARITH_NEW_FMM_CTX:
+-- 
+2.25.1
+

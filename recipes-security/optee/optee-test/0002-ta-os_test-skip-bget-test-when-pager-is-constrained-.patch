@@ -1,0 +1,83 @@
+From 24fcf0eee546a99658ed050b9c103d025f3ae38a Mon Sep 17 00:00:00 2001
+From: Etienne Carriere <etienne.carriere@linaro.org>
+Date: Tue, 7 Mar 2023 17:44:00 +0100
+Subject: [PATCH 1/2] ta: os_test: skip bget test when pager is constrained
+ (regression 1006)
+
+Skips BGET test when OP-TEE embeds pager with a relatively small page
+pool unless what test can be very slow. The reason is that freed
+buffers have their content wiped and BGET test allocates quite a few
+very big (MByte) paged buffers which content is long to clear when
+operating with the pager.
+
+Acked-by: Jens Wiklander <jens.wiklander@linaro.org>
+Signed-off-by: Etienne Carriere <etienne.carriere@linaro.org>
+---
+ ta/os_test/os_test.c | 42 ++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 42 insertions(+)
+
+diff --git a/ta/os_test/os_test.c b/ta/os_test/os_test.c
+index b95c0a1..134ad22 100644
+--- a/ta/os_test/os_test.c
++++ b/ta/os_test/os_test.c
+@@ -19,6 +19,14 @@
+ #include "test_float_subj.h"
+ #include "os_test_lib.h"
+ 
++#define STATS_UUID \
++	{ 0xd96a5b40, 0xe2c7, 0xb1af, \
++		{ 0x87, 0x94, 0x10, 0x02, 0xa5, 0xd5, 0xc6, 0x1b } }
++
++#define STATS_CMD_PAGER_STATS		0
++
++#define PAGER_PAGE_COUNT_THRESHOLD	((128 * 1024) / 4096)
++
+ enum p_type {
+ 	P_TYPE_BOOL,
+ 	P_TYPE_INT,
+@@ -735,8 +743,42 @@ static void free_wrapper(void *ptr __unused)
+ {
+ }
+ 
++static bool optee_pager_with_small_pool(void)
++{
++	uint32_t ptypes = TEE_PARAM_TYPES(TEE_PARAM_TYPE_VALUE_OUTPUT,
++					  TEE_PARAM_TYPE_VALUE_OUTPUT,
++					  TEE_PARAM_TYPE_VALUE_OUTPUT,
++					  TEE_PARAM_TYPE_NONE);
++	static const TEE_UUID uuid = STATS_UUID;
++	TEE_TASessionHandle sess = TEE_HANDLE_NULL;
++	TEE_Result res = TEE_ERROR_GENERIC;
++	TEE_Param params[4] = { };
++	uint32_t eo = 0;
++	bool rc = false;
++
++	res = TEE_OpenTASession(&uuid, TEE_TIMEOUT_INFINITE, 0, NULL, &sess,
++				&eo);
++	if (res)
++		return false;
++
++	res = TEE_InvokeTACommand(sess, 0, STATS_CMD_PAGER_STATS,
++				  ptypes, params, &eo);
++	if (res == TEE_SUCCESS &&
++	    params[0].value.b && params[0].value.b <= PAGER_PAGE_COUNT_THRESHOLD)
++		rc = true;
++
++	TEE_CloseTASession(sess);
++
++	return rc;
++}
++
+ static TEE_Result test_bget(void)
+ {
++	if (optee_pager_with_small_pool()) {
++		IMSG("Skip testing bget due to pager pool constraints");
++		return TEE_SUCCESS;
++	}
++
+ 	DMSG("Testing bget");
+ 	if (bget_main_test(malloc_wrapper, free_wrapper)) {
+ 		EMSG("bget_main_test failed");
+-- 
+2.25.1
+

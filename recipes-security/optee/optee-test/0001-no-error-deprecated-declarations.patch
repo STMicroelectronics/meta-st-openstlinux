@@ -1,0 +1,25 @@
+From 313e4dd8c7d74d951726f02cf9cd72ede11f9190 Mon Sep 17 00:00:00 2001
+From: Christophe Priouzeau <christophe.priouzeau@st.com>
+Date: Mon, 2 May 2022 14:57:57 +0200
+Subject: [PATCH] no-error=deprecated-declarations
+
+Signed-off-by: Christophe Priouzeau <christophe.priouzeau@st.com>
+---
+ CMakeLists.txt | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 6b91f23..795b487 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -21,6 +21,7 @@ add_compile_options (
+ 	-Wwrite-strings -Werror -fPIC
+  	-Wno-missing-field-initializers
+ 	-Wno-unused-parameter
++        -Wno-error=deprecated-declarations
+ )
+ 
+ find_program(CCACHE_FOUND ccache)
+-- 
+2.17.1
+

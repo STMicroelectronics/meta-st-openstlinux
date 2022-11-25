@@ -1,0 +1,20 @@
+#!/bin/sh
+#
+# Create a systemd environment file for tee-supplicant
+# $1 is the path to the file to be generated.
+# At the moment this figures out the --rpmb-cid parameter to be given to
+# tee-supplicant, indicating which eMMC device OP-TEE should use for RPMB
+# storage.
+# No file is generated if no device is found (not an error) or if multiple
+# eMMCs are found (which is an error).
+
+[ "$1" ] || { echo Usage: $0 FILE >&2; exit 1; }
+
+for f in /sys/class/mmc_host/mmc*/mmc*\:*/raw_rpmb_size_mult; do
+  [ "$CID" ] && { echo $0: Multiple eMMC devices found, not chosing one automatically >&2; exit 2; }
+  # POSIX shells don't expand globbing patterns that match no file
+  [ -e $f ] || exit 0
+  SYS_MMC_PATH=$(dirname $f)
+  CID=$(cat $SYS_MMC_PATH/cid)
+done
+[ "$CID" ] && echo RPMB_CID="--rpmb-cid $CID" >$1

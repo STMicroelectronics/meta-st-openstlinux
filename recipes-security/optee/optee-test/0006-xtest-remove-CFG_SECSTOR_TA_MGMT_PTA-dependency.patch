@@ -1,0 +1,75 @@
+From 0dd3aea147926812f1ae91a927507d4105ee33db Mon Sep 17 00:00:00 2001
+From: Etienne Carriere <etienne.carriere@foss.st.com>
+Date: Fri, 31 Mar 2023 10:13:51 +0200
+Subject: [PATCH 3/3] xtest: remove CFG_SECSTOR_TA_MGMT_PTA dependency
+
+Embed TA install interface in xtest even if devkit says the secure
+storage TA management PTA service is not available. This change does not
+change xtest regression suite behavior and will alos return an
+error message if one uses --install-ta option while the effective
+embedded TEE does not provide this service.
+
+Change-Id: I853a68a151604ef3946e577fde828c77548ec1ff
+Signed-off-by: Etienne Carriere <etienne.carriere@foss.st.com>
+---
+ host/xtest/CMakeLists.txt | 2 +-
+ host/xtest/Makefile       | 2 --
+ host/xtest/xtest_main.c   | 4 ----
+ 3 files changed, 1 insertion(+), 7 deletions(-)
+
+diff --git a/host/xtest/CMakeLists.txt b/host/xtest/CMakeLists.txt
+index 320d336..39a512d 100644
+--- a/host/xtest/CMakeLists.txt
++++ b/host/xtest/CMakeLists.txt
+@@ -99,7 +99,7 @@ if (CFG_GP_SOCKETS)
+ 	)
+ endif()
+ 
+-if (CFG_SECSTOR_TA_MGMT_PTA)
++if (TRUE)
+ 	list (APPEND SRC install_ta.c)
+ endif()
+ 
+diff --git a/host/xtest/Makefile b/host/xtest/Makefile
+index af45f5e..146a715 100644
+--- a/host/xtest/Makefile
++++ b/host/xtest/Makefile
+@@ -87,9 +87,7 @@ ifeq ($(CFG_SECURE_PARTITION)-$(CFG_SPMC_TESTS),y-y)
+ srcs += ffa_spmc_1000.c
+ endif
+ 
+-ifeq ($(CFG_SECSTOR_TA_MGMT_PTA),y)
+ srcs += install_ta.c
+-endif
+ 
+ ifeq ($(CFG_SECURE_DATA_PATH),y)
+ srcs += sdp_basic.c
+diff --git a/host/xtest/xtest_main.c b/host/xtest/xtest_main.c
+index c61f4db..f297371 100644
+--- a/host/xtest/xtest_main.c
++++ b/host/xtest/xtest_main.c
+@@ -100,10 +100,8 @@ void usage(char *program)
+ 	printf("applets:\n");
+ 	printf("\t--sha-perf [opts]  SHA performance testing tool (-h for usage)\n");
+ 	printf("\t--aes-perf [opts]  AES performance testing tool (-h for usage)\n");
+-#ifdef CFG_SECSTOR_TA_MGMT_PTA
+ 	printf("\t--install-ta [directory or list of TAs]\n");
+ 	printf("\t                   Install TAs\n");
+-#endif
+ #ifdef CFG_SECURE_DATA_PATH
+ 	printf("\t--sdp-basic [opts] Basic Secure Data Path test setup ('-h' for usage)\n");
+ #endif
+@@ -156,10 +154,8 @@ int main(int argc, char *argv[])
+ 		return sha_perf_runner_cmd_parser(argc-1, &argv[1]);
+ 	else if (argc > 1 && !strcmp(argv[1], "--aes-perf"))
+ 		return aes_perf_runner_cmd_parser(argc-1, &argv[1]);
+-#ifdef CFG_SECSTOR_TA_MGMT_PTA
+ 	else if (argc > 1 && !strcmp(argv[1], "--install-ta"))
+ 		return install_ta_runner_cmd_parser(argc - 1, argv + 1);
+-#endif
+ #ifdef CFG_SECURE_DATA_PATH
+ 	else if (argc > 1 && !strcmp(argv[1], "--sdp-basic"))
+ 		return sdp_basic_runner_cmd_parser(argc-1, &argv[1]);
+-- 
+2.25.1
+

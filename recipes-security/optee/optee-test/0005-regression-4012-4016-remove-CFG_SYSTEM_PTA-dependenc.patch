@@ -1,0 +1,102 @@
+From 6c4f4d9aa1eb80742333e09e1ed294319555f824 Mon Sep 17 00:00:00 2001
+From: Jens Wiklander <jens.wiklander@linaro.org>
+Date: Fri, 2 Dec 2022 20:56:49 +0100
+Subject: [PATCH 2/3] regression 4012-4016: remove CFG_SYSTEM_PTA dependency
+
+The regression cases 4012-4016 indicates an unnecessary build-time
+dependency on CFG_SYSTEM_PTA. So remove the ifdef.
+
+The affected test cases (4012 and 4013) instead skip these tests if it
+turns out that the system PTA isn't available.
+
+Change-Id: I5e5ddf150dd9154508d525cda1491cdf33a7c87b
+Reviewed-by: Jerome Forissier <jerome.forissier@linaro.org>
+Signed-off-by: Jens Wiklander <jens.wiklander@linaro.org>
+[etienne: picked from c44350d720cbec1c9eb29ba983f7b81b810297bc]
+Signed-off-by: Etienne Carriere <etienne.carriere@foss.st.com>
+---
+ host/xtest/regression_4000.c | 34 +++++++++++++++++++++-------------
+ 1 file changed, 21 insertions(+), 13 deletions(-)
+
+diff --git a/host/xtest/regression_4000.c b/host/xtest/regression_4000.c
+index c840d78..3db6250 100644
+--- a/host/xtest/regression_4000.c
++++ b/host/xtest/regression_4000.c
+@@ -5260,9 +5260,9 @@ out:
+ ADBG_CASE_DEFINE(regression, 4011, xtest_tee_test_4011,
+ 		"Test TEE Internal API Bleichenbacher attack (negative)");
+ 
+-#ifdef CFG_SYSTEM_PTA
+ static void xtest_tee_test_4012(ADBG_Case_t *c)
+ {
++	TEEC_Result res = TEEC_SUCCESS;
+ 	TEEC_Session session = { };
+ 	uint32_t ret_orig = 0;
+ 	TEEC_Operation op = TEEC_OPERATION_INITIALIZER;
+@@ -5290,11 +5290,15 @@ static void xtest_tee_test_4012(ADBG_Case_t *c)
+ 					&ret_orig)))
+ 		return;
+ 
+-	(void)ADBG_EXPECT_TEEC_SUCCESS(c,
+-				       TEEC_InvokeCommand(&session,
+-					TA_CRYPT_CMD_SEED_RNG_POOL,
+-					&op,
+-					&ret_orig));
++       res = TEEC_InvokeCommand(&session, TA_CRYPT_CMD_SEED_RNG_POOL,
++				&op, &ret_orig);
++	if (res == TEEC_ERROR_ITEM_NOT_FOUND &&
++	    ADBG_EXPECT_TEEC_ERROR_ORIGIN(c, ret_orig,
++					  TEEC_ORIGIN_TRUSTED_APP))
++		Do_ADBG_Log("System PTA not available, skipping test 4012");
++	else
++		ADBG_EXPECT_TEEC_SUCCESS(c, res);
++
+ 	TEEC_CloseSession(&session);
+ }
+ ADBG_CASE_DEFINE(regression, 4012, xtest_tee_test_4012,
+@@ -5302,6 +5306,7 @@ ADBG_CASE_DEFINE(regression, 4012, xtest_tee_test_4012,
+ 
+ static void xtest_tee_test_4013(ADBG_Case_t *c)
+ {
++	TEEC_Result res = TEEC_SUCCESS;
+ 	TEEC_Session session = { };
+ 	uint32_t ret_orig = 0;
+ 	TEEC_Operation op = TEEC_OPERATION_INITIALIZER;
+@@ -5317,11 +5322,15 @@ static void xtest_tee_test_4013(ADBG_Case_t *c)
+ 						NULL, &ret_orig)))
+ 		return;
+ 
+-	(void)ADBG_EXPECT_TEEC_SUCCESS(c,
+-			TEEC_InvokeCommand(&session,
+-					  TA_CRYPT_CMD_DERIVE_TA_UNIQUE_KEY,
+-					  &op,
+-					  &ret_orig));
++	res = TEEC_InvokeCommand(&session, TA_CRYPT_CMD_DERIVE_TA_UNIQUE_KEY,
++				 &op, &ret_orig);
++	if (res == TEEC_ERROR_ITEM_NOT_FOUND &&
++	    ADBG_EXPECT_TEEC_ERROR_ORIGIN(c, ret_orig,
++					  TEEC_ORIGIN_TRUSTED_APP)) {
++		Do_ADBG_Log("System PTA not available, skipping test 4013");
++		goto out;
++	}
++	ADBG_EXPECT_TEEC_SUCCESS(c, res);
+ 
+ 	/* Negative test using non-secure memory */
+ 	memset(&op, 0, sizeof(op));
+@@ -5341,6 +5350,7 @@ static void xtest_tee_test_4013(ADBG_Case_t *c)
+ 					   &op,
+ 					   &ret_orig));
+ 
++out:
+ 	TEEC_CloseSession(&session);
+ }
+ ADBG_CASE_DEFINE(regression, 4013, xtest_tee_test_4013,
+@@ -5984,5 +5994,3 @@ out:
+ }
+ ADBG_CASE_DEFINE(regression, 4016_ed25519, xtest_tee_test_4016_ed25519,
+ 		 "Test TEE Internal API ED25519 sign/verify");
+-
+-#endif /*CFG_SYSTEM_PTA*/
+-- 
+2.25.1
+
