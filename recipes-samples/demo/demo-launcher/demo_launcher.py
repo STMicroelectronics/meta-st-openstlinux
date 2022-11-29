@@ -25,6 +25,7 @@ import subprocess
 import random
 import math
 import os
+import sys
 import glob
 import socket
 import fcntl
@@ -51,8 +52,34 @@ if SIMULATE > 0:
 else:
     DEMO_PATH = "/usr/local/demo"
 
+
+# -------------------------------------------------------------------
+# Managment of lock file to have only excution of this script as same time
 lock = threading.Lock()
 
+lock_handle = None
+lock_file_path = '/tmp/demo_launcher.lock'
+
+def file_is_locked(file_path):
+    global lock_handle
+    lock_handle= open(file_path, 'w')
+    try:
+        fcntl.lockf(lock_handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        return False
+    except IOError:
+        return True
+
+def file_lock_remove(file_path):
+    try:
+        os.remove(lock_file_path)
+    except Exception as exc:
+        print("Signal handler Exception: ", exc)
+
+# -------------------------------------------------------------------
+# -------------------------------------------------------------------
+def detroy_quit_application(widget):
+    file_lock_remove(lock_file_path)
+    Gtk.main_quit()
 # -------------------------------------------------------------------
 # -------------------------------------------------------------------
 # CONSTANT VALUES
@@ -64,6 +91,7 @@ SIMULATE_SCREEN_SIZE_HEIGHT = 480
 
 # -------------------------------------------------------------------
 # -------------------------------------------------------------------
+ICON_SIZE_1080 = 260
 ICON_SIZE_720 = 180
 ICON_SIZE_480 = 128
 ICON_SIZE_272 = 64
@@ -105,6 +133,20 @@ def get_sizes_from_screen_size(width, height):
         exit_size = 25
         column_spacing = 5
         row_spacing = 5
+    elif minsize == 600:
+        icon_size = ICON_SIZE_720
+        font_size = 15
+        logo_size = 160
+        exit_size = 50
+        column_spacing = 20
+        row_spacing = 20
+    elif minsize >= 1080:
+        icon_size = ICON_SIZE_1080
+        font_size = 32
+        logo_size = 260
+        exit_size = 50
+        column_spacing = 20
+        row_spacing = 20
     return [icon_size, font_size, logo_size, exit_size, column_spacing, row_spacing]
 
 # -------------------------------------------------------------------
@@ -299,7 +341,7 @@ def read_configuration_board_file(search_path):
     if yaml_configuration and yaml_configuration["LOGO"]:
         board_list.append(yaml_configuration["LOGO"])
     else:
-        board_list.append('pictures/ST11249_Module_STM32MP1_alpha.png')
+        board_list.append('pictures/ST20578_Label_OpenSTlinux_V.png')
     # info text to display
     if yaml_configuration and yaml_configuration["INFO"]:
         info = '\n'.join(yaml_configuration["INFO"].split('|'))
@@ -502,7 +544,7 @@ def gtk_style():
     background-color: rgba (0%, 0%, 0%, 0.1);
 }
 #logo_bg {
-    background-color: rgba (31%, 32%, 31%, 1.0);
+    background-color: #03244b;
 }
 #backed_bg {
     background-color: rgba (31%, 32%, 31%, 0.8);
@@ -546,7 +588,7 @@ class MainUIWindow(Gtk.Window):
         self.set_default_size(self.screen_width, self.screen_height)
         print("[DEBUG] screen size: %dx%d" % (self.screen_width, self.screen_height))
         self.set_position(Gtk.WindowPosition.CENTER)
-        self.connect('destroy', Gtk.main_quit)
+        self.connect('destroy', detroy_quit_application)
 
         self.previous_click_time=time()
 
@@ -669,7 +711,7 @@ class MainUIWindow(Gtk.Window):
         overlay = Gtk.Overlay()
         overlay.add(self.page_main)
         self.button_exit = Gtk.Button()
-        self.button_exit.connect("clicked", Gtk.main_quit)
+        self.button_exit.connect("clicked", detroy_quit_application)
         self.button_exit_image = _load_image_on_button(self, "%s/pictures/close_70x70_white.png" % DEMO_PATH, "Exit", -1, self.exit_size)
         self.button_exit.set_halign(Gtk.Align.END)
         self.button_exit.set_valign(Gtk.Align.START)
@@ -791,19 +833,12 @@ class MainUIWindow(Gtk.Window):
         widget.set_name("transparent_bg")
         self.button_exit.show()
 
-# -------------------------------------------------------------------
-# Managment of lock file to have only excution of this script as same time
-lock_handle = None
-lock_file_path = '/tmp/demo_launcher.lock'
 
-def file_is_locked(file_path):
-    global lock_handle
-    lock_handle= open(file_path, 'w')
-    try:
-        fcntl.lockf(lock_handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        return False
-    except IOError:
-        return True
+# -------------------------------------------------------------------
+# Signal handler
+def demo_signal_handler(signum, frame):
+    file_lock_remove(lock_file_path)
+    sys.exit(0)
 
 # -------------------------------------------------------------------
 # -------------------------------------------------------------------
@@ -811,7 +846,7 @@ def file_is_locked(file_path):
 if __name__ == "__main__":
     # add signal to catch CRTL+C
     import signal
-    signal.signal(signal.SIGINT, signal.SIG_DFL)
+    signal.signal(signal.SIGINT, demo_signal_handler)
 
     if file_is_locked(lock_file_path):
         print("[ERROR] another instance is running exiting now\n")
@@ -822,5 +857,5 @@ if __name__ == "__main__":
         win.show_all()
         Gtk.main()
     except Exception as exc:
-        print("Main Exception: ", exc )
+        print("Main Exception: ", exc)
 
