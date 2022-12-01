@@ -1,0 +1,72 @@
+From 32ece9f1a0240f5aff47d791ab71dabb37e0c781 Mon Sep 17 00:00:00 2001
+From: Christophe Priouzeau <christophe.priouzeau@foss.st.com>
+Date: Thu, 30 Mar 2023 17:13:02 +0200
+Subject: [PATCH] WESTON-CUBE: adapt to weston 11
+
+Signed-off-by: Christophe Priouzeau <christophe.priouzeau@foss.st.com>
+---
+ src/cube-common.c       | 11 ++++++-----
+ src/simple-st-egl-tex.c | 11 ++++++-----
+ 2 files changed, 12 insertions(+), 10 deletions(-)
+
+diff --git a/src/cube-common.c b/src/cube-common.c
+index cd38944..3c96e41 100644
+--- a/src/cube-common.c
++++ b/src/cube-common.c
+@@ -125,6 +125,12 @@ init_egl(struct display *d, struct window *w)
+ 		exit(EXIT_FAILURE);
+ 	}
+ 
++	d->egl.ctx = eglCreateContext(d->egl.dpy,
++				      d->egl.conf,
++				      EGL_NO_CONTEXT,
++				      context_attribs);
++	assert(d->egl.ctx);
++
+ 	egl_extensions = eglQueryString(d->egl.dpy, EGL_EXTENSIONS);
+ 	assert(egl_extensions != NULL);
+ 
+@@ -158,11 +164,6 @@ init_egl(struct display *d, struct window *w)
+ 		d->egl.name = (void *)eglGetProcAddress(#name); \
+ 	} while (0)
+ 
+-	d->egl.ctx = eglCreateContext(d->egl.dpy,
+-				      d->egl.conf,
+-				      EGL_NO_CONTEXT,
+-				      context_attribs);
+-	assert(d->egl.ctx);
+ 
+ 	eglMakeCurrent(d->egl.dpy, EGL_NO_SURFACE, EGL_NO_SURFACE,
+ 		       d->egl.ctx);
+diff --git a/src/simple-st-egl-tex.c b/src/simple-st-egl-tex.c
+index 804d24f..138d5df 100644
+--- a/src/simple-st-egl-tex.c
++++ b/src/simple-st-egl-tex.c
+@@ -163,6 +163,12 @@ create_surface(struct window *window)
+ 
+ 	window->surface = wl_compositor_create_surface(display->compositor);
+ 
++	if (display->shell) {
++		create_xdg_surface(window, display);
++	} else {
++		assert(0);
++	}
++
+ 	window->native =
+ 		wl_egl_window_create(window->surface,
+ 				     window->geometry.width,
+@@ -172,11 +178,6 @@ create_surface(struct window *window)
+ 						   display->egl.conf,
+ 						   window->native, NULL);
+ 
+-	if (display->shell) {
+-		create_xdg_surface(window, display);
+-	} else {
+-		assert(0);
+-	}
+ 
+ 	ret = eglMakeCurrent(window->display->egl.dpy, window->egl_surface,
+ 			     window->egl_surface, window->display->egl.ctx);
+-- 
+2.25.1
+
