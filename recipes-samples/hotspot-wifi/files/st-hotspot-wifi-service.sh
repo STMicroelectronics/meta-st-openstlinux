@@ -16,13 +16,13 @@ else
     HOSTAPD_PASSWD=stm32mp1
 fi
 
-WLAN_INTERFACE=wlan0
+WLAN_INTERFACE=$(/sbin/ip link show wlan0 | head -n 1 | awk '{print $2}' | tr '\n' ' ' | sed "s/://" | sed "s/ //g")
 
 network_hotspot_install() {
 # systemd netword hotsopt configuration
 cat > /lib/systemd/network/hostapd.network << EOF
 [Match]
-Name=wlan0
+Name=$WLAN_INTERFACE
 
 [Network]
 Address=192.168.72.1/24
@@ -37,9 +37,10 @@ UseTimezone=false
 [DHCPServer]
 EmitTimezone=no
 EOF
+
 # hotapd configuration
 cat > /etc/hostapd.conf << EOF
-interface=wlan0
+interface=$WLAN_INTERFACE
 driver=nl80211
 # mode Wi-Fi (a = IEEE 802.11a, b = IEEE 802.11b, g = IEEE 802.11g)
 hw_mode=g
@@ -56,6 +57,7 @@ wpa_key_mgmt=WPA-PSK
 wpa_pairwise=TKIP
 rsn_pairwise=CCMP
 EOF
+
 }
 network_hotspot_erase() {
     rm -f /lib/systemd/network/hostapd.network
