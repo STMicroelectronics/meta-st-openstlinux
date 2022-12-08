@@ -1,5 +1,5 @@
 [Match]
-Name=eth[1-9]
+Name=!eth0 !end0
 
 [Network]
 DHCP=ipv4

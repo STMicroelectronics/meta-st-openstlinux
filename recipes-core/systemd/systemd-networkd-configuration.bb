@@ -13,6 +13,7 @@ SRC_URI = " \
     \
     file://98-net-alias-stm32mp.rules \
     file://stm32mp-net-alias-udev.sh \
+    file://stm32mp-net-alias-wlan-udev.sh \
     "
 
 do_install() {
@@ -26,7 +27,7 @@ do_install() {
     install -m 0644 ${WORKDIR}/98-net-alias-stm32mp.rules ${D}${sysconfdir}/udev/rules.d/
     install -d ${D}${sbindir}/
     install -m 0755 ${WORKDIR}/stm32mp-net-alias-udev.sh ${D}${sbindir}/
-
+    install -m 0755 ${WORKDIR}/stm32mp-net-alias-wlan-udev.sh ${D}${sbindir}/
 }
 
 FILES:${PN} += "${systemd_unitdir}/network"
