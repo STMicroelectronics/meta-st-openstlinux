@@ -4,8 +4,7 @@
 * Inspired by the code of modeset:
 *   https://github.com/dvdhrm/docs/blob/master/drm-howto/modeset.c
 *   Written 2012 by David Herrmann <dh.herrmann@googlemail.com>
-*
-*
+* For PNG read, it's inspirated from example.c of libpng (git://git.code.sf.net/p/libpng/code)
 */
 
 #define _GNU_SOURCE
@@ -24,7 +23,10 @@
 #include <signal.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <getopt.h>
 
+#include <pixman.h>
+#include <png.h>
 #include "image_header.h"
 
 
@@ -55,8 +57,9 @@ static void modeset_cleanup (int fd);
 static void splash_draw_image_center (void);
 
 
-//-------------------------------
-// Modeset function
+// --------------------------------------------- //
+//                 Modeset function
+// --------------------------------------------- //
 static int
 modeset_open (int *out, const char *node)
 {
@@ -412,7 +415,9 @@ modeset_cleanup (int fd)
     }
 }
 
-//-------------------------------
+// --------------------------------------------- //
+//              Draw function
+// --------------------------------------------- //
 // Draw function
 static void
 splash_draw_image_for_modeset (struct modeset_dev *iter,
@@ -469,6 +474,30 @@ splash_draw_image_for_modeset (struct modeset_dev *iter,
     }
 }
 
+static void
+splash_draw_image_for_modeset32 (struct modeset_dev *iter,
+        int x,
+        int y,
+        int img_width,
+        int img_height,
+        uint32_t * rle_data)
+{
+    uint32_t *p = rle_data;
+    int dx = 0, dy = 0, total_len, i;
+    unsigned int off;
+
+    total_len = img_width * img_height;
+
+    for (i = 0; i < total_len; i++) {
+        off = iter->stride * (y + dy) + (x + dx)*4;
+        *(uint32_t *) & iter->map[off] = (*(p));
+        if (++dx >= img_width) {
+            dx = 0;
+            dy++;
+        }
+        p += 1;
+    }
+}
 
 static void
 splash_draw_image_center (void)
@@ -500,22 +529,22 @@ splash_draw_image_center (void)
     }
 }
 
-//-------------------------------
-// Exit function
+// --------------------------------------------- //
+//              Exit function
+// --------------------------------------------- //
 void
 splash_exit (int signum)
 {
     modeset_cleanup (drm_fd);
     close(pipe_fd);
 }
-//-------------------------------
-// fifo processing message
+// --------------------------------------------- //
+//              fifo processing message
+// --------------------------------------------- //
 static int
 parse_command (char *string, int length)
 {
     char *command;
-    //int   parsed=0;
-    //parsed = strlen(string)+1;
 
     fprintf(stderr, "got cmd %s", string);
     if (strcmp(string,"QUIT") == 0)
@@ -523,13 +552,7 @@ parse_command (char *string, int length)
 
     command = strtok(string," ");
 
-    if (!strcmp(command,"PROGRESS")) {
-        //psplash_draw_progress (fb, atoi(strtok(NULL,"\0")));
-    }
-    else if (!strcmp(command,"MSG")) {
-        //psplash_draw_msg (fb, strtok(NULL,"\0"));
-    }
-    else if (!strcmp(command,"QUIT")) {
+    if (!strcmp(command,"QUIT")) {
         return 1;
     }
     return 0;
@@ -607,20 +630,223 @@ int get_valid_dri_card() {
     }
     return -1;
 }
+// --------------------------------------------- //
+//          Load png image
+// --------------------------------------------- //
 //-------------------------------
-// Main function
+// load Image (png file)
+static void
+pixman_image_destroy_func(pixman_image_t *image, void *data) {
+    free(data);
+}
+static void
+read_user_callback(png_structp   png,
+                 png_row_infop row_info,
+                 png_bytep     data)
+{
+    unsigned int i;
+    png_bytep p;
+    int tmp;
+
+    for (i = 0, p = data; i < row_info->rowbytes; i += 4, p += 4) {
+        uint32_t alpha = p[3];
+        uint32_t w;
+
+        if (alpha == 0) {
+            w = 0;
+        } else {
+            uint32_t red   = p[0];
+            uint32_t green = p[1];
+            uint32_t blue  = p[2];
+
+            if (alpha != 0xff) {
+                tmp = ((alpha * red) + 0x80);
+                red   = ((tmp + (tmp >>8)) >> 8);
+                tmp = ((alpha * green) + 0x80);
+                green = ((tmp + (tmp >>8)) >> 8);
+                tmp = ((alpha * blue) + 0x80);
+                blue  = ((tmp + (tmp >>8)) >> 8);
+        }
+            w = (alpha << 24) | (red << 16) | (green << 8) | (blue << 0);
+        }
+
+        * (uint32_t *) p = w;
+    }
+}
+
+static pixman_image_t *read_png_image(FILE *fp)
+{
+    png_struct *png;
+    png_info *info;
+    png_byte * data = NULL;
+    //png_byte **volatile row_pointers = NULL;
+
+    png_uint_32 width, height;
+    int depth, color_type, interlace, stride;
+    unsigned int i;
+    pixman_image_t *pixman_image = NULL;
+
+    png = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+    if (!png)
+        return NULL;
+
+    info = png_create_info_struct(png);
+    if (info != NULL) {
+
+        if (setjmp(png_jmpbuf(png)) == 0) {
+            png_init_io(png, fp);
+
+            png_read_info(png, info);
+
+            png_get_IHDR(png, info,
+                         &width, &height, &depth,
+                         &color_type, &interlace, NULL, NULL);
+
+            if (depth == 16)
+                png_set_strip_16(png);
+            if (depth < 8)
+                png_set_packing(png);
+
+            /* Expand paletted colors into true RGB triplets. */
+            if (color_type == PNG_COLOR_TYPE_PALETTE)
+                png_set_palette_to_rgb(png);
+            /* Expand grayscale images to the full 8 bits from 1, 2 or 4 bits/pixel. */
+            if (color_type == PNG_COLOR_TYPE_GRAY)
+                png_set_expand_gray_1_2_4_to_8(png);
+
+            if (png_get_valid(png, info, PNG_INFO_tRNS))
+                png_set_tRNS_to_alpha(png);
+
+            if (color_type == PNG_COLOR_TYPE_GRAY ||
+                color_type == PNG_COLOR_TYPE_GRAY_ALPHA)
+                    png_set_gray_to_rgb(png);
+
+            if (interlace != PNG_INTERLACE_NONE)
+                png_set_interlace_handling(png);
+
+            /* Add filler (or alpha) byte (before/after each RGB triplet). */
+            png_set_filler(png, 0xffff, PNG_FILLER_AFTER);
+            png_set_read_user_transform_fn(png, read_user_callback);
+            png_read_update_info(png, info);
+            png_get_IHDR(png, info, &width, &height, &depth, &color_type, &interlace, NULL, NULL);
+
+            stride = width * 4;
+            data = malloc(stride * height);
+            if (!data) {
+                png_destroy_read_struct(&png, &info, NULL);
+                return NULL;
+            }
+            png_bytep row_pointers[height];
+            for (i = 0; i < height; i++)
+                row_pointers[i] = NULL; /* Clear the pointer array */
+            for (i = 0; i < height; i++)
+                row_pointers[i] = &data[i * stride];
+
+            png_read_image(png, row_pointers);
+            png_read_end(png, info);
+
+            png_destroy_read_struct(&png, &info, NULL);
+
+            pixman_image = pixman_image_create_bits(PIXMAN_a8r8g8b8,
+                width, height, (uint32_t *) data, stride);
+
+            pixman_image_set_destroy_function(pixman_image,
+                    pixman_image_destroy_func, data);
+            return pixman_image;
+
+        } else { // setjmp
+            png_destroy_read_struct(&png, &info, NULL);
+            return NULL;
+        }
+    } else { // info
+        png_destroy_read_struct(&png, NULL, NULL);
+        return NULL;
+    }
+    return pixman_image;
+}
+
+static pixman_image_t *
+load_image(char *filename) {
+    FILE *fp = NULL;
+    unsigned char header[4];
+    pixman_image_t *ppixman_image = NULL;
+
+    // open file
+    if (filename == NULL){
+        printf("[ERROR] load_image: parameter empty\n");
+        goto end;
+    }
+
+    fp = fopen(filename, "rb");
+    if (!fp) {
+        printf("[ERROR] load_image: %s: %s\n", filename, strerror(errno));
+        goto end;
+    }
+    // verify if it's a png file
+    if (fread(header, sizeof header, 1, fp) != 1) {
+        fclose(fp);
+        printf("[ERROR] load_image: %s: unable to read file header\n", filename);
+        goto end;
+    }
+    if ( (header[0] == 0x89) &&
+         (header[1] == 'P') &&
+         (header[2] == 'N') &&
+         (header[3] == 'G') ) {
+            printf("load_image: %s is a png\n", filename);
+    } else {
+        printf("[ERROR] load_image: %s: is not a PNG image\n", filename);
+        return NULL;
+    }
+    rewind(fp);
+
+    ppixman_image = read_png_image(fp);
+
+end:
+    fclose(fp);
+    return ppixman_image;
+}
+
+// --------------------------------------------- //
+//           Main
+// --------------------------------------------- //
+static const char *shortopts = "wb:f:h";
+
+static const struct option longopts[] = {
+    {"wait",    no_argument,       0, 'w'},
+    {"background",        required_argument, 0, 'b'},
+    {"filename",  required_argument, 0, 'f'},
+    {"help",          no_argument,       0, 'h'},
+    {0, 0, 0, 0}
+};
+static void
+usage(int error_code)
+{
+    fprintf(stderr, "Usage: psplash-drm [-w][-h][-f <image name>][-b RRGGBB]\n"
+        "\n"
+        "options:\n"
+            "  -w, --wait         Display image and wait\n"
+            "  -b, --background=RRGGBB       Set the background color\n"
+            "  -f, --filename=image name     Image to display\n"
+            "  -h, --help                This help text\n\n");
+    exit(error_code);
+}
+
 int
 main (int argc, char **argv)
 {
     int ret;
     char card[32];
     struct modeset_dev *iter;
+    mode_t oldMask;
     char *tmpdir;
+    char background_red = 0x03;
+    char background_green = 0x23;
+    char background_blue = 0x4b;
+    int opt;
+    char *filename = "";
+    pixman_image_t *pixman_image = NULL;
 
     /* check which DRM device to open */
-    //if (argc > 1)
-    //    card = argv[1];
-    //else
     ret = get_valid_dri_card();
     if (ret < 0) {
         perror("There is no dri card arvaible (/dev/dri/cardX)");
@@ -630,17 +856,37 @@ main (int argc, char **argv)
     fprintf (stderr, "using card '%s'\n", card);
 
     wait = 0;
-    if (argc > 1) {
-        if ( !strncasecmp(argv[1], "-w",2) ||
-             !strncasecmp(argv[1], "--wait", 6) ) {
-            fprintf (stderr, "Wait until we are stopped via %s\n"
-                        "echo QUIT > %s",
+
+    while ((opt = getopt_long_only(argc, argv, shortopts, longopts, NULL)) != -1) {
+        switch (opt) {
+        case 'w':
+            wait = 1;
+            fprintf (stderr, "    Wait until we are stopped via %s\n"
+                        "        echo QUIT > %s\n",
                         SPLASH_FIFO, SPLASH_FIFO);
-            wait = 1;
-        }
-        else {
-            fprintf (stderr, "%s [-w|--wait]\n", argv[0]);
-            wait = 1;
+            break;
+        case 'h':
+            usage(EXIT_SUCCESS);
+            break;
+        case 'b':
+            char *color = strdup(optarg);
+            unsigned int bg_color;
+            if (sscanf(color, "%x", &bg_color) > 0) {
+                background_red = (bg_color & 0xff0000) >> 16;
+                background_green = (bg_color & 0x00ff00) >> 8;
+                background_blue = bg_color & 0x0000ff;
+                printf("Background color  RR=%02x GG=%02x BB=%02x\n",
+                       background_red, background_green, background_blue);
+            }
+            free(color);
+            break;
+        case 'f':
+            filename = strdup(optarg);
+            printf("Filename of image: %s\n", filename);
+            break;
+        default:
+            usage(EXIT_FAILURE);
+            break;
         }
     }
 
@@ -649,21 +895,37 @@ main (int argc, char **argv)
     signal(SIGINT, splash_exit);
     signal(SIGQUIT, splash_exit);
 
-    //open fifo for receiving command
-    tmpdir = getenv("TMPDIR");
-    if (!tmpdir)
-        tmpdir = "/tmp";
-    chdir(tmpdir);
-    if (mkfifo(SPLASH_FIFO, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP)) {
+    remove(SPLASH_FIFO);
+    oldMask = umask(0);
+    if (mkfifo(SPLASH_FIFO, 0777)) {
         if (errno != EEXIST) {
             perror("mkfifo");
             exit(-1);
         }
     }
+    /* restore old umask */
+    umask(oldMask);
+
+
+    //open fifo for receiving command
+    tmpdir = getenv("TMPDIR");
+    if (!tmpdir)
+        tmpdir = "/tmp";
+    chdir(tmpdir);
     pipe_fd = open (SPLASH_FIFO,O_RDONLY|O_NONBLOCK);
     if (-1 == pipe_fd) {
         perror("pipe open");
         exit(-2);
+    }
+
+    /* if there is a specified filename, open it */
+    if (strlen(filename) > 0) {
+        printf("try filename -> %s\n", filename);
+
+        pixman_image  = load_image(filename);
+
+        if (pixman_image_get_width(pixman_image) <= 0)
+            exit(-3);
     }
 
     /* open the DRM device */
@@ -686,15 +948,44 @@ main (int argc, char **argv)
                     iter->conn, errno);
     }
 
-    /* draw some colors for 5seconds */
-    modeset_draw_bgcolor (0xFF, 0xFF, 0xFF);
-    splash_draw_image_center ();
+    /* set background color and display picture */
+    //modeset_draw_bgcolor (0xFF, 0xFF, 0xFF);
+    modeset_draw_bgcolor (background_red, background_green, background_blue);
+    if (pixman_image != NULL) {
+        struct modeset_dev *iter;
+        int img_width, img_height;
+        int x, y;
+        int bad_size = 0;
+
+        for (iter = modeset_list; iter; iter = iter->next) {
+            img_width = pixman_image_get_width(pixman_image);
+            img_height = pixman_image_get_height(pixman_image);
+
+            x = (iter->width - img_width) / 2;
+            y = (iter->height - img_height) / 2;
+            if ((img_width < iter->width) && (img_height < iter->height) )
+                splash_draw_image_for_modeset32 (iter, x, y, img_width, img_height,
+                    (uint32_t *)pixman_image_get_data(pixman_image));
+            else {
+                fprintf(stderr, "[ISSUE] Image %s is greater than screen (Image: %dx%d, screen: %dx%d)\n",
+                        filename, img_width, img_height, iter->width, iter->height);
+                fprintf(stderr, "       use fallback picture\n");
+                bad_size = 1;
+            }
+        }
+        if (bad_size)
+            splash_draw_image_center ();
+    } else
+        splash_draw_image_center ();
 
     splash_processing ();
 
     /* cleanup everything */
     modeset_cleanup (drm_fd);
     close(pipe_fd);
+    if (strlen(filename) > 0) {
+        free(filename);
+    }
     ret = 0;
 
 out_close:
@@ -709,6 +1000,7 @@ out_return:
         fprintf (stderr, "exiting\n");
     }
     close(pipe_fd);
+    remove(SPLASH_FIFO);
     return ret;
 }
 

@@ -6,6 +6,10 @@ After=systemd-remount-fs.service
 DefaultDependencies=no
 
 [Service]
+Type=forking
+RemainAfterExit=yes
+KillMode=mixed
+SendSIGKILL=no
 ExecStart=/usr/bin/psplash-drm -w
 
 [Install]
