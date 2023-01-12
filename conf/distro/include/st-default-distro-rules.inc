@@ -1,7 +1,7 @@
 #@DESCRIPTION: ST default distro rules
 
 # Set common distrooverrides for all ST distro
-DISTROOVERRIDES .= ":openstlinuxcommon"
+DISTROOVERRIDES =. "openstlinuxcommon:"
 
 #--------------------------
 # Mirror settings

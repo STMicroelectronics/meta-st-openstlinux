@@ -5,7 +5,8 @@
 # be set in this file. More adventurous users can look at
 # local.conf.sample.extended which contains other examples of configuration which
 # can be placed in this file but new users likely won't need any of them
-# initially.
+# initially. There's also site.conf.sample which contains examples of site specific
+# information such as proxy server addresses.
 #
 # Lines starting with the '#' character are commented out and in some cases the
 # default values are provided as comments to show people example syntax. Enabling
@@ -28,6 +29,10 @@
 #
 # This sets the default machine to be qemux86-64 if no other machine is selected:
 MACHINE ??= "qemux86-64"
+
+# These are some of the more commonly used values. Looking at the files in the
+# meta/conf/machine directory, or the conf/machine directory of any additional layers
+# you add in will show all the available machines.
 
 #
 # Default policy config
@@ -127,7 +132,8 @@ PACKAGE_CLASSES ?= "package_ipk"
 #  "debug-tweaks"   - make an image suitable for development
 #                     e.g. ssh root access has a blank password
 # There are other application targets that can be used here too, see
-# meta/classes/image.bbclass and meta/classes/core-image.bbclass for more details.
+# meta/classes-recipe/image.bbclass and
+# meta/classes-recipe/core-image.bbclass for more details.
 # We default to enabling the debugging tweaks.
 EXTRA_IMAGE_FEATURES ?= "debug-tweaks"
 
@@ -147,7 +153,7 @@ USER_CLASSES ?= "buildstats"
 # The build system can test booting virtual machine images under qemu (an emulator)
 # after any root filesystems are created and run tests against those images. It can also
 # run tests against any SDK that are built. To enable this uncomment these lines.
-# See classes/test{image,sdk}.bbclass for further details.
+# See meta/classes-recipe/test{image,sdk}.bbclass for further details.
 #IMAGE_CLASSES += "testimage testsdk"
 #TESTIMAGE_AUTO:qemuall = "1"
 
@@ -212,22 +218,50 @@ BB_DISKMON_DIRS ??= "\
 #
 # Qemu configuration
 #
-# By default qemu will build with a builtin VNC server where graphical output can be
-# seen. The two lines below enable the SDL backend too. By default libsdl2-native will
-# be built, if you want to use your host's libSDL instead of the minimal libsdl built
-# by libsdl2-native then uncomment the ASSUME_PROVIDED line below.
+# By default native qemu will build with a builtin VNC server where graphical output can be
+# seen. The line below enables the SDL UI frontend too.
 PACKAGECONFIG:append:pn-qemu-system-native = " sdl"
-PACKAGECONFIG:append:pn-nativesdk-qemu = " sdl"
+# By default libsdl2-native will be built, if you want to use your host's libSDL instead of 
+# the minimal libsdl built by libsdl2-native then uncomment the ASSUME_PROVIDED line below.
 #ASSUME_PROVIDED += "libsdl2-native"
+
+# You can also enable the Gtk UI frontend, which takes somewhat longer to build, but adds
+# a handy set of menus for controlling the emulator.
+#PACKAGECONFIG:append:pn-qemu-system-native = " gtk+"
+
+#
+# Hash Equivalence
+#
+# Enable support for automatically running a local hash equivalence server and
+# instruct bitbake to use a hash equivalence aware signature generator. Hash
+# equivalence improves reuse of sstate by detecting when a given sstate
+# artifact can be reused as equivalent, even if the current task hash doesn't
+# match the one that generated the artifact.
+#
+# A shared hash equivalent server can be set with "<HOSTNAME>:<PORT>" format
+#
+#BB_HASHSERVE = "auto"
+#BB_SIGNATURE_HANDLER = "OEEquivHash"
+
+#
+# Memory Resident Bitbake
+#
+# Bitbake's server component can stay in memory after the UI for the current command
+# has completed. This means subsequent commands can run faster since there is no need
+# for bitbake to reload cache files and so on. Number is in seconds, after which the
+# server will shut down.
+#
+#BB_SERVER_TIMEOUT = "60"
+
+# CONF_VERSION is increased each time build/conf/ changes incompatibly and is used to
+# track the version of this file when it was generated. This can safely be ignored if
+# this doesn't mean anything to you.
+CONF_VERSION = "2"
 
 # =========================================================================
 #   ST SPecific
 # =========================================================================
 #
-# CONF_VERSION is increased each time build/conf/ changes incompatibly and is used to
-# track the version of this file when it was generated. This can safely be ignored if
-# this doesn't mean anything to you.
-CONF_VERSION = "2"
 
 # Set GLIBC_GENERATE_LOCALES to the locales you wish to generate should you not
 # wish to perform the time-consuming step of generating all LIBC locales.
