@@ -1,0 +1,65 @@
+From f7b4ff8313d4e2197bdb91d21cd0a7beb59b7b7c Mon Sep 17 00:00:00 2001
+From: Hugues Fruchet <hugues.fruchet@foss.st.com>
+Date: Wed, 14 Jun 2023 11:24:49 +0200
+Subject: [PATCH 20/21] gtkwaylandsink: do not use drm dumb pool with DMAbuf
+ buffers
+
+There is no need to use our DRM dumb pool if buffer to
+render is already a DMABuf, just import it and render it.
+
+This fixes a DMAbuf memory leakage identfied with command:
+watch "cat /sys/kernel/debug/dma_buf/bufinfo | grep attached "
+
+Signed-off-by: Hugues Fruchet <hugues.fruchet@foss.st.com>
+---
+ ext/gtk/gstgtkwaylandsink.c  | 6 +++++-
+ ext/wayland/gstwaylandsink.c | 6 +++++-
+ 2 files changed, 10 insertions(+), 2 deletions(-)
+
+diff --git a/ext/gtk/gstgtkwaylandsink.c b/ext/gtk/gstgtkwaylandsink.c
+index 2debee6..7537200 100644
+--- a/ext/gtk/gstgtkwaylandsink.c
++++ b/ext/gtk/gstgtkwaylandsink.c
+@@ -1175,12 +1175,16 @@ gst_gtk_wayland_sink_show_frame (GstVideoSink * vsink, GstBuffer * buffer)
+       wbuf = gst_wl_linux_dmabuf_construct_wl_buffer (buffer, priv->display,
+           &priv->video_info);
+ 
++    if (wbuf)
++      GST_LOG_OBJECT (self,
++        "buffer %" GST_PTR_FORMAT " is DMABuf", buffer);
++
+     /* DMABuf did not work, let try and make this a dmabuf, it does not matter
+      * if it was a SHM since the compositor needs to copy that anyway, and
+      * offloading the compositor from a copy helps maintaining a smoother
+      * desktop.
+      */
+-    if (!priv->skip_dumb_buffer_copy) {
++    if (!wbuf && !priv->skip_dumb_buffer_copy) {
+       GstVideoFrame src, dst;
+ 
+       if (!gst_gtk_wayland_activate_drm_dumb_pool (self)) {
+diff --git a/ext/wayland/gstwaylandsink.c b/ext/wayland/gstwaylandsink.c
+index 24a7174..1662241 100644
+--- a/ext/wayland/gstwaylandsink.c
++++ b/ext/wayland/gstwaylandsink.c
+@@ -907,12 +907,16 @@ gst_wayland_sink_show_frame (GstVideoSink * vsink, GstBuffer * buffer)
+       wbuf = gst_wl_linux_dmabuf_construct_wl_buffer (buffer, self->display,
+           &self->video_info);
+ 
++    if (wbuf)
++      GST_LOG_OBJECT (self,
++        "buffer %" GST_PTR_FORMAT " is DMABuf", buffer);
++
+     /* DMABuf did not work, let try and make this a dmabuf, it does not matter
+      * if it was a SHM since the compositor needs to copy that anyway, and
+      * offloading the compositor from a copy helps maintaining a smoother
+      * desktop.
+      */
+-    if (!self->skip_dumb_buffer_copy) {
++    if (!wbuf && !self->skip_dumb_buffer_copy) {
+       GstVideoFrame src, dst;
+ 
+       if (!gst_wayland_activate_drm_dumb_pool (self)) {
+-- 
+2.25.1
+

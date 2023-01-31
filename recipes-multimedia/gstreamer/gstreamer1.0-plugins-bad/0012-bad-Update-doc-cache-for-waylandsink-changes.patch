@@ -1,0 +1,57 @@
+From f0e7d7840db7a27d29127acdd42a09ea7450c969 Mon Sep 17 00:00:00 2001
+From: Nicolas Dufresne <nicolas.dufresne@collabora.com>
+Date: Fri, 17 Feb 2023 12:10:25 -0500
+Subject: [PATCH 12/17] bad: Update doc cache for waylandsink changes
+
+A new drm-device property has been added.
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/3801>
+---
+ docs/plugins/gst_plugins_cache.json | 24 ++++++++++++++++++++++++
+ 1 file changed, 24 insertions(+)
+
+diff --git a/docs/plugins/gst_plugins_cache.json b/docs/plugins/gst_plugins_cache.json
+index 50128fb..4ea6d90 100644
+--- a/docs/plugins/gst_plugins_cache.json
++++ b/docs/plugins/gst_plugins_cache.json
+@@ -29462,6 +29462,18 @@
+                     }
+                 },
+                 "properties": {
++                    "drm-device": {
++                        "blurb": "Path of the DRM device to use for dumb buffer allocation",
++                        "conditionally-available": false,
++                        "construct": false,
++                        "construct-only": true,
++                        "controllable": false,
++                        "default": "NULL",
++                        "mutable": "null",
++                        "readable": true,
++                        "type": "gchararray",
++                        "writable": true
++                    },
+                     "rotate-method": {
+                         "blurb": "rotate method",
+                         "conditionally-available": false,
+@@ -236521,6 +236533,18 @@
+                         "type": "gchararray",
+                         "writable": true
+                     },
++                    "drm-device": {
++                        "blurb": "Path of the DRM device to use for dumb buffer allocation",
++                        "conditionally-available": false,
++                        "construct": false,
++                        "construct-only": true,
++                        "controllable": false,
++                        "default": "NULL",
++                        "mutable": "null",
++                        "readable": true,
++                        "type": "gchararray",
++                        "writable": true
++                    },
+                     "fullscreen": {
+                         "blurb": "Whether the surface should be made fullscreen ",
+                         "conditionally-available": false,
+-- 
+2.25.1
+

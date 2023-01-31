@@ -1,0 +1,25 @@
+From a028c20bb3ad4f17b60afacb2a5f2a624432b2d4 Mon Sep 17 00:00:00 2001
+From: Christophe Priouzeau <christophe.priouzeau@foss.st.com>
+Date: Wed, 29 Mar 2023 14:42:17 +0200
+Subject: [PATCH 16/17] gstwlshmallocator: correct WL API declaration
+
+Signed-off-by: Christophe Priouzeau <christophe.priouzeau@foss.st.com>
+---
+ gst-libs/gst/wayland/gstwlshmallocator.h | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/gst-libs/gst/wayland/gstwlshmallocator.h b/gst-libs/gst/wayland/gstwlshmallocator.h
+index 0e7e15d..dcbea6c 100644
+--- a/gst-libs/gst/wayland/gstwlshmallocator.h
++++ b/gst-libs/gst/wayland/gstwlshmallocator.h
+@@ -30,6 +30,7 @@
+ G_BEGIN_DECLS
+ 
+ #define GST_TYPE_WL_SHM_ALLOCATOR (gst_wl_shm_allocator_get_type ())
++GST_WL_API
+ G_DECLARE_FINAL_TYPE (GstWlShmAllocator, gst_wl_shm_allocator, GST, WL_SHM_ALLOCATOR, GstFdAllocator);
+ 
+ #define GST_ALLOCATOR_WL_SHM "wl_shm"
+-- 
+2.25.1
+

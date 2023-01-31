@@ -1,0 +1,92 @@
+From d9b34f66193a5a4ac60df33ec80e0da76d197fe4 Mon Sep 17 00:00:00 2001
+From: Nicolas Dufresne <nicolas.dufresne@collabora.com>
+Date: Fri, 17 Feb 2023 09:42:42 -0500
+Subject: [PATCH 09/17] wlvideoformat: Fix sign issue for DRM fourcc
+
+DRM fourcc ared defined as 32bit unsigned in, but the format helper was passing
+an int, while using a unsigned int internally. This is a API/ABI break, but
+the API is still unstable.
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/3801>
+---
+ gst-libs/gst/wayland/gstwldisplay.c     | 2 +-
+ gst-libs/gst/wayland/gstwllinuxdmabuf.c | 4 ++--
+ gst-libs/gst/wayland/gstwlvideoformat.c | 6 +++---
+ gst-libs/gst/wayland/gstwlvideoformat.h | 2 +-
+ 4 files changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/gst-libs/gst/wayland/gstwldisplay.c b/gst-libs/gst/wayland/gstwldisplay.c
+index 1f83cb2..a9da274 100644
+--- a/gst-libs/gst/wayland/gstwldisplay.c
++++ b/gst-libs/gst/wayland/gstwldisplay.c
+@@ -226,7 +226,7 @@ gst_wl_display_check_format_for_dmabuf (GstWlDisplay * self,
+     return FALSE;
+ 
+   dmabuf_fmt = gst_video_format_to_wl_dmabuf_format (format);
+-  if (dmabuf_fmt == (guint) - 1)
++  if (!dmabuf_fmt)
+     return FALSE;
+ 
+   formats = priv->dmabuf_formats;
+diff --git a/gst-libs/gst/wayland/gstwllinuxdmabuf.c b/gst-libs/gst/wayland/gstwllinuxdmabuf.c
+index 4b33d05..deb5d32 100644
+--- a/gst-libs/gst/wayland/gstwllinuxdmabuf.c
++++ b/gst-libs/gst/wayland/gstwllinuxdmabuf.c
+@@ -175,8 +175,8 @@ out:
+     GST_ERROR_OBJECT (mem->allocator, "can't create linux-dmabuf buffer");
+   } else {
+     GST_DEBUG_OBJECT (mem->allocator, "created linux_dmabuf wl_buffer (%p):"
+-        "%dx%d, fmt=%.4s, %d planes",
+-        data.wbuf, width, height, (char *) &format, nplanes);
++        "%dx%d, fmt=%" GST_FOURCC_FORMAT ", %d planes",
++        data.wbuf, width, height, GST_FOURCC_ARGS (format), nplanes);
+   }
+ 
+   g_mutex_unlock (&data.lock);
+diff --git a/gst-libs/gst/wayland/gstwlvideoformat.c b/gst-libs/gst/wayland/gstwlvideoformat.c
+index 44a9536..49d927a 100644
+--- a/gst-libs/gst/wayland/gstwlvideoformat.c
++++ b/gst-libs/gst/wayland/gstwlvideoformat.c
+@@ -48,7 +48,7 @@ gst_wl_videoformat_init_once (void)
+ typedef struct
+ {
+   enum wl_shm_format wl_shm_format;
+-  guint dma_format;
++  guint32 dma_format;
+   GstVideoFormat gst_format;
+ } wl_VideoFormat;
+ 
+@@ -96,7 +96,7 @@ gst_video_format_to_wl_shm_format (GstVideoFormat format)
+   return -1;
+ }
+ 
+-gint
++guint32
+ gst_video_format_to_wl_dmabuf_format (GstVideoFormat format)
+ {
+   guint i;
+@@ -106,7 +106,7 @@ gst_video_format_to_wl_dmabuf_format (GstVideoFormat format)
+       return wl_formats[i].dma_format;
+ 
+   GST_WARNING ("wayland dmabuf video format not found");
+-  return -1;
++  return 0;
+ }
+ 
+ GstVideoFormat
+diff --git a/gst-libs/gst/wayland/gstwlvideoformat.h b/gst-libs/gst/wayland/gstwlvideoformat.h
+index bc36a08..bbacde3 100644
+--- a/gst-libs/gst/wayland/gstwlvideoformat.h
++++ b/gst-libs/gst/wayland/gstwlvideoformat.h
+@@ -36,7 +36,7 @@ GST_WL_API
+ enum wl_shm_format gst_video_format_to_wl_shm_format (GstVideoFormat format);
+ 
+ GST_WL_API
+-gint gst_video_format_to_wl_dmabuf_format (GstVideoFormat format);
++guint32 gst_video_format_to_wl_dmabuf_format (GstVideoFormat format);
+ 
+ GST_WL_API
+ GstVideoFormat gst_wl_shm_format_to_video_format (enum wl_shm_format wl_format);
+-- 
+2.25.1
+

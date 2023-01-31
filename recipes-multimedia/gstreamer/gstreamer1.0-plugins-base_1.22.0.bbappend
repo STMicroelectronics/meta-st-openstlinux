@@ -1,7 +1,8 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}/:"
 
-SRC_URI:append = " file://0001-playbin2-disable-any-default-video-processing.patch "
-SRC_URI:append = " file://0002-playbin3-disable-any-default-video-processing.patch "
+SRC_URI:append = " \
+    file://0001-allocators-Add-a-DRM-Dumb-Allocator.patch \
+    "
 
 PACKAGECONFIG ?= " \
     ${GSTREAMER_ORC} \

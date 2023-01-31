@@ -1,0 +1,30 @@
+From 60b5f9809703c6668e566a8133b000ec2c3c0dfc Mon Sep 17 00:00:00 2001
+From: Nicolas Dufresne <nicolas.dufresne@collabora.com>
+Date: Thu, 16 Feb 2023 14:31:10 -0500
+Subject: [PATCH 07/17] gtkwaylandsink: Fix display/wl_window/pool leaks
+
+These were leaked in the GTK implementation of the sink.
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/3801>
+---
+ ext/gtk/gstgtkwaylandsink.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/ext/gtk/gstgtkwaylandsink.c b/ext/gtk/gstgtkwaylandsink.c
+index 8967d97..0c74a91 100644
+--- a/ext/gtk/gstgtkwaylandsink.c
++++ b/ext/gtk/gstgtkwaylandsink.c
+@@ -200,6 +200,10 @@ gst_gtk_wayland_sink_finalize (GObject * object)
+   GstGtkWaylandSinkPrivate *priv =
+       gst_gtk_wayland_sink_get_instance_private (self);
+ 
++  g_clear_object (&priv->display);
++  g_clear_object (&priv->wl_window);
++  g_clear_object (&priv->pool);
++
+   g_clear_object (&priv->gtk_widget);
+   gst_clear_caps (&priv->caps);
+ 
+-- 
+2.25.1
+

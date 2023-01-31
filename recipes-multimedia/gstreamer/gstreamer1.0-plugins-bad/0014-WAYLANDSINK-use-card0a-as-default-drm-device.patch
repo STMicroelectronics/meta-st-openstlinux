@@ -1,0 +1,26 @@
+From 0bc64942a8f0c1b49e2488b52f083c5545b1079c Mon Sep 17 00:00:00 2001
+From: Christophe Priouzeau <christophe.priouzeau@foss.st.com>
+Date: Wed, 29 Mar 2023 13:11:55 +0200
+Subject: [PATCH 14/17] WAYLANDSINK: use card0a as default drm-device
+
+Signed-off-by: Christophe Priouzeau <christophe.priouzeau@foss.st.com>
+---
+ ext/wayland/gstwaylandsink.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/ext/wayland/gstwaylandsink.c b/ext/wayland/gstwaylandsink.c
+index bb7fcff..8cf8e36 100644
+--- a/ext/wayland/gstwaylandsink.c
++++ b/ext/wayland/gstwaylandsink.c
+@@ -186,7 +186,7 @@ gst_wayland_sink_class_init (GstWaylandSinkClass * klass)
+   g_object_class_install_property (gobject_class, PROP_DRM_DEVICE,
+       g_param_spec_string ("drm-device", "DRM Device", "Path of the "
+           "DRM device to use for dumb buffer allocation",
+-          NULL,
++          "/dev/dri/card0",
+           G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS | G_PARAM_CONSTRUCT_ONLY));
+ 
+ 
+-- 
+2.25.1
+

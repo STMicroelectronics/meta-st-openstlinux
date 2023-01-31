@@ -1,0 +1,39 @@
+From baf873c06399c6ad6062cc1a96cc1b0bfc0edf3c Mon Sep 17 00:00:00 2001
+From: Nicolas Dufresne <nicolas.dufresne@collabora.com>
+Date: Wed, 15 Feb 2023 12:34:27 -0500
+Subject: [PATCH 04/17] gtkwaylandsink: Force a redraw on resolution change
+
+As we don't render into the widget directly, there is no "initial" draw
+happening. As a side effect, the internal aspect ratio adapted display
+width/height is never initialize leading to assertions when handling navigation
+events.
+
+  gst_video_center_rect: assertion 'src->h != 0' failed
+
+Simply queue a redraw after setting the widget format in order to fix the issue.
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/3801>
+---
+ ext/gtk/gstgtkwaylandsink.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/ext/gtk/gstgtkwaylandsink.c b/ext/gtk/gstgtkwaylandsink.c
+index dc1e3c3..5288614 100644
+--- a/ext/gtk/gstgtkwaylandsink.c
++++ b/ext/gtk/gstgtkwaylandsink.c
+@@ -875,6 +875,12 @@ gst_gtk_wayland_sink_set_caps (GstBaseSink * bsink, GstCaps * caps)
+     GST_OBJECT_UNLOCK (self);
+     return FALSE;
+   }
++
++  /* Ensure queue_draw get executed and internal display size get initialized.
++   * This does not happen otherwise as we don't draw in the widget
++   */
++  gtk_gst_base_widget_queue_draw (GTK_GST_BASE_WIDGET (priv->gtk_widget));
++
+   GST_OBJECT_UNLOCK (self);
+ 
+   priv->use_dmabuf = use_dmabuf;
+-- 
+2.25.1
+

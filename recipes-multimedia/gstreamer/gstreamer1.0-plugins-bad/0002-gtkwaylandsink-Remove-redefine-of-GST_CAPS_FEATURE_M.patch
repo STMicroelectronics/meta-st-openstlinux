@@ -1,0 +1,49 @@
+From 930fb463ebf2fffed6a8e8f8b05594082fb2a3c2 Mon Sep 17 00:00:00 2001
+From: Nicolas Dufresne <nicolas.dufresne@collabora.com>
+Date: Wed, 15 Feb 2023 11:49:38 -0500
+Subject: [PATCH 02/17] gtkwaylandsink: Remove redefine of
+ GST_CAPS_FEATURE_MEMORY_DMABUF
+
+Instead just include the appropriate header file. There is no meson deps
+modification as gstallocators_dep is already part of gstwayland_dep.
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/3801>
+---
+ ext/gtk/gstgtkwaylandsink.c | 10 +++-------
+ 1 file changed, 3 insertions(+), 7 deletions(-)
+
+diff --git a/ext/gtk/gstgtkwaylandsink.c b/ext/gtk/gstgtkwaylandsink.c
+index e4dd06e..35367ca 100644
+--- a/ext/gtk/gstgtkwaylandsink.c
++++ b/ext/gtk/gstgtkwaylandsink.c
+@@ -25,13 +25,13 @@
+ #endif
+ 
+ #include "gstgtkwaylandsink.h"
++#include "gstgtkutils.h"
++#include "gtkgstwaylandwidget.h"
+ 
+ #include <gdk/gdk.h>
++#include <gst/allocators/allocators.h>
+ #include <gst/wayland/wayland.h>
+ 
+-#include "gstgtkutils.h"
+-#include "gtkgstwaylandwidget.h"
+-
+ #ifdef GDK_WINDOWING_WAYLAND
+ #include <gdk/gdkwayland.h>
+ #else
+@@ -41,10 +41,6 @@
+ #define GST_CAT_DEFAULT gst_debug_gtk_wayland_sink
+ GST_DEBUG_CATEGORY_STATIC (GST_CAT_DEFAULT);
+ 
+-#ifndef GST_CAPS_FEATURE_MEMORY_DMABUF
+-#define GST_CAPS_FEATURE_MEMORY_DMABUF "memory:DMABuf"
+-#endif
+-
+ #define WL_VIDEO_FORMATS \
+   "{ BGRx, BGRA, RGBx, xBGR, xRGB, RGBA, ABGR, ARGB, RGB, BGR, " \
+   "RGB16, BGR16, YUY2, YVYU, UYVY, AYUV, NV12, NV21, NV16, NV61, " \
+-- 
+2.25.1
+

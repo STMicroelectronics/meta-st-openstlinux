@@ -1,0 +1,26 @@
+From a4873e027038d26e9fb43a03a016d2975e6b3ba3 Mon Sep 17 00:00:00 2001
+From: Christophe Priouzeau <christophe.priouzeau@foss.st.com>
+Date: Wed, 29 Mar 2023 13:14:01 +0200
+Subject: [PATCH 15/17] waylandsink: Uprank to secondary
+
+Signed-off-by: Christophe Priouzeau <christophe.priouzeau@foss.st.com>
+---
+ ext/wayland/gstwaylandsink.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/ext/wayland/gstwaylandsink.c b/ext/wayland/gstwaylandsink.c
+index 8cf8e36..24a7174 100644
+--- a/ext/wayland/gstwaylandsink.c
++++ b/ext/wayland/gstwaylandsink.c
+@@ -114,7 +114,7 @@ static void gst_wayland_sink_expose (GstVideoOverlay * overlay);
+ G_DEFINE_TYPE_WITH_CODE (GstWaylandSink, gst_wayland_sink, GST_TYPE_VIDEO_SINK,
+     G_IMPLEMENT_INTERFACE (GST_TYPE_VIDEO_OVERLAY,
+         gst_wayland_sink_videooverlay_init));
+-GST_ELEMENT_REGISTER_DEFINE (waylandsink, "waylandsink", GST_RANK_MARGINAL,
++GST_ELEMENT_REGISTER_DEFINE (waylandsink, "waylandsink", GST_RANK_SECONDARY+1,
+     GST_TYPE_WAYLAND_SINK);
+ 
+ static void
+-- 
+2.25.1
+

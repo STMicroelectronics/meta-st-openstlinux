@@ -1,0 +1,173 @@
+From 38ee1f8e97429506db0ca9c0c2ac61da4f00ba5d Mon Sep 17 00:00:00 2001
+From: Nicolas Dufresne <nicolas.dufresne@collabora.com>
+Date: Thu, 16 Feb 2023 21:12:08 -0500
+Subject: [PATCH 08/17] wllinuxdmabuf: Handle video meta inside the importer
+
+This allow simplifying the GstVideoInfo handling in the sinks. Instead
+of having to update a video info for the import, the sink can simply pass the
+video info associated with the caps and rely on the VideoMeta in the GstBuffer
+to obtain the appropriate offset and stride.
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/3801>
+---
+ ext/gtk/gstgtkwaylandsink.c             | 22 ++++------------------
+ ext/wayland/gstwaylandsink.c            | 18 ++----------------
+ gst-libs/gst/wayland/gstwllinuxdmabuf.c | 13 +++++++++++--
+ 3 files changed, 17 insertions(+), 36 deletions(-)
+
+diff --git a/ext/gtk/gstgtkwaylandsink.c b/ext/gtk/gstgtkwaylandsink.c
+index 0c74a91..c46207c 100644
+--- a/ext/gtk/gstgtkwaylandsink.c
++++ b/ext/gtk/gstgtkwaylandsink.c
+@@ -1028,9 +1028,7 @@ gst_gtk_wayland_sink_show_frame (GstVideoSink * vsink, GstBuffer * buffer)
+       gst_gtk_wayland_sink_get_instance_private (self);
+   GstBuffer *to_render;
+   GstWlBuffer *wlbuffer;
+-  GstVideoMeta *vmeta;
+   GstVideoFormat format;
+-  GstVideoInfo src_vinfo;
+   GstMemory *mem;
+   struct wl_buffer *wbuf = NULL;
+ 
+@@ -1073,23 +1071,11 @@ gst_gtk_wayland_sink_show_frame (GstVideoSink * vsink, GstBuffer * buffer)
+   /* update video info from video meta */
+   mem = gst_buffer_peek_memory (buffer, 0);
+ 
+-  src_vinfo = priv->video_info;
+-  vmeta = gst_buffer_get_video_meta (buffer);
+-  if (vmeta) {
+-    gint i;
+-
+-    for (i = 0; i < vmeta->n_planes; i++) {
+-      src_vinfo.offset[i] = vmeta->offset[i];
+-      src_vinfo.stride[i] = vmeta->stride[i];
+-    }
+-    src_vinfo.size = gst_buffer_get_size (buffer);
+-  }
+-
+   GST_LOG_OBJECT (self,
+       "buffer %" GST_PTR_FORMAT " does not have a wl_buffer from our "
+       "display, creating it", buffer);
+ 
+-  format = GST_VIDEO_INFO_FORMAT (&src_vinfo);
++  format = GST_VIDEO_INFO_FORMAT (&priv->video_info);
+   if (gst_wl_display_check_format_for_dmabuf (priv->display, format)) {
+     guint i, nb_dmabuf = 0;
+ 
+@@ -1099,13 +1085,13 @@ gst_gtk_wayland_sink_show_frame (GstVideoSink * vsink, GstBuffer * buffer)
+ 
+     if (nb_dmabuf && (nb_dmabuf == gst_buffer_n_memory (buffer)))
+       wbuf = gst_wl_linux_dmabuf_construct_wl_buffer (buffer, priv->display,
+-          &src_vinfo);
++          &priv->video_info);
+   }
+ 
+   if (!wbuf && gst_wl_display_check_format_for_shm (priv->display, format)) {
+     if (gst_buffer_n_memory (buffer) == 1 && gst_is_fd_memory (mem))
+       wbuf = gst_wl_shm_memory_construct_wl_buffer (mem, priv->display,
+-          &src_vinfo);
++          &priv->video_info);
+ 
+     /* If nothing worked, copy into our internal pool */
+     if (!wbuf) {
+@@ -1146,7 +1132,7 @@ gst_gtk_wayland_sink_show_frame (GstVideoSink * vsink, GstBuffer * buffer)
+               GST_MAP_WRITE))
+         goto dst_map_failed;
+ 
+-      if (!gst_video_frame_map (&src, &src_vinfo, buffer, GST_MAP_READ)) {
++      if (!gst_video_frame_map (&src, &priv->video_info, buffer, GST_MAP_READ)) {
+         gst_video_frame_unmap (&dst);
+         goto src_map_failed;
+       }
+diff --git a/ext/wayland/gstwaylandsink.c b/ext/wayland/gstwaylandsink.c
+index b9b6267..aa39447 100644
+--- a/ext/wayland/gstwaylandsink.c
++++ b/ext/wayland/gstwaylandsink.c
+@@ -779,9 +779,7 @@ gst_wayland_sink_show_frame (GstVideoSink * vsink, GstBuffer * buffer)
+   GstWaylandSink *self = GST_WAYLAND_SINK (vsink);
+   GstBuffer *to_render;
+   GstWlBuffer *wlbuffer;
+-  GstVideoMeta *vmeta;
+   GstVideoFormat format;
+-  GstVideoInfo src_vinfo;
+   GstMemory *mem;
+   struct wl_buffer *wbuf = NULL;
+ 
+@@ -835,18 +833,6 @@ gst_wayland_sink_show_frame (GstVideoSink * vsink, GstBuffer * buffer)
+   /* update video info from video meta */
+   mem = gst_buffer_peek_memory (buffer, 0);
+ 
+-  src_vinfo = self->video_info;
+-  vmeta = gst_buffer_get_video_meta (buffer);
+-  if (vmeta) {
+-    gint i;
+-
+-    for (i = 0; i < vmeta->n_planes; i++) {
+-      src_vinfo.offset[i] = vmeta->offset[i];
+-      src_vinfo.stride[i] = vmeta->stride[i];
+-    }
+-    src_vinfo.size = gst_buffer_get_size (buffer);
+-  }
+-
+   GST_LOG_OBJECT (self,
+       "buffer %" GST_PTR_FORMAT " does not have a wl_buffer from our "
+       "display, creating it", buffer);
+@@ -861,7 +847,7 @@ gst_wayland_sink_show_frame (GstVideoSink * vsink, GstBuffer * buffer)
+ 
+     if (nb_dmabuf && (nb_dmabuf == gst_buffer_n_memory (buffer)))
+       wbuf = gst_wl_linux_dmabuf_construct_wl_buffer (buffer, self->display,
+-          &src_vinfo);
++          &self->video_info);
+   }
+ 
+   if (!wbuf && gst_wl_display_check_format_for_shm (self->display, format)) {
+@@ -907,7 +893,7 @@ gst_wayland_sink_show_frame (GstVideoSink * vsink, GstBuffer * buffer)
+               GST_MAP_WRITE))
+         goto dst_map_failed;
+ 
+-      if (!gst_video_frame_map (&src, &src_vinfo, buffer, GST_MAP_READ)) {
++      if (!gst_video_frame_map (&src, &self->video_info, buffer, GST_MAP_READ)) {
+         gst_video_frame_unmap (&dst);
+         goto src_map_failed;
+       }
+diff --git a/gst-libs/gst/wayland/gstwllinuxdmabuf.c b/gst-libs/gst/wayland/gstwllinuxdmabuf.c
+index d6ee6ec..4b33d05 100644
+--- a/gst-libs/gst/wayland/gstwllinuxdmabuf.c
++++ b/gst-libs/gst/wayland/gstwllinuxdmabuf.c
+@@ -88,6 +88,9 @@ gst_wl_linux_dmabuf_construct_wl_buffer (GstBuffer * buf,
+   GstMemory *mem;
+   int format;
+   guint i, width, height;
++  const gsize *offsets = info->offset;
++  const gint *strides = info->stride;
++  GstVideoMeta *vmeta;
+   guint nplanes, flags = 0;
+   struct zwp_linux_buffer_params_v1 *params;
+   gint64 timeout;
+@@ -107,6 +110,12 @@ gst_wl_linux_dmabuf_construct_wl_buffer (GstBuffer * buf,
+   height = GST_VIDEO_INFO_HEIGHT (info);
+   nplanes = GST_VIDEO_INFO_N_PLANES (info);
+ 
++  vmeta = gst_buffer_get_video_meta (buf);
++  if (vmeta) {
++    offsets = vmeta->offset;
++    strides = vmeta->stride;
++  }
++
+   GST_DEBUG_OBJECT (display, "Creating wl_buffer from DMABuf of size %"
+       G_GSSIZE_FORMAT " (%d x %d), format %s", info->size, width, height,
+       gst_wl_dmabuf_format_to_string (format));
+@@ -119,8 +128,8 @@ gst_wl_linux_dmabuf_construct_wl_buffer (GstBuffer * buf,
+     guint offset, stride, mem_idx, length;
+     gsize skip;
+ 
+-    offset = GST_VIDEO_INFO_PLANE_OFFSET (info, i);
+-    stride = GST_VIDEO_INFO_PLANE_STRIDE (info, i);
++    offset = offsets[i];
++    stride = strides[i];
+     if (gst_buffer_find_memory (buf, offset, 1, &mem_idx, &length, &skip)) {
+       GstMemory *m = gst_buffer_peek_memory (buf, mem_idx);
+       gint fd = gst_dmabuf_memory_get_fd (m);
+-- 
+2.25.1
+

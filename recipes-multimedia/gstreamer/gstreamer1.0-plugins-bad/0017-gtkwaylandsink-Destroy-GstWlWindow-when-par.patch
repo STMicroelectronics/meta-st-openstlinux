@@ -1,0 +1,44 @@
+From 31d07ae72c3b78936bd4a385f1f5a72a2171da8b Mon Sep 17 00:00:00 2001
+From: Christophe Priouzeau <christophe.priouzeau@foss.st.com>
+Date: Wed, 29 Mar 2023 14:46:04 +0200
+Subject: [PATCH 17/17] sts/3801>gtkwaylandsink: Destroy GstWlWindow when
+ parent GtkWindow is destroyed
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/4197>
+---
+ ext/gtk/gstgtkwaylandsink.c | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/ext/gtk/gstgtkwaylandsink.c b/ext/gtk/gstgtkwaylandsink.c
+index a89ef44..9691255 100644
+--- a/ext/gtk/gstgtkwaylandsink.c
++++ b/ext/gtk/gstgtkwaylandsink.c
+@@ -245,6 +245,7 @@ window_destroy_cb (GtkWidget * widget, GstGtkWaylandSink * self)
+       gst_gtk_wayland_sink_get_instance_private (self);
+ 
+   GST_OBJECT_LOCK (self);
++  g_clear_object (&priv->wl_window);
+   priv->gtk_window = NULL;
+   GST_OBJECT_UNLOCK (self);
+ 
+@@ -652,6 +653,7 @@ gst_gtk_wayland_sink_stop_on_main (GstGtkWaylandSink * self)
+       g_signal_handler_disconnect (priv->gtk_window,
+           priv->gtk_window_destroy_id);
+     priv->gtk_window_destroy_id = 0;
++    g_clear_object (&priv->wl_window);
+     gtk_widget_destroy (priv->gtk_window);
+     priv->gtk_window = NULL;
+   }
+@@ -959,6 +961,9 @@ gst_gtk_wayland_sink_set_caps (GstBaseSink * bsink, GstCaps * caps)
+     if (!gst_wl_display_check_format_for_dmabuf (priv->display, format))
+       goto unsupported_format;
+   } else if (!gst_wl_display_check_format_for_shm (priv->display, format)) {
++    /* Note: we still support dmabuf in this case, but formats must also be
++     * supported on SHM interface to ensure a fallback is possible as we are
++     * not guarantied we'll get dmabuf in the buffers. */
+     goto unsupported_format;
+   }
+ 
+-- 
+2.25.1
+

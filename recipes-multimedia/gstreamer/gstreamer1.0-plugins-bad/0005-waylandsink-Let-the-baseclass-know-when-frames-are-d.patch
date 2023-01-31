@@ -1,0 +1,61 @@
+From c6eb72dc5b88c188abb237dff09475594c443bae Mon Sep 17 00:00:00 2001
+From: Nicolas Dufresne <nicolas.dufresne@collabora.com>
+Date: Wed, 15 Feb 2023 13:11:36 -0500
+Subject: [PATCH 05/17] waylandsink: Let the baseclass know when frames are
+ dropped
+
+This is using the new GST_BASE_SINK_FLOW_DROPPED return value.
+With this change, fpsdisplaysink will properly report the
+render and dropped rate.
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/3801>
+---
+ ext/gtk/gstgtkwaylandsink.c  | 2 ++
+ ext/wayland/gstwaylandsink.c | 4 ++++
+ 2 files changed, 6 insertions(+)
+
+diff --git a/ext/gtk/gstgtkwaylandsink.c b/ext/gtk/gstgtkwaylandsink.c
+index 5288614..1afad32 100644
+--- a/ext/gtk/gstgtkwaylandsink.c
++++ b/ext/gtk/gstgtkwaylandsink.c
+@@ -1001,6 +1001,7 @@ gst_gtk_wayland_sink_show_frame (GstVideoSink * vsink, GstBuffer * buffer)
+   if (!priv->wl_window) {
+     GST_LOG_OBJECT (self,
+         "buffer %" GST_PTR_FORMAT " dropped (waiting for window)", buffer);
++    ret = GST_FLOW_CUSTOM_SUCCESS;
+     goto done;
+   }
+ 
+@@ -1008,6 +1009,7 @@ gst_gtk_wayland_sink_show_frame (GstVideoSink * vsink, GstBuffer * buffer)
+   if (priv->redraw_pending) {
+     GST_LOG_OBJECT (self, "buffer %" GST_PTR_FORMAT " dropped (redraw pending)",
+         buffer);
++    ret = GST_FLOW_CUSTOM_SUCCESS;
+     goto done;
+   }
+ 
+diff --git a/ext/wayland/gstwaylandsink.c b/ext/wayland/gstwaylandsink.c
+index 6dd0807..7077ee9 100644
+--- a/ext/wayland/gstwaylandsink.c
++++ b/ext/wayland/gstwaylandsink.c
+@@ -631,6 +631,9 @@ gst_wayland_sink_set_caps (GstBaseSink * bsink, GstCaps * caps)
+     if (!gst_wl_display_check_format_for_dmabuf (self->display, format))
+       goto unsupported_format;
+   } else if (!gst_wl_display_check_format_for_shm (self->display, format)) {
++    /* Note: we still support dmabuf in this case, but formats must also be
++     * supported on SHM interface to ensure a fallback is possible as we are
++     * not guarantied we'll get dmabuf in the buffers. */
+     goto unsupported_format;
+   }
+ 
+@@ -773,6 +776,7 @@ gst_wayland_sink_show_frame (GstVideoSink * vsink, GstBuffer * buffer)
+   if (self->redraw_pending) {
+     GST_LOG_OBJECT (self, "buffer %" GST_PTR_FORMAT " dropped (redraw pending)",
+         buffer);
++    ret = GST_FLOW_CUSTOM_SUCCESS;
+     goto done;
+   }
+ 
+-- 
+2.25.1
+

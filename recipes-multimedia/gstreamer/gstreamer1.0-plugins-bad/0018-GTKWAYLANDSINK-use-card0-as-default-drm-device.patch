@@ -1,0 +1,25 @@
+From 11f6e311f37ca4aaf5bafb9bc646686905c5c377 Mon Sep 17 00:00:00 2001
+From: Christophe Priouzeau <christophe.priouzeau@foss.st.com>
+Date: Wed, 29 Mar 2023 18:28:39 +0200
+Subject: [PATCH] GTKWAYLANDSINK: use card0 as default drm-device
+
+---
+ ext/gtk/gstgtkwaylandsink.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/ext/gtk/gstgtkwaylandsink.c b/ext/gtk/gstgtkwaylandsink.c
+index 9691255..985ac07 100644
+--- a/ext/gtk/gstgtkwaylandsink.c
++++ b/ext/gtk/gstgtkwaylandsink.c
+@@ -173,7 +173,7 @@ gst_gtk_wayland_sink_class_init (GstGtkWaylandSinkClass * klass)
+   g_object_class_install_property (gobject_class, PROP_DRM_DEVICE,
+       g_param_spec_string ("drm-device", "DRM Device", "Path of the "
+           "DRM device to use for dumb buffer allocation",
+-          NULL,
++          "/dev/dri/card0",
+           G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS | G_PARAM_CONSTRUCT_ONLY));
+ 
+   gstelement_class->change_state =
+-- 
+2.25.1
+

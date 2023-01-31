@@ -1,0 +1,68 @@
+From c590304b77a723b9b69f3d2d2f777dc27ac4901c Mon Sep 17 00:00:00 2001
+From: Nicolas Dufresne <nicolas.dufresne@collabora.com>
+Date: Wed, 15 Feb 2023 13:10:25 -0500
+Subject: [PATCH] basesink: Add GST_BASE_SINK_FLOW_DROPPED return value
+
+This new flow return value can be used in ::render virtual method
+to signal that a frame is not being rendered.
+
+Part-of: <https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/3801>
+---
+ libs/gst/base/gstbasesink.c |  8 ++++++++
+ libs/gst/base/gstbasesink.h | 14 ++++++++++++++
+ 2 files changed, 22 insertions(+)
+
+diff --git a/libs/gst/base/gstbasesink.c b/libs/gst/base/gstbasesink.c
+index 294d946..a3abcc7 100644
+--- a/libs/gst/base/gstbasesink.c
++++ b/libs/gst/base/gstbasesink.c
+@@ -3950,6 +3950,11 @@ again:
+ 
+     if (bclass->render)
+       ret = bclass->render (basesink, GST_BUFFER_CAST (obj));
++
++    if (ret == GST_BASE_SINK_FLOW_DROPPED) {
++      ret = GST_FLOW_OK;
++      goto dropped;
++    }
+   } else {
+     GstBufferList *buffer_list = GST_BUFFER_LIST_CAST (obj);
+ 
+@@ -3959,6 +3964,9 @@ again:
+     /* Set the first buffer and buffer list to be included in last sample */
+     gst_base_sink_set_last_buffer (basesink, sync_buf);
+     gst_base_sink_set_last_buffer_list (basesink, buffer_list);
++
++    /* Not currently supported */
++    g_assert (ret != GST_BASE_SINK_FLOW_DROPPED);
+   }
+ 
+   if (ret == GST_FLOW_STEP)
+diff --git a/libs/gst/base/gstbasesink.h b/libs/gst/base/gstbasesink.h
+index 8edae03..2cf799a 100644
+--- a/libs/gst/base/gstbasesink.h
++++ b/libs/gst/base/gstbasesink.h
+@@ -58,6 +58,20 @@ G_BEGIN_DECLS
+ #define GST_BASE_SINK_PREROLL_SIGNAL(obj)     g_cond_signal (GST_BASE_SINK_GET_PREROLL_COND (obj));
+ #define GST_BASE_SINK_PREROLL_BROADCAST(obj)  g_cond_broadcast (GST_BASE_SINK_GET_PREROLL_COND (obj));
+ 
++/**
++ * GST_BASE_SINK_FLOW_DROPPED:
++ *
++ * A #GstFlowReturn that can be returned from
++ * #GstBaseSinkClass::render to indicate that the output buffer was not
++ * rendered.
++ *
++ * Note that this is currently not support for #GstBaseSinkClass::render_list
++ * virtual method.
++ *
++ * Since: 1.24
++ */
++#define GST_BASE_SINK_FLOW_DROPPED     GST_FLOW_CUSTOM_SUCCESS
++
+ typedef struct _GstBaseSink GstBaseSink;
+ typedef struct _GstBaseSinkClass GstBaseSinkClass;
+ typedef struct _GstBaseSinkPrivate GstBaseSinkPrivate;
+-- 
+2.25.1
+
