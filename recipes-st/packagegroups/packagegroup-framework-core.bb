@@ -19,6 +19,7 @@ RDEPENDS:packagegroup-framework-core = "\
     packagegroup-framework-core-mm      \
     infos-openstlinux \
     gpio-udev \
+    ${@bb.utils.contains('ST_DEBUG_TRACE','0', 'notrace', '', d)} \
     "
 
 SUMMARY:packagegroup-framework-core-display = "Framework core components for display"
