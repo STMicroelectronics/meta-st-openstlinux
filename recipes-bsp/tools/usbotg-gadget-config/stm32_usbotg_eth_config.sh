@@ -1,14 +1,14 @@
 #!/bin/sh
 
 #add stm32_eth_config script to enable USB Ethernet & MSC gadget This script configures USB Gadget
-#configfs to use USB OTG as a USB Ethernet Gadget with Remote NDIS (RNDIS), well supported by Microsoft
+#configfs to use USB OTG as a USB Ethernet Gadget with NCM, well supported by Microsoft
 #Windows and Linux.
 
 configfs="/sys/kernel/config/usb_gadget"
 g=g1
 c=c.1
 d="${configfs}/${g}"
-func_eth=rndis.0
+func_eth=ncm.0
 func_ms=mass_storage.0
 
 VENDOR_ID="0x1d6b"
@@ -49,6 +49,8 @@ do_start() {
     echo ${VENDOR_ID} > "${d}/idVendor"
     echo ${PRODUCT_ID} > "${d}/idProduct"
     echo 0x0200 > "${d}/bcdUSB"
+    # Windows extension to use IAD (Interface Association Descriptor)
+    # https://learn.microsoft.com/en-us/windows-hardware/drivers/usbcon/usb-interface-association-descriptor
     echo "0xEF" > "${d}/bDeviceClass"
     echo "0x02" > "${d}/bDeviceSubClass"
     echo "0x01" > "${d}/bDeviceProtocol"
@@ -62,20 +64,21 @@ do_start() {
     # Config
     mkdir -p "${d}/configs/${c}"
     mkdir -p "${d}/configs/${c}/strings/0x409"
-    echo "Config 1: RNDIS" > "${d}/configs/${c}/strings/0x409/configuration"
-    echo 250 > "${d}/configs/${c}/MaxPower"
+    echo "Config 1: NCM" > "${d}/configs/${c}/strings/0x409/configuration"
+    echo 0 > "${d}/configs/${c}/MaxPower"
     echo 0xC0 > "${d}/configs/${c}/bmAttributes" # self powered device
 
-    # Windows extension to force RNDIS config
+    # Enable use of OS descriptor (for windows to bind drivers like NCM, RNDIS...
+    # without additional .inf file)
     mkdir -p "${d}/os_desc"
     echo "1" > "${d}/os_desc/use"
     echo "0xbc" > "${d}/os_desc/b_vendor_code"
     echo "MSFT100" > "${d}/os_desc/qw_sign"
 
+    # Select windows UsbNcm Host driver
     mkdir -p "${d}/functions/${func_eth}"
-    mkdir -p "${d}/functions/${func_eth}/os_desc/interface.rndis"
-    echo "RNDIS" > "${d}/functions/${func_eth}/os_desc/interface.rndis/compatible_id"
-    echo "5162001" > "${d}/functions/${func_eth}/os_desc/interface.rndis/sub_compatible_id"
+    mkdir -p "${d}/functions/${func_eth}/os_desc/interface.ncm"
+    echo "WINNCM" > "${d}/functions/${func_eth}/os_desc/interface.ncm/compatible_id"
 
     if [ "$MAC_HOST_CUST" != "" ]; then
         echo $MAC_HOST_CUST > "${d}/functions/${func_eth}/host_addr"
@@ -131,13 +134,20 @@ do_stop() {
 case $1 in
     start)
         echo "Start usb gadget"
-        do_start $2
+        do_start
         ;;
     stop)
         echo "Stop usb gadget"
         do_stop
         ;;
+    restart)
+        echo "Stop usb gadget"
+        do_stop
+        sleep 1
+        echo "Start usb gadget"
+        do_start
+        ;;
     *)
-        echo "Usage: $0 (stop | start)"
+        echo "Usage: $0 (stop | start | restart)"
         ;;
 esac
