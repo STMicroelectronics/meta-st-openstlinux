@@ -1,0 +1,98 @@
+From 6becd213de6a94c9c6f44b260927ee965fbcbb2b Mon Sep 17 00:00:00 2001
+From: Robert Mader <robert.mader@collabora.com>
+Date: Thu, 16 Dec 2021 14:32:51 +0100
+Subject: [PATCH 5/7] touch-player: Remove touch event handler
+
+It is currently unused. If developers want to handle touch events
+differently, they should set the event masks accordingly.
+As that is documented well for GTK3 there's arguably no need
+to carry a code example around here.
+---
+ main.c | 57 -----------------------------------
+ 1 file changed, 57 deletions(-)
+
+diff --git a/main.c b/main.c
+index bac7c6a..173a8a9 100644
+--- a/main.c
++++ b/main.c
+@@ -39,8 +39,6 @@ typedef struct
+ 
+ 	gchar **argv;
+ 	gint current_uri;             /* index for argv */
+-
+-	guint32 last_touch_tap;
+ } DemoApp;
+ 
+ static void
+@@ -153,59 +151,6 @@ button_notify_event_cb (GtkWidget * widget, GdkEventButton * eventButton,
+ 	return TRUE;
+ }
+ 
+-static gboolean
+-touch_notify_event_cb (GtkWidget * widget, GdkEvent * event, gpointer data)
+-{
+-	DemoApp *d = data;
+-	guint32 diff;
+-	GstState actual_state;
+-
+-	g_print("--> %s\n", __FUNCTION__);
+-	switch(event->touch.type) {
+-	case GDK_TOUCH_BEGIN:
+-		if (d->last_touch_tap == 0) {
+-			d->last_touch_tap = event->touch.time;
+-			gst_element_get_state(d->pipeline, &actual_state, NULL, -1);
+-			if (actual_state == GST_STATE_PAUSED)
+-				gst_element_set_state (d->pipeline, GST_STATE_PLAYING);
+-			else
+-				gst_element_set_state (d->pipeline, GST_STATE_PAUSED);
+-		} else {
+-			diff = event->touch.time - d->last_touch_tap;
+-			if (d->last_touch_tap != 0) {
+-				d->last_touch_tap = event->touch.time;
+-				if (diff < 600) {
+-					g_print("--> DOUBLE TAP\n");
+-					g_main_loop_quit (d->loop);
+-				} else {
+-					gst_element_get_state(d->pipeline, &actual_state, NULL, -1);
+-					if (actual_state == GST_STATE_PAUSED)
+-						gst_element_set_state (d->pipeline, GST_STATE_PLAYING);
+-					else
+-						gst_element_set_state (d->pipeline, GST_STATE_PAUSED);
+-					g_print("--> SIMPLE TAP\n");
+-				}
+-				g_print("--> BEGIN diff = %d\n", diff);
+-			}
+-		}
+-		break;
+-	case GDK_TOUCH_UPDATE:
+-		//g_print("--> UPDATE\n");
+-		break;
+-	case GDK_TOUCH_END:
+-		//g_print("--> END\n");
+-		break;
+-	case GDK_TOUCH_CANCEL:
+-		//g_print("--> CANCEL\n");
+-		break;
+-	default:
+-		break;
+-		//g_print("--> something else \n");
+-	}
+-	/* We've handled it, stop processing */
+-	return TRUE;
+-}
+-
+ static void
+ build_window (DemoApp * d)
+ {
+@@ -257,8 +202,6 @@ build_window (DemoApp * d)
+ 	g_object_get (sink, "widget", &video_widget, NULL);
+ 	gtk_widget_set_support_multidevice (video_widget, TRUE);
+ 	gtk_widget_set_vexpand (video_widget, TRUE);
+-	g_signal_connect (video_widget, "touch-event",
+-			G_CALLBACK (touch_notify_event_cb), d);
+ 	g_signal_connect (video_widget, "button-press-event",
+ 			G_CALLBACK (button_notify_event_cb), d);
+ 
+-- 
+2.25.1
+

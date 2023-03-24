@@ -1,0 +1,41 @@
+From a638f83022c1a031824ea2ea0ad80064a764504a Mon Sep 17 00:00:00 2001
+From: George Kiagiadakis <george.kiagiadakis@collabora.com>
+Date: Mon, 13 Dec 2021 12:14:12 +0200
+Subject: [PATCH 2/7] touch-player: cleanup the makefile
+
+We don't need all these dependencies anymore
+---
+ Makefile.sdk | 17 -----------------
+ 1 file changed, 17 deletions(-)
+
+diff --git a/Makefile.sdk b/Makefile.sdk
+index 3eb6d4c..27f2557 100644
+--- a/Makefile.sdk
++++ b/Makefile.sdk
+@@ -18,23 +18,6 @@ LDFLAGS_ADDONS += $(shell pkg-config --libs gtk+-3.0)
+ CFLAGS_ADDONS += $(shell pkg-config --cflags gstreamer-1.0)
+ LDFLAGS_ADDONS += $(shell pkg-config --libs gstreamer-1.0)
+ 
+-# gstreamer video
+-CFLAGS_ADDONS += $(shell pkg-config --cflags gstreamer-video-1.0)
+-LDFLAGS_ADDONS += $(shell pkg-config --libs gstreamer-video-1.0)
+-
+-# gstreamer wayland
+-CFLAGS_ADDONS += $(shell pkg-config --cflags gstreamer-wayland-1.0)
+-LDFLAGS_ADDONS += $(shell pkg-config --libs gstreamer-wayland-1.0)
+-
+-# gstreamer plugins base
+-CFLAGS_ADDONS += $(shell pkg-config --cflags gstreamer-plugins-base-1.0)
+-LDFLAGS_ADDONS += $(shell pkg-config --libs gstreamer-plugins-base-1.0)
+-
+-# glib
+-CFLAGS_ADDONS += $(shell pkg-config --cflags glib-2.0)
+-LDFLAGS_ADDONS += $(shell pkg-config --libs glib-2.0)
+-
+-
+ CFLAGS_ADDONS += -DHAVE_GST
+ LDFLAGS_ADDONS += -lpthread
+ 
+-- 
+2.25.1
+

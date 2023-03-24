@@ -1,0 +1,197 @@
+From 1b69798661d39d5bea14479a4a9b963cbc5f6ef4 Mon Sep 17 00:00:00 2001
+From: Christophe Priouzeau <christophe.priouzeau@foss.st.com>
+Date: Thu, 30 Mar 2023 10:43:12 +0200
+Subject: [PATCH 7/7] TOUCH EVENT: add touch event
+
+Signed-off-by: Christophe Priouzeau <christophe.priouzeau@foss.st.com>
+---
+ main.c | 90 ++++++++++++++++++++++++++++++++---
+ 1 file changed, 84 insertions(+), 6 deletions(-)
+
+diff --git a/main.c b/main.c
+index b262fb7..f3c7444 100644
+--- a/main.c
++++ b/main.c
+@@ -16,6 +16,9 @@
+ static gchar *graph = NULL;
+ static gchar *shader_file = NULL;
+ static gboolean nofullscreen = FALSE;
++static gint window_width = 480;
++static gint window_height = 272;
++static guint32 last_touch_tap = 0;
+ 
+ static GOptionEntry entries[] = {
+ 	{"nofullscreen", 'F', 0, G_OPTION_ARG_NONE, &nofullscreen,
+@@ -56,6 +59,7 @@ msg_state_changed (GstBus * bus, GstMessage * message, gpointer user_data)
+ {
+ 	const GstStructure *s;
+ 	DemoApp *d = user_data;
++	(void)bus;
+ 
+ 	s = gst_message_get_structure (message);
+ 
+@@ -123,21 +127,71 @@ gstreamer_bus_callback (GstBus * bus, GstMessage * message, void *data)
+ 		break;
+ 
+ 	default:
++/*                const GstStructure *s = gst_message_get_structure (message);*/
++/*                gchar *str;*/
++/*                str = gst_structure_to_string (s);*/
++/*                g_print ("BUS %s: %s\n", GST_MESSAGE_TYPE_NAME (message), str);*/
++/*                g_free (str);*/
+ 		/* unhandled message */
+ 		break;
+ 	}
+ 	return TRUE;
+ }
+ 
++
++
++static gboolean
++touch_notify_event_cb (GtkWidget * widget, GdkEventTouch * eventTouch,
++	gpointer data)
++{
++	DemoApp *d = data;
++	(void)widget;
++	guint32 diff;
++	GstState actual_state;
++
++	if (eventTouch->type == GDK_TOUCH_END || eventTouch->type == GDK_TOUCH_CANCEL) {
++		if (last_touch_tap == 0) {
++			last_touch_tap = eventTouch->time;
++			gst_element_get_state(d->pipeline, &actual_state, NULL, -1);
++			if (actual_state == GST_STATE_PAUSED)
++				gst_element_set_state (d->pipeline, GST_STATE_PLAYING);
++			else
++				gst_element_set_state (d->pipeline, GST_STATE_PAUSED);
++		} else {
++			diff = eventTouch->time - last_touch_tap;
++			if (last_touch_tap != 0) {
++				last_touch_tap = eventTouch->time;
++				if (diff < 600) {
++					//g_print("--> DOUBLE TAP\n");
++					gst_element_set_state (d->pipeline, GST_STATE_NULL);
++					g_main_loop_quit (d->loop);
++					exit(1); //force to quit application
++				} else {
++					gst_element_get_state(d->pipeline, &actual_state, NULL, -1);
++					if (actual_state == GST_STATE_PAUSED)
++						gst_element_set_state (d->pipeline, GST_STATE_PLAYING);
++					else
++						gst_element_set_state (d->pipeline, GST_STATE_PAUSED);
++					//g_print("--> SIMPLE TAP\n");
++				}
++				//g_print("--> BEGIN diff = %d\n", diff);
++			}
++		}
++	}
++
++	/* We've handled the event, stop processing */
++	return TRUE;
++}
++
+ static gboolean
+ button_notify_event_cb (GtkWidget * widget, GdkEventButton * eventButton,
+ 	gpointer data)
+ {
+ 	DemoApp *d = data;
++	(void)widget;
+ 
+ 	if (eventButton->type == GDK_BUTTON_PRESS) {
+ 		GstState actual_state;
+-
+ 		gst_element_get_state(d->pipeline, &actual_state, NULL, -1);
+ 		if (actual_state == GST_STATE_PAUSED)
+ 			gst_element_set_state (d->pipeline, GST_STATE_PLAYING);
+@@ -146,11 +200,11 @@ button_notify_event_cb (GtkWidget * widget, GdkEventButton * eventButton,
+ 	} else if (eventButton->type == GDK_2BUTTON_PRESS) {
+ 		g_main_loop_quit (d->loop);
+ 	}
+-
+ 	/* We've handled the event, stop processing */
+ 	return TRUE;
+ }
+ 
++
+ static void
+ build_window (DemoApp * d)
+ {
+@@ -186,9 +240,10 @@ build_window (DemoApp * d)
+ 	g_object_unref(provider);
+ 
+ 	gtk_widget_set_name(d->window_widget, "transparent_bg");
+-
+ 	sink = gst_bin_get_by_name (GST_BIN (d->pipeline), "gtkwsink");
+-	if (!sink && !g_strcmp0 (G_OBJECT_TYPE_NAME (d->pipeline), "GstPlayBin")) {
++	if (!sink &&
++	    (!g_strcmp0 (G_OBJECT_TYPE_NAME (d->pipeline), "GstPlayBin") ||
++	     !g_strcmp0 (G_OBJECT_TYPE_NAME (d->pipeline), "GstPlayBin3"))) {
+ 		g_object_get (d->pipeline, "video-sink", &sink, NULL);
+ 		if (sink && g_strcmp0 (G_OBJECT_TYPE_NAME (sink), "GstGtkWaylandSink") != 0
+ 				&& GST_IS_BIN (sink)) {
+@@ -205,6 +260,8 @@ build_window (DemoApp * d)
+ 	gtk_widget_set_vexpand (video_widget, TRUE);
+ 	g_signal_connect (video_widget, "button-press-event",
+ 			G_CALLBACK (button_notify_event_cb), d);
++	g_signal_connect (video_widget, "touch-event",
++			G_CALLBACK (touch_notify_event_cb), d);
+ 
+ 	// Override the system settings to match other demos more closely
+ 	g_object_set (gtk_settings_get_default (),
+@@ -214,6 +271,8 @@ build_window (DemoApp * d)
+ 
+ 	gtk_container_add(GTK_CONTAINER (d->window_widget), video_widget);
+ 	gtk_widget_show_all (d->window_widget);
++/*        gtk_widget_set_can_focus(video_widget, TRUE);*/
++/*        gtk_widget_grab_focus (video_widget);*/
+ 
+ 	g_object_unref (video_widget);
+ 	gst_object_unref (sink);
+@@ -248,8 +307,26 @@ keyboard_cb (const gchar key_input, gpointer user_data)
+ 		gst_element_get_state(d->pipeline, &actual_state, NULL, -1);
+ 		if (actual_state == GST_STATE_PLAYING)
+ 			gst_element_set_state (d->pipeline, GST_STATE_PAUSED);
+-		else
++		else {
++/*                        switch (actual_state){*/
++/*                        case GST_STATE_VOID_PENDING:*/
++/*                                g_print("keyboard_cb state: GST_STATE_VOID_PENDING\n");*/
++/*                                break;*/
++/*                        case GST_STATE_NULL:*/
++/*                                g_print("keyboard_cb state: GST_STATE_NULL\n");*/
++/*                                break;*/
++/*                        case GST_STATE_READY:*/
++/*                                g_print("keyboard_cb state: GST_STATE_READY\n");*/
++/*                                break;*/
++/*                        case GST_STATE_PAUSED:*/
++/*                                g_print("keyboard_cb state: GST_STATE_PAUSED\n");*/
++/*                                break;*/
++/*                        case GST_STATE_PLAYING:*/
++/*                                g_print("keyboard_cb state: GST_STATE_PLAYING\n");*/
++/*                                break;*/
++/*                        }*/
+ 			gst_element_set_state (d->pipeline, GST_STATE_PLAYING);
++		}
+ 		break;
+ 	}
+ 	case 'q':
+@@ -265,6 +342,7 @@ io_callback (GIOChannel * io, GIOCondition condition, gpointer data)
+ {
+ 	gchar in;
+ 	GError *error = NULL;
++	(void)condition;
+ 
+ 	switch (g_io_channel_read_chars (io, &in, 1, NULL, &error)) {
+ 	case G_IO_STATUS_NORMAL:
+@@ -327,7 +405,7 @@ main (int argc, char **argv)
+ 		d->argv = argv;
+ 		d->current_uri = 1;
+ 
+-		d->pipeline = gst_parse_launch ("playbin video-sink=gtkwaylandsink", &error);
++		d->pipeline = gst_parse_launch ("playbin3 video-sink='gtkwaylandsink name=gtkwsink' ", &error);
+ 		if (error)
+ 			goto out;
+ 
+-- 
+2.25.1
+

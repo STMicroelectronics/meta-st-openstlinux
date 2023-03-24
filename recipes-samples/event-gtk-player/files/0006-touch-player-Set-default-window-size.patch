@@ -1,0 +1,25 @@
+From 763d938e19cb27979e2d11c7123e6de1ad31321b Mon Sep 17 00:00:00 2001
+From: Robert Mader <robert.mader@collabora.com>
+Date: Thu, 16 Dec 2021 18:23:10 +0100
+Subject: [PATCH 6/7] touch-player: Set default window size
+
+Otherwise the window is unreasonable small, especially on desktops.
+---
+ main.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/main.c b/main.c
+index 173a8a9..b262fb7 100644
+--- a/main.c
++++ b/main.c
+@@ -161,6 +161,7 @@ build_window (DemoApp * d)
+ 	/* windows */
+ 	d->window_widget = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+ 	gtk_window_set_title (GTK_WINDOW(d->window_widget), "GStreamer Wayland GTK ");
++	gtk_window_set_default_size (GTK_WINDOW (d->window_widget), 320, 240);
+ 	g_signal_connect (d->window_widget, "destroy",
+ 			G_CALLBACK (gtk_widget_destroyed), &d->window_widget);
+ 	g_signal_connect_swapped (d->window_widget, "destroy",
+-- 
+2.25.1
+

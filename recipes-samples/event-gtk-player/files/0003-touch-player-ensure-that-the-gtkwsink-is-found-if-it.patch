@@ -1,0 +1,36 @@
+From 3810b08ba588f0790bbf0aae764d36097ae33668 Mon Sep 17 00:00:00 2001
+From: George Kiagiadakis <george.kiagiadakis@collabora.com>
+Date: Thu, 16 Dec 2021 12:59:27 +0200
+Subject: [PATCH 3/7] touch-player: ensure that the gtkwsink is found if it is
+ a child of playbin's video-sink
+
+This allows starting with a --graph command line option that includes
+playbin video-sink="foo ! bar ! gtkwaylandsink name=gtkwsink"
+---
+ main.c | 9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
+
+diff --git a/main.c b/main.c
+index 0f254e0..91b89d8 100644
+--- a/main.c
++++ b/main.c
+@@ -263,8 +263,15 @@ build_window (DemoApp * d)
+ 	gtk_widget_set_name(d->window_widget, "transparent_bg");
+ 
+ 	sink = gst_bin_get_by_name (GST_BIN (d->pipeline), "gtkwsink");
+-	if (!sink && !g_strcmp0 (G_OBJECT_TYPE_NAME (d->pipeline), "GstPlayBin"))
++	if (!sink && !g_strcmp0 (G_OBJECT_TYPE_NAME (d->pipeline), "GstPlayBin")) {
+ 		g_object_get (d->pipeline, "video-sink", &sink, NULL);
++		if (sink && g_strcmp0 (G_OBJECT_TYPE_NAME (sink), "GstGtkWaylandSink") != 0
++				&& GST_IS_BIN (sink)) {
++			GstBin *sinkbin = GST_BIN (sink);
++			sink = gst_bin_get_by_name (sinkbin, "gtkwsink");
++			gst_object_unref (sinkbin);
++		}
++	}
+ 	g_assert (sink);
+ 	g_assert (!g_strcmp0 (G_OBJECT_TYPE_NAME (sink), "GstGtkWaylandSink"));
+ 
+-- 
+2.25.1
+
