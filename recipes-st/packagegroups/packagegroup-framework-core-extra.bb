@@ -22,6 +22,7 @@ RDEPENDS:packagegroup-framework-core-extra = "\
 SUMMARY:packagegroup-framework-core-extra-display = "Framework core extra components for display"
 RDEPENDS:packagegroup-framework-core-extra-display = "\
     ${@bb.utils.contains('DISTRO_FEATURES', 'wayland', 'weston', '', d)}                        \
+    ${@bb.utils.contains('DISTRO_FEATURES', 'wayland', 'wayland-utils', '', d)}                 \
     ${@bb.utils.contains('DISTRO_FEATURES', 'wayland', 'weston-init', '', d)}                   \
     ${@bb.utils.contains('DISTRO_FEATURES', 'wayland', 'weston-examples', '', d)}               \
     ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'tzdata', '', d)}                        \
