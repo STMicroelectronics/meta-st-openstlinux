@@ -1,0 +1,38 @@
+From 02370e466c7cda9347c9a6d65a160fdd41e91cbe Mon Sep 17 00:00:00 2001
+From: Vincent ABRIOU <vincent.abriou@st.com>
+Date: Thu, 13 Apr 2023 18:28:55 +0200
+Subject: [PATCH 10/10] fix gdb-cross-arm compilation with YOCTO build system
+
+Issue meet while compiling:
+linux-tdep.c:(.text+0x13ac): undefined reference to
+`gcore_elf_build_thread_register_notes(gdbarch*, thread_info*, gdb_signal,
+ bfd*, std::unique_ptr<char, gdb::xfree_deleter<char> >*, int*)'
+linux-tdep.c:(.text+0x49d7): undefined reference to
+`gcore_elf_make_tdesc_note(bfd*, std::unique_ptr<char,
+gdb::xfree_deleter<char> >*, int*)'
+
+
+Patch inspired fro this discussion.
+https://lists.openembedded.org/g/openembedded-core/message/177970
+
+Signed-off-by: Vincent ABRIOU <vincent.abriou@st.com>
+---
+ gdb/configure | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/gdb/configure b/gdb/configure
+index bdc84be9c01..2179743d3ab 100755
+--- a/gdb/configure
++++ b/gdb/configure
+@@ -28561,7 +28561,7 @@ WIN32LIBS="$WIN32LIBS $WIN32APILIBS"
+   # points somewhere with bfd, with -I/foo/lib and -L/foo/lib.  We
+   # always want our bfd.
+   CFLAGS="-I${srcdir}/../include -I../bfd -I${srcdir}/../bfd $CFLAGS"
+-  LDFLAGS="-L../bfd -L../libiberty"
++  LDFLAGS="-L../bfd -L../libiberty $LDFLAGS"
+   intl=`echo $LIBINTL | sed 's,${top_builddir}/,,g'`
+   LIBS="-lbfd -liberty $intl $LIBS"
+   CC="./libtool --quiet --mode=link $CC"
+-- 
+2.25.1
+
