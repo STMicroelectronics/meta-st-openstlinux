@@ -65,7 +65,7 @@ DISTRO_FEATURES:append = " x11 "
 DISTRO_FEATURES:append = " kde "
 
 # add support of systemd
-DISTRO_FEATURES:append = " systemd polkit "
+DISTRO_FEATURES:append = " systemd "
 
 # add support of efi
 DISTRO_FEATURES:append = " efi "

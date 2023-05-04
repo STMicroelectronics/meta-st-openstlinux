@@ -4,6 +4,8 @@ PACKAGECONFIG:append = " \
     iptc \
     "
 
+PACKAGECONFIG:append = "${@bb.utils.contains('DISTRO_FEATURES', 'polkit', '', 'polkit_hostnamed_fallback', d)} "
+
 WATCHDOG_TIMEOUT = "32"
 
 NTP_SERVERS ??= ""
