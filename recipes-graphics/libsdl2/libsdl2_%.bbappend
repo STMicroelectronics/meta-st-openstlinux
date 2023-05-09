@@ -1,7 +1,5 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-SRC_URI += "file://0001-Correction-of-bad-dlopen-for-libEGL.patch"
-
 PACKAGECONFIG_GL = ""
 PACKAGECONFIG ??= " \
     ${PACKAGECONFIG_GL} \
