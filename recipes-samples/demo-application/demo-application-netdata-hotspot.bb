@@ -16,6 +16,8 @@ SRC_URI = " \
     file://hostapd \
     file://wifi_start.sh \
     file://wifi_stop.sh \
+    file://get_wlan_name.sh \
+    file://get_ethernet_ip.sh \
     "
 
 do_configure[noexec] = "1"

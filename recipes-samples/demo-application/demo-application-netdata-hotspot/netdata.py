@@ -21,6 +21,8 @@ import threading
 
 SIMULATE = 0
 
+ETHERNET_PREFIX="end"
+
 # -------------------------------------------------------------------
 # -------------------------------------------------------------------
 SUBMODULE_PATH = "application/netdata"
@@ -39,6 +41,7 @@ if SIMULATE > 0:
 
 # -------------------------------------------------------------------
 # -------------------------------------------------------------------
+ICON_SIZE_1080 = 260
 ICON_SIZE_720 = 160
 ICON_SIZE_480 = 160
 ICON_SIZE_272 = 48
@@ -60,6 +63,12 @@ def get_sizes_from_screen_size(width, height):
     elif minsize == 272:
         icon_size = ICON_SIZE_272
         font_size = 10
+    elif minsize == 600:
+        icon_size = ICON_SIZE_720
+        font_size = 15
+    elif minsize >= 1080:
+        icon_size = ICON_SIZE_1080
+        font_size = 32
     return [icon_size, font_size]
 
 def get_icon_size_from_screen_size(width, height):
@@ -70,6 +79,27 @@ def get_icon_size_from_screen_size(width, height):
         return ICON_SIZE_480
     elif minsize == 272:
         return ICON_SIZE_272
+    elif minsize == 600:
+        return ICON_SIZE_1080
+    elif minsize >= 1080:
+        return ICON_SIZE_1080
+
+# -------------------------------------------------------------------
+# -------------------------------------------------------------------
+# Get the wlan interface name
+def get_wlan_interface_name():
+    cmd = ["%s/application/netdata/bin/get_wlan_name.sh" % DEMO_PATH]
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    res = proc.stdout.read().decode('utf-8')
+    return res
+# -------------------------------------------------------------------
+# -------------------------------------------------------------------
+# Get list of ip address
+def get_ip_address_list():
+    cmd = ["%s/application/netdata/bin/get_ethernet_ip.sh" % DEMO_PATH]
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    res = proc.stdout.read().decode('utf-8')
+    return res
 
 # -------------------------------------------------------------------
 # -------------------------------------------------------------------
@@ -164,8 +194,8 @@ class NetdataWebserver(Gtk.Dialog):
         self.label_eth = Gtk.Label()
         self.label_eth.set_markup("<span font='%d' color='#FFFFFFFF'>netdata over Ethernet:</span>" % self.font_size)
         self.label_eth.set_xalign (0.0)
-        self.label_ip_eth0 = Gtk.Label()
-        #self.label_ip_eth0.set_xalign (0.0)
+        self.label_ip_ethernet = Gtk.Label()
+        #self.label_ip_ethernet.set_xalign (0.0)
         self.label_wifi = Gtk.Label()
         self.label_wifi.set_markup("<span font='%d' color='#FFFFFFFF'>netdata over Wifi:</span>" % self.font_size)
         self.label_wifi.set_xalign (0.0)
@@ -183,14 +213,14 @@ class NetdataWebserver(Gtk.Dialog):
         self.info_grid.set_row_spacing(2)
 
         self.info_grid.attach(self.label_eth, 0, 1, 1, 1)
-        self.info_grid.attach(self.label_ip_eth0, 1, 1, 1, 1)
+        self.info_grid.attach(self.label_ip_ethernet, 1, 1, 1, 1)
 
         if self.is_wifi_available():
             print ("wlan0 is available")
             self.hotspot_switch = Gtk.Switch()
 
             # set wlan switch state on first execution
-            ip_wlan0 = get_ip_address('wlan0')
+            ip_wlan0 = get_ip_address(get_wlan_interface_name())
             if ip_wlan0 == WIFI_HOTSPOT_IP:
                 self.hotspot_switch.set_active(True)
             else:
@@ -213,7 +243,8 @@ class NetdataWebserver(Gtk.Dialog):
         self.show_all()
 
     def is_wifi_available(self):
-        if WIFI_LINUX_INTERFACE_NAME in open('/proc/net/dev').read():
+        interface_name = get_wlan_interface_name()
+        if len(interface_name) > 0:
             return True
         return False
 
@@ -256,20 +287,28 @@ class NetdataWebserver(Gtk.Dialog):
     def refresh_network_page(self):
         print("[Refresh network page]\n")
 
-        ip_eth0 = get_ip_address('eth0')
-        if ip_eth0 != "NA":
-            eth0_status = "<span font='%d' color='#FFFFFFFF'>  http://%s:19999</span>" % (self.font_size, ip_eth0)
+        ip_list=get_ip_address_list().split()
+        if len(ip_list) > 0:
+            ip_ethernet = ip_list[0]
+            ethernet_status = "<span font='%d' color='#FFFFFFFF'>  %s</span>" % (self.font_size, ip_ethernet)
         else:
-            eth0_status = "<span font='%d' color='#FF0000FF'>  No Ethernet connection</span>"  % self.font_size
-        self.label_ip_eth0.set_markup(eth0_status)
+            ip_ethernet = get_ip_address('{}0'.format(ETHERNET_PREFIX))
+            if ip_ethernet == "NA":
+                ip_ethernet = get_ip_address('{}1'.format(ETHERNET_PREFIX))
+            if ip_ethernet != "NA":
+                ethernet_status = "<span font='%d' color='#FFFFFFFF'>  http://%s:19999</span>" % (self.font_size, ip_ethernet)
+            else:
+                ethernet_status = "<span font='%d' color='#FF0000FF'>  No Ethernet connection</span>"  % self.font_size
+        self.label_ip_ethernet.set_markup(ethernet_status)
 
         if self.is_wifi_available():
             print ("wlan0 is available")
-            ip_wlan0 = get_ip_address('wlan0')
+            ip_wlan0 = get_ip_address(get_wlan_interface_name())
+
             print("Ip address of Wlan0 are: ", ip_wlan0)
             if ip_wlan0 == "NA":
                 sleep(1)
-                ip_wlan0 = get_ip_address('wlan0')
+                ip_wlan0 = get_ip_address(get_wlan_interface_name())
                 print("Ip address of Wlan0 are: ", ip_wlan0)
             if ip_wlan0 == "NA":
                 hotspot_status = "<span font='%d' color='#FF0000FF'>  Wifi not started</span>" % self.font_size

@@ -30,10 +30,12 @@ SUBMODULE_PATH = "application/bluetooth"
 DEMO_PATH = "/usr/local/demo"
 # -------------------------------------------------------------------
 # -------------------------------------------------------------------
+ICON_SIZE_1080 = 260
 ICON_SIZE_720 = 180
 ICON_SIZE_480 = 128
 ICON_SIZE_272 = 48
 
+TREELIST_HEIGHT_1080 = 500
 TREELIST_HEIGHT_720 = 400
 TREELIST_HEIGHT_480 = 160
 TREELIST_HEIGHT_272 = 68
@@ -65,6 +67,16 @@ def get_sizes_from_screen_size(width, height):
         font_size = 15
         treelist_height = TREELIST_HEIGHT_272
         button_height = 25
+    elif minsize == 600:
+        icon_size = ICON_SIZE_720
+        font_size = 15
+        treelist_height = TREELIST_HEIGHT_720
+        button_height = 60
+    elif minsize >= 1080:
+        icon_size = ICON_SIZE_1080
+        font_size = 32
+        treelist_height = TREELIST_HEIGHT_1080
+        button_height = 80
     return [icon_size, font_size, treelist_height, button_height]
 
 def get_treelist_height_from_screen_size(width, height):
@@ -75,6 +87,10 @@ def get_treelist_height_from_screen_size(width, height):
         return TREELIST_HEIGHT_480
     elif minsize == 272:
         return TREELIST_HEIGHT_272
+    elif minsize == 600:
+        return ICON_SIZE_1080
+    elif minsize >= 1080:
+        return ICON_SIZE_1080
 
 # -------------------------------------------------------------------
 # -------------------------------------------------------------------
