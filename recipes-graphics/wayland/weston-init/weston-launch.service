@@ -35,7 +35,7 @@ Environment="WESTON_USER=weston"
 Environment="WL_EGL_GBM_FENCE=0"
 #ExecStart=/usr/bin/weston-launch -- --modules=systemd-notify.so --log=/home/weston/weston.log $OPTARGS
 ExecStart=/usr/bin/weston-start --modules=systemd-notify.so --log=/home/weston/weston.log $OPTARGS
-ExecStop=/usr/bin/killall weston-launch
+ExecStop=/usr/bin/killall weston
 
 # Optional watchdog setup
 #TimeoutStartSec=60

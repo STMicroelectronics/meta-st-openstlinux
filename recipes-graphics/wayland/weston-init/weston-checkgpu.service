@@ -1,7 +1,6 @@
 [Unit]
 Description=Check if the gpu are present and set the correct weston configuration
-Before=weston-launch.service
-After=psplash-drm-wait.service
+Before=weston-graphical-session.service
 
 [Service]
 ExecStart=-/sbin/check-gpu

@@ -5,10 +5,6 @@ weston_args=$*
 if [ -z "$WESTON_USER" ]; then
     WESTON_USER=weston
 fi
-if [ "$USER" != "$WESTON_USER" ]; then
-    weston_args_user="-u $WESTON_USER"
-fi
-
 
 # for associated service: pulseaudio
 if [ ! -d "/var/run/pulse" ]; then
@@ -37,5 +33,9 @@ if [ "$USER" == "$WESTON_USER" ]; then
         done
     fi
 fi
-exec /usr/bin/weston-launch $weston_args_user -- $weston_args
+if [ -f /home/weston/weston.log ]; then
+   mv /home/weston/weston.log /home/weston/weston-previous.log
+fi
+
+exec /usr/bin/weston $weston_args
 

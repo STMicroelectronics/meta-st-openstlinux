@@ -1,0 +1,55 @@
+[Unit]
+Description=Weston graphical session
+
+# Make sure we are started after logins are permitted.
+Requires=systemd-user-sessions.service
+After=systemd-user-sessions.service
+
+# if you want you can make it part of the graphical session
+#Before=graphical.target
+
+# not necessary but just in case
+#ConditionPathExists=/dev/tty7
+
+# D-Bus is necessary for contacting logind. Logind is required.
+Wants=dbus.socket
+After=dbus.socket
+
+[Service]
+Type=simple
+Environment=XDG_SESSION_TYPE=wayland
+ExecStartPre=/usr/bin/systemd-graphical-weston-session.sh start
+ExecStart=/bin/systemctl --wait --user start weston.service
+ExecStop=/usr/bin/systemd-graphical-weston-session.sh stop
+RemainAfterExit=yes
+
+# The user to run the session as. Pick one!
+User=weston
+Group=weston
+
+# Make sure the working directory is the users home directory
+WorkingDirectory=/home/weston
+
+# Set up a full user session for the user, required by Weston.
+PAMName=weston-autologin
+
+# A virtual terminal is needed.
+TTYPath=/dev/tty7
+TTYReset=yes
+TTYVHangup=yes
+TTYVTDisallocate=yes
+
+# Fail to start if not controlling the tty.
+StandardInput=tty-fail
+
+# Defaults to journal, in case it doesn't adjust it accordingly
+#StandardOutput=journal
+StandardError=journal
+
+# Log this user with utmp, letting it show up with commands 'w' and 'who'.
+UtmpIdentifier=tty7
+UtmpMode=user
+
+[Install]
+Alias=display-manager.service
+WantedBy=multi-user.target

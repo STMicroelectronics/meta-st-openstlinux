@@ -1,0 +1,7 @@
+[Unit]
+Description=Weston, a Wayland compositor
+Documentation=man:weston(1) man:weston.ini(5)
+Documentation=https://wayland.freedesktop.org/
+
+[Socket]
+ListenStream=%t/wayland-0

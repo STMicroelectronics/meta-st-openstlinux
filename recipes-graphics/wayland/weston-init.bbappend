@@ -6,10 +6,9 @@ SRC_URI += " \
             file://weston.ini \
             file://utilities-terminal.png \
             file://ST_1366x768.png \
-            file://ST13028_Linux_picto_11_1366x768.png \
+            file://OpenSTLinux_background_1024x600.png \
             file://ST13345_Products_light_blue_24x24.png \
             file://space.png \
-            file://weston-launch.service \
             file://weston-checkgpu.service \
             file://weston_profile.sh \
             file://README-CHECK-GPU \
@@ -18,6 +17,11 @@ SRC_URI += " \
             file://73-pulseaudio-hdmi.rules \
             file://default_pulseaudio_profile \
             file://pulseaudio_hdmi_switch.sh \
+            \
+            file://weston-graphical-session.service \
+            file://systemd-graphical-weston-session.sh \
+            file://weston.service \
+            file://weston.socket \
             "
 SRC_URI:append:stm32mpcommon = " file://check-gpu "
 
@@ -29,6 +33,7 @@ FILES:${PN} += " ${datadir}/weston \
          ${sysconfdir}/etc/profile.d \
          ${sysconfdir}/xdg/weston/weston.ini \
          /home/root \
+         ${systemd_user_unitdir} \
          "
 
 CONFFILES:${PN} += "${sysconfdir}/xdg/weston/weston.ini"
@@ -43,7 +48,7 @@ do_install:append() {
     install -m 0644 ${WORKDIR}/utilities-terminal.png ${D}${datadir}/weston/icon/utilities-terminal.png
     install -m 0644 ${WORKDIR}/ST13345_Products_light_blue_24x24.png ${D}${datadir}/weston/icon/ST13345_Products_light_blue_24x24.png
     install -m 0644 ${WORKDIR}/ST_1366x768.png ${D}${datadir}/weston/backgrounds/ST_1366x768.png
-    install -m 0644 ${WORKDIR}/ST13028_Linux_picto_11_1366x768.png ${D}${datadir}/weston/backgrounds/ST13028_Linux_picto_11_1366x768.png
+    install -m 0644 ${WORKDIR}/OpenSTLinux_background_1024x600.png ${D}${datadir}/weston/backgrounds/OpenSTLinux_background_1024x600.png
 
     install -m 0644 ${WORKDIR}/space.png ${D}${datadir}/weston/icon/
 
@@ -52,14 +57,19 @@ do_install:append() {
     install -d ${D}/lib/systemd/system/
     if [ -e ${D}/lib/systemd/system/weston.service ]; then
         rm ${D}/lib/systemd/system/weston.service ${D}/lib/systemd/system/weston.socket
-        install -D -p -m0644 ${WORKDIR}/weston-launch.service ${D}${systemd_system_unitdir}/weston-launch.service
+        install -D -p -m0644 ${WORKDIR}/weston-graphical-session.service ${D}${systemd_system_unitdir}/weston-graphical-session.service
         sed -i -e s:/etc:${sysconfdir}:g \
             -e s:/usr/bin:${bindir}:g \
             -e s:/var:${localstatedir}:g \
-            ${D}${systemd_unitdir}/system/weston-launch.service
+            ${D}${systemd_unitdir}/system/weston-graphical-session.service
         install -d ${D}${sysconfdir}/systemd/system/multi-user.target.wants/
+        install -D -m 0755 ${WORKDIR}/systemd-graphical-weston-session.sh ${D}${bindir}
         #ln -s /lib/systemd/system/weston-launch.service ${D}${sysconfdir}/systemd/system/multi-user.target.wants/display-manager.service
         install -D -p -m0644 ${WORKDIR}/weston-checkgpu.service ${D}${systemd_system_unitdir}/
+
+        install -d ${D}${systemd_user_unitdir}
+        install -D -p -m0644 ${WORKDIR}/weston.service ${D}${systemd_user_unitdir}
+        install -D -p -m0644 ${WORKDIR}/weston.socket ${D}${systemd_user_unitdir}
     fi
 
     install -d ${D}${sysconfdir}/profile.d
@@ -104,7 +114,7 @@ do_install:append:stm32mpcommon() {
 }
 
 SYSTEMD_SERVICE:${PN}:remove = "weston.service weston.socket"
-SYSTEMD_SERVICE:${PN} += "weston-launch.service weston-checkgpu.service"
+SYSTEMD_SERVICE:${PN} += "weston-graphical-session.service weston-checkgpu.service"
 #inherit useradd
-USERADD_PARAM:${PN} = "--home /home/weston --shell /bin/sh --user-group -G video,input,tty,audio,weston-launch,dialout weston"
-GROUPADD_PARAM:${PN} = "-r weston-launch; -r wayland"
+USERADD_PARAM:${PN} = "--home /home/weston --shell /bin/sh --user-group -G video,input,tty,audio,dialout weston"
+GROUPADD_PARAM:${PN} = "-r wayland"
