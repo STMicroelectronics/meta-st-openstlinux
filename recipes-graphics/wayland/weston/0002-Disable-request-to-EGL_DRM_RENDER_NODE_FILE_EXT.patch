@@ -1,7 +1,7 @@
-From 290af727df7df8d54f665824daf2def0a45dabf7 Mon Sep 17 00:00:00 2001
+From 953cbf79c877b4bb4af7c54cfaa779da346513f5 Mon Sep 17 00:00:00 2001
 From: Christophe Priouzeau <christophe.priouzeau@foss.st.com>
-Date: Thu, 25 Aug 2022 09:34:23 +0200
-Subject: [PATCH 4/4] Disable request to EGL_DRM_RENDER_NODE_FILE_EXT
+Date: Fri, 24 Mar 2023 11:58:06 +0100
+Subject: [PATCH 2/4] Disable request to EGL_DRM_RENDER_NODE_FILE_EXT
 
 Depending on GPU userland implementationn the reqest of EGL_DRM_RENDER_NODE_FILE_EXT
 return /dev/dri/renderD128 but this interface are not always present.
@@ -12,11 +12,11 @@ Signed-off-by: Christophe Priouzeau <christophe.priouzeau@foss.st.com>
  1 file changed, 3 insertions(+), 3 deletions(-)
 
 diff --git a/libweston/renderer-gl/egl-glue.c b/libweston/renderer-gl/egl-glue.c
-index 013172a..46063c5 100644
+index 8a0381c..90f499f 100644
 --- a/libweston/renderer-gl/egl-glue.c
 +++ b/libweston/renderer-gl/egl-glue.c
-@@ -480,9 +480,9 @@ gl_renderer_set_egl_device(struct gl_renderer *gr)
- 	gl_renderer_log_extensions("EGL device extensions", extensions);
+@@ -481,9 +481,9 @@ gl_renderer_set_egl_device(struct gl_renderer *gr)
+ 	gl_renderer_log_extensions(gr, "EGL device extensions", extensions);
  
  	/* Try to query the render node using EGL_DRM_RENDER_NODE_FILE_EXT */
 -	if (weston_check_egl_extension(extensions, "EGL_EXT_device_drm_render_node"))

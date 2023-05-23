@@ -1,0 +1,78 @@
+From 0e3325c8409aa73e9a4168caa4b41f26155770ca Mon Sep 17 00:00:00 2001
+From: Pierre-Yves MORDRET <pierre-yves.mordret@foss.st.com>
+Date: Tue, 9 May 2023 15:06:25 +0200
+Subject: [PATCH 4/4] Revert "compositor: set transform.opaque for surfaces
+ without alpha channel"
+
+This reverts commit e2426960d479a84ad66ee865404a925d66d9a55b.
+---
+ libweston/compositor.c | 46 +++++++++++++++++-------------------------
+ 1 file changed, 18 insertions(+), 28 deletions(-)
+
+diff --git a/libweston/compositor.c b/libweston/compositor.c
+index ff029f7..867cb57 100644
+--- a/libweston/compositor.c
++++ b/libweston/compositor.c
+@@ -1525,20 +1525,15 @@ weston_view_update_transform_disable(struct weston_view *view)
+ 				  view->geometry.x, view->geometry.y);
+ 
+ 	if (view->alpha == 1.0) {
+-		if (view->surface->is_opaque) {
+-			pixman_region32_copy(&view->transform.opaque,
+-					     &view->transform.boundingbox);
+-		} else {
+-			pixman_region32_copy(&view->transform.opaque,
+-					     &view->surface->opaque);
+-			if (view->geometry.scissor_enabled)
+-				pixman_region32_intersect(&view->transform.opaque,
+-							  &view->transform.opaque,
+-							  &view->geometry.scissor);
+-			pixman_region32_translate(&view->transform.opaque,
+-						  view->geometry.x,
+-						  view->geometry.y);
+-		}
++		pixman_region32_copy(&view->transform.opaque,
++				     &view->surface->opaque);
++		if (view->geometry.scissor_enabled)
++			pixman_region32_intersect(&view->transform.opaque,
++						  &view->transform.opaque,
++						  &view->geometry.scissor);
++		pixman_region32_translate(&view->transform.opaque,
++					  view->geometry.x,
++					  view->geometry.y);
+ 	}
+ }
+ 
+@@ -1585,20 +1580,15 @@ weston_view_update_transform_enable(struct weston_view *view)
+ 
+ 	if (view->alpha == 1.0 &&
+ 	    matrix->type == WESTON_MATRIX_TRANSFORM_TRANSLATE) {
+-		if (view->surface->is_opaque) {
+-			pixman_region32_copy(&view->transform.opaque,
+-					     &view->transform.boundingbox);
+-		} else {
+-			pixman_region32_copy(&view->transform.opaque,
+-					     &view->surface->opaque);
+-			if (view->geometry.scissor_enabled)
+-				pixman_region32_intersect(&view->transform.opaque,
+-							  &view->transform.opaque,
+-							  &view->geometry.scissor);
+-			pixman_region32_translate(&view->transform.opaque,
+-						  matrix->d[12],
+-						  matrix->d[13]);
+-		}
++		pixman_region32_copy(&view->transform.opaque,
++				     &view->surface->opaque);
++		if (view->geometry.scissor_enabled)
++			pixman_region32_intersect(&view->transform.opaque,
++						  &view->transform.opaque,
++						  &view->geometry.scissor);
++		pixman_region32_translate(&view->transform.opaque,
++					  matrix->d[12],
++					  matrix->d[13]);
+ 	}
+ 
+ 	return 0;
+-- 
+2.25.1
+

@@ -1,0 +1,60 @@
+From 454b7a0237be35a9b2d76b5ad5611c0b0ea7a802 Mon Sep 17 00:00:00 2001
+From: Yannick Fertre <yannick.fertre@foss.st.com>
+Date: Wed, 10 May 2023 17:26:33 +0200
+Subject: [PATCH 1/4] Clone mode not supported
+
+Display controller doesn't support several outputs.
+During a head changed, get & close the weston head which is enabled.
+Then an output can enabled (only one even if several output have
+connected).
+
+Signed-off-by: Yannick Fertre <yannick.fertre@foss.st.com>
+---
+ compositor/main.c | 23 +++++++++++++++--------
+ 1 file changed, 15 insertions(+), 8 deletions(-)
+
+diff --git a/compositor/main.c b/compositor/main.c
+index 15f9d4e..3c239ba 100644
+--- a/compositor/main.c
++++ b/compositor/main.c
+@@ -2570,22 +2570,29 @@ drm_heads_changed(struct wl_listener *listener, void *arg)
+ 	/* We need to collect all cloned heads into outputs before enabling the
+ 	 * output.
+ 	 */
++	while ((head = weston_compositor_iterate_heads(compositor, head))) {
++		enabled = weston_head_is_enabled(head);
++
++		if (enabled) {
++			drm_head_disable(head);
++			weston_head_reset_device_changed(head);
++		}
++	}
++
+ 	while ((head = weston_compositor_iterate_heads(compositor, head))) {
+ 		connected = weston_head_is_connected(head);
+ 		enabled = weston_head_is_enabled(head);
+-		changed = weston_head_is_device_changed(head);
+ 		forced = drm_head_should_force_enable(wet, head);
+ 
+ 		if ((connected || forced) && !enabled) {
++			/*
++			 * Prepare & enable only the first head connected.
++			 * CRTC doesn't support several output.
++			 */
+ 			drm_head_prepare_enable(wet, head);
+-		} else if (!(connected || forced) && enabled) {
+-			drm_head_disable(head);
+-		} else if (enabled && changed) {
+-			weston_log("Detected a monitor change on head '%s', "
+-				   "not bothering to do anything about it.\n",
+-				   weston_head_get_name(head));
++			weston_head_reset_device_changed(head);
++			break;
+ 		}
+-		weston_head_reset_device_changed(head);
+ 	}
+ 
+ 	if (drm_process_layoutputs(wet) < 0)
+-- 
+2.25.1
+

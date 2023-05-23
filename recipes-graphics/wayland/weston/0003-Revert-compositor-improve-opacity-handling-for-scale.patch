@@ -1,0 +1,46 @@
+From 3ca655e561099b11c70961c5132bbab8fa3f0c63 Mon Sep 17 00:00:00 2001
+From: Pierre-Yves MORDRET <pierre-yves.mordret@foss.st.com>
+Date: Tue, 9 May 2023 15:06:09 +0200
+Subject: [PATCH 3/4] Revert "compositor: improve opacity handling for scaled
+ surfaces"
+
+This reverts commit 81912dc2a69f24c8fbcb43a2bc1f7860f3085c01.
+---
+ libweston/compositor.c | 13 +------------
+ 1 file changed, 1 insertion(+), 12 deletions(-)
+
+diff --git a/libweston/compositor.c b/libweston/compositor.c
+index 6cfcba2..ff029f7 100644
+--- a/libweston/compositor.c
++++ b/libweston/compositor.c
+@@ -1581,6 +1581,7 @@ weston_view_update_transform_enable(struct weston_view *view)
+ 	surfbox = pixman_region32_extents(&surfregion);
+ 
+ 	view_compute_bbox(view, surfbox, &view->transform.boundingbox);
++	pixman_region32_fini(&surfregion);
+ 
+ 	if (view->alpha == 1.0 &&
+ 	    matrix->type == WESTON_MATRIX_TRANSFORM_TRANSLATE) {
+@@ -1598,19 +1599,7 @@ weston_view_update_transform_enable(struct weston_view *view)
+ 						  matrix->d[12],
+ 						  matrix->d[13]);
+ 		}
+-	} else if (view->alpha == 1.0 &&
+-		 matrix->type < WESTON_MATRIX_TRANSFORM_ROTATE &&
+-		 pixman_region32_n_rects(&surfregion) == 1 &&
+-		 (pixman_region32_equal(&surfregion, &view->surface->opaque) ||
+-		  view->surface->is_opaque)) {
+-		/* The whole surface is opaque and it is only translated and
+-		 * scaled and after applying the scissor, the result is still
+-		 * a single rectangle. In this case the boundingbox matches the
+-		 * view exactly and can be used as opaque area. */
+-		pixman_region32_copy(&view->transform.opaque,
+-				     &view->transform.boundingbox);
+ 	}
+-	pixman_region32_fini(&surfregion);
+ 
+ 	return 0;
+ }
+-- 
+2.25.1
+
