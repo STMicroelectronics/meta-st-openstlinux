@@ -52,6 +52,6 @@ do_install() {
 }
 
 # for Feature calibration
-SYSTEMD_SERVICE:{PN} = "stm32mp-calibration.service stm32mp-calibration.timer"
+SYSTEMD_SERVICE:${PN} = "stm32mp-calibration.service stm32mp-calibration.timer"
 
 FILES:${PN} += "${systemd_system_unitdir} ${nonarch_base_libdir}"
