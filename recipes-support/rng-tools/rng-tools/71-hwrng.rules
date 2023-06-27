@@ -1,0 +1,1 @@
+SUBSYSTEM=="misc", KERNEL=="hw_random", TAG+="systemd", ENV{SYSTEMD_WANTS}+="hwrng.device"

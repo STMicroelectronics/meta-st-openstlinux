@@ -43,6 +43,7 @@ RDEPENDS:packagegroup-framework-tools-core = "\
     systemtap       \
     gptfdisk        \
     rng-tools       \
+    ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'rng-tools-service', '', d)}    \
     apt-openstlinux \
     bzip2           \
     tar             \
