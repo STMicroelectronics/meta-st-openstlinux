@@ -29,9 +29,8 @@ resize_run() {
                     root_label=`echo $bootparam_root | cut -c7-`
                     bootparam_root="/dev/disk/by-label/$root_label"
                 fi
-
                 if [ -e "$bootparam_root" ]; then
-                    bootparam_root_device=$(busybox readlink /dev/disk/by-partuuid/e91c4e10-16e6-4c0e-bd0e-77becf4a3582 -f)
+                    bootparam_root_device=$(busybox readlink $bootparam_root -f)
                     j=$(echo $bootparam_root_device | sed "s|/dev/mmcblk\([0-1]\)p.*|\1|")
                     for i in 3 4 5 6 7 8 9 10 11 12 13 14 15 16;
                     do
