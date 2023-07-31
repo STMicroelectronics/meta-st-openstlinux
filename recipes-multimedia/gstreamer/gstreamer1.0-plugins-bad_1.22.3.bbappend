@@ -13,7 +13,6 @@ SRC_URI:append = " \
     file://0010-wlvideobufferpool-Add-DRM-Dumb-buffer-support.patch \
     file://0011-wayladnsink-Add-DRM-Dumb-allocator-support.patch \
     file://0012-bad-Update-doc-cache-for-waylandsink-changes.patch \
-    file://0013-gtkwaylandsink-Fix-crash-when-rendering-after-the-wi.patch \
     file://0014-WAYLANDSINK-use-card0a-as-default-drm-device.patch \
     file://0015-waylandsink-Uprank-to-secondary.patch \
     file://0016-gstwlshmallocator-correct-WL-API-declaration.patch \
