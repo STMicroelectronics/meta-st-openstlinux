@@ -63,13 +63,13 @@ do_install:append() {
             -e s:/var:${localstatedir}:g \
             ${D}${systemd_unitdir}/system/weston-graphical-session.service
         install -d ${D}${sysconfdir}/systemd/system/multi-user.target.wants/
-        install -D -m 0755 ${WORKDIR}/systemd-graphical-weston-session.sh ${D}${bindir}
+        install -D -m 0755 ${WORKDIR}/systemd-graphical-weston-session.sh ${D}${bindir}/systemd-graphical-weston-session.sh
         #ln -s /lib/systemd/system/weston-launch.service ${D}${sysconfdir}/systemd/system/multi-user.target.wants/display-manager.service
-        install -D -p -m0644 ${WORKDIR}/weston-checkgpu.service ${D}${systemd_system_unitdir}/
+        install -D -p -m0644 ${WORKDIR}/weston-checkgpu.service ${D}${systemd_system_unitdir}/weston-checkgpu.service
 
         install -d ${D}${systemd_user_unitdir}
-        install -D -p -m0644 ${WORKDIR}/weston.service ${D}${systemd_user_unitdir}
-        install -D -p -m0644 ${WORKDIR}/weston.socket ${D}${systemd_user_unitdir}
+        install -D -p -m0644 ${WORKDIR}/weston.service ${D}${systemd_user_unitdir}/weston.service
+        install -D -p -m0644 ${WORKDIR}/weston.socket ${D}${systemd_user_unitdir}/weston.socket
     fi
 
     install -d ${D}${sysconfdir}/profile.d
@@ -79,7 +79,11 @@ do_install:append() {
         # uncomment modules line for support of xwayland
         sed -i -e 's,#xwayland=true,xwayland=true,g' ${D}${sysconfdir}/xdg/weston/weston.ini
     fi
+
+    install -Dm755 ${WORKDIR}/weston-start ${D}${bindir}/weston-start
     sed -i 's,@DATADIR@,${datadir},g' ${D}${bindir}/weston-start
+    sed -i 's,@LOCALSTATEDIR@,${localstatedir},g' ${D}${bindir}/weston-start
+
     # /etc/default/weston
     install -d ${D}${sysconfdir}/default
     echo "WESTON_USER=weston" > ${D}${sysconfdir}/default/weston
