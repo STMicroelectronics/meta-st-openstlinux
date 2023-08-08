@@ -1,0 +1,62 @@
+From 5cf87e34ad0aa98ceb004f68ea72498f490e6858 Mon Sep 17 00:00:00 2001
+From: Hugues Fruchet <hugues.fruchet@st.com>
+Date: Wed, 12 Dec 2018 12:04:03 +0100
+Subject: [PATCH 08/14] waylandsink: HACK: disable frame dropping while redraw
+ is pending
+
+This workaround is needed to reach 30fps video playback.
+
+Redraw callback is received late, leading to many frames
+being dropped and so low framerate on display driver stage.
+The fact that redraw callback is received late is not yet understood
+but display subsystem is able to sustain a higher framerate
+than the one reached with redraw callback mechanism.
+This workaround consists to ignore redraw callback allowing to
+get back to the expected framerate performances.
+
+Even if not observed yet, there is a risk of visible decoding artefacts
+due to the fact that downstream elements could rewrite in a frame
+being currently rendered by display subsystem...
+
+Signed-off-by: Hugues Fruchet <hugues.fruchet@st.com>
+---
+ ext/wayland/gstwaylandsink.c | 19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
+
+diff --git a/ext/wayland/gstwaylandsink.c b/ext/wayland/gstwaylandsink.c
+index a5fb0cd..d98c53f 100644
+--- a/ext/wayland/gstwaylandsink.c
++++ b/ext/wayland/gstwaylandsink.c
+@@ -806,10 +806,29 @@ render_last_buffer (GstWaylandSink * self, gboolean redraw)
+   wlbuffer = gst_buffer_get_wl_buffer (self->display, self->last_buffer);
+   surface = gst_wl_window_get_wl_surface (self->window);
+ 
++  /*
++   * HACK: disable frame dropping while redraw is pending
++   *
++   * This workaround is needed to reach 30fps video playback.
++   *
++   * Redraw callback is received late, leading to many frames
++   * being dropped and so low framerate on display driver stage.
++   * The fact that redraw callback is received late is not yet understood
++   * but display subsystem is able to sustain a higher framerate
++   * than the one reached with redraw callback mechanism.
++   * This workaround consists to ignore redraw callback allowing to
++   * get back to the expected framerate performances.
++   *
++   * Why not observed yet, there is a risk of visible decoding artefacts
++   * due to the fact that downstream elements could rewrite in a frame
++   * being currently rendered by display subsystem...
++   */
++#if 0
+   self->redraw_pending = TRUE;
+   callback = wl_surface_frame (surface);
+   self->callback = callback;
+   wl_callback_add_listener (callback, &frame_callback_listener, self);
++#endif
+ 
+   if (G_UNLIKELY (self->video_info_changed && !redraw)) {
+     info = &self->video_info;
+-- 
+2.25.1
+
