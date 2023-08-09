@@ -26,6 +26,7 @@ SRC_URI:append = " \
     file://0025-v4l2codecs-Add-V4L2-stateless-VP8-encoder.patch \
     file://0026-v4l2codecs-Register-V4L2-stateless-Vp8-encoder.patch \
     file://0027-waylandsink-HACK-disable-frame-dropping-while-redraw.patch \
+    file://0028-v4l2codecs-add-key-frame-signaling.patch \
 "
 
 PACKAGECONFIG_GL ?= "${@bb.utils.contains('DISTRO_FEATURES', 'opengl', 'gles2 egl', '', d)}"

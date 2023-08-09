@@ -1,0 +1,106 @@
+From cf7bb1dd6061de058c33dbc9cd268441af784309 Mon Sep 17 00:00:00 2001
+From: Hugues Fruchet <hugues.fruchet@foss.st.com>
+Date: Tue, 8 Aug 2023 16:13:35 +0200
+Subject: [PATCH] v4l2codecs: add key frame signaling
+
+Propagate V4L2 keyframe flags signaling to upstream elements
+by setting  GstBuffer delta-unit flag & GstVideoCodecFrame sync point flag.
+
+Signed-off-by: Hugues Fruchet <hugues.fruchet@foss.st.com>
+---
+ sys/v4l2codecs/gstv4l2codecvp8enc.c | 11 ++++++++++-
+ sys/v4l2codecs/gstv4l2encoder.c     |  7 ++++---
+ sys/v4l2codecs/gstv4l2encoder.h     |  2 +-
+ 3 files changed, 15 insertions(+), 5 deletions(-)
+
+diff --git a/sys/v4l2codecs/gstv4l2codecvp8enc.c b/sys/v4l2codecs/gstv4l2codecvp8enc.c
+index 2f15caf..71c7dd2 100644
+--- a/sys/v4l2codecs/gstv4l2codecvp8enc.c
++++ b/sys/v4l2codecs/gstv4l2codecvp8enc.c
+@@ -542,6 +542,7 @@ gst_v4l2_codec_vp8_enc_encode_frame (GstVp8Encoder * encoder,
+   GstVideoCodecFrame *frame = vp8_frame->frame;
+   GstBuffer *resized_buffer;
+   guint32 bytesused;
++  guint32 flags;
+ 
+   /* *INDENT-OFF* */
+   struct v4l2_ext_control control[] = {
+@@ -596,7 +597,7 @@ gst_v4l2_codec_vp8_enc_encode_frame (GstVp8Encoder * encoder,
+     goto done;
+   }
+ 
+-  if (!gst_v4l2_encoder_request_set_done (request, &bytesused)) {
++  if (!gst_v4l2_encoder_request_set_done (request, &bytesused, &flags)) {
+     GST_ELEMENT_ERROR (self, RESOURCE, WRITE,
+         ("Driver did not ack the request."), (NULL));
+     goto done;
+@@ -609,6 +610,14 @@ gst_v4l2_codec_vp8_enc_encode_frame (GstVp8Encoder * encoder,
+   gst_buffer_replace (&frame->output_buffer, resized_buffer);
+   gst_buffer_unref (resized_buffer);
+ 
++  if (flags & V4L2_BUF_FLAG_KEYFRAME) {
++    GST_BUFFER_FLAG_UNSET (frame->output_buffer, GST_BUFFER_FLAG_DELTA_UNIT);
++    GST_VIDEO_CODEC_FRAME_SET_SYNC_POINT (frame);
++  } else {
++    GST_BUFFER_FLAG_SET (frame->output_buffer, GST_BUFFER_FLAG_DELTA_UNIT);
++    GST_VIDEO_CODEC_FRAME_UNSET_SYNC_POINT (frame);
++  }
++
+   return gst_video_encoder_finish_frame (venc, frame);
+ 
+ done:
+diff --git a/sys/v4l2codecs/gstv4l2encoder.c b/sys/v4l2codecs/gstv4l2encoder.c
+index 5ae2cfa..e2ef423 100644
+--- a/sys/v4l2codecs/gstv4l2encoder.c
++++ b/sys/v4l2codecs/gstv4l2encoder.c
+@@ -696,7 +696,7 @@ gst_v4l2_encoder_dequeue_sink (GstV4l2Encoder * self)
+ 
+ static gboolean
+ gst_v4l2_encoder_dequeue_src (GstV4l2Encoder * self, guint32 * out_frame_num,
+-    guint32 * bytesused)
++    guint32 * bytesused, guint32 * flags)
+ {
+   gint ret;
+   struct v4l2_plane planes[GST_VIDEO_MAX_PLANES] = { {0} };
+@@ -718,6 +718,7 @@ gst_v4l2_encoder_dequeue_src (GstV4l2Encoder * self, guint32 * out_frame_num,
+ 
+   *out_frame_num = buf.timestamp.tv_usec;
+   *bytesused = buf.m.planes[0].bytesused;
++  *flags = buf.flags;
+ 
+   GST_TRACE_OBJECT (self, "Dequeued bitstream buffer %i, %d bytes used",
+       buf.index, buf.m.planes[0].bytesused);
+@@ -1137,7 +1138,7 @@ gst_v4l2_encoder_request_queue (GstV4l2Request * request, guint flags)
+ 
+ gint
+ gst_v4l2_encoder_request_set_done (GstV4l2Request * request,
+-    guint32 * bytesused)
++    guint32 * bytesused, guint32 * flags)
+ {
+   GstV4l2Encoder *encoder = request->encoder;
+   GstV4l2Request *pending_req = NULL;
+@@ -1167,7 +1168,7 @@ gst_v4l2_encoder_request_set_done (GstV4l2Request * request,
+ 
+     if (!pending_req->hold_pic_buf) {
+       guint32 frame_num = G_MAXUINT32;
+-      if (!gst_v4l2_encoder_dequeue_src (encoder, &frame_num, bytesused)) {
++      if (!gst_v4l2_encoder_dequeue_src (encoder, &frame_num, bytesused, flags)) {
+         pending_req->failed = TRUE;
+       } else if (frame_num != pending_req->frame_num) {
+         GST_WARNING_OBJECT (encoder,
+diff --git a/sys/v4l2codecs/gstv4l2encoder.h b/sys/v4l2codecs/gstv4l2encoder.h
+index 7ff01a9..9acb0e3 100644
+--- a/sys/v4l2codecs/gstv4l2encoder.h
++++ b/sys/v4l2codecs/gstv4l2encoder.h
+@@ -128,7 +128,7 @@ void              gst_v4l2_encoder_ro_request_unref (GstV4l2Request * request);
+ gboolean          gst_v4l2_encoder_request_queue (GstV4l2Request * request,
+                                                   guint flags);
+ 
+-gint              gst_v4l2_encoder_request_set_done (GstV4l2Request * request, guint32 * bytesused);
++gint              gst_v4l2_encoder_request_set_done (GstV4l2Request * request, guint32 * bytesused, guint32 * flags);
+ 
+ gboolean          gst_v4l2_encoder_request_failed (GstV4l2Request * request);
+ 
+-- 
+2.25.1
+
