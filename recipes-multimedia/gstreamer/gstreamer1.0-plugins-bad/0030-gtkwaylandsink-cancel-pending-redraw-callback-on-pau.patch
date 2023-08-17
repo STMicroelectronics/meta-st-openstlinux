@@ -1,0 +1,62 @@
+From ec109f9a3b50f21227e15f45b1558b0f5c6f73ef Mon Sep 17 00:00:00 2001
+From: Hugues Fruchet <hugues.fruchet@foss.st.com>
+Date: Wed, 16 Aug 2023 17:14:55 +0200
+Subject: [PATCH 1/2] gtkwaylandsink: cancel pending redraw callback on
+ pause/resume
+
+Pipeline freeze have been observed when doing intensive pause/resume
+on video playback.
+
+Analysis shows that gtkwaylandsink element is stalled on state change
+from PLAYING to PAUSED or PAUSED to PLAYING.
+
+There is a first problem when ASYNC state change is returned by parent
+class; in this case we prematurely return from state_change, fix that by
+checking GST_STATE_CHANGE_FAILURE instead.
+
+The other problem is about eventual pending wayland listener callback
+(see redraw_callback mechanism) while changing state which cause
+further freeze of element. Fix this by destroying listener callback
+and resetting redraw_callback flag when going from PLAYING to PAUSED and
+PAUSED to PLAYING.
+
+Signed-off-by: Hugues Fruchet <hugues.fruchet@foss.st.com>
+---
+ ext/gtk/gstgtkwaylandsink.c | 14 +++++++++++++-
+ 1 file changed, 13 insertions(+), 1 deletion(-)
+
+diff --git a/ext/gtk/gstgtkwaylandsink.c b/ext/gtk/gstgtkwaylandsink.c
+index 0d6ea69..26e4aa0 100644
+--- a/ext/gtk/gstgtkwaylandsink.c
++++ b/ext/gtk/gstgtkwaylandsink.c
+@@ -736,7 +736,7 @@ gst_gtk_wayland_sink_change_state (GstElement * element,
+   }
+ 
+   ret = GST_ELEMENT_CLASS (parent_class)->change_state (element, transition);
+-  if (ret != GST_STATE_CHANGE_SUCCESS)
++  if (ret == GST_STATE_CHANGE_FAILURE)
+     return ret;
+ 
+   switch (transition) {
+@@ -762,6 +762,18 @@ gst_gtk_wayland_sink_change_state (GstElement * element,
+       priv->redraw_pending = FALSE;
+       g_mutex_unlock (&priv->render_lock);
+       break;
++    case GST_STATE_CHANGE_PAUSED_TO_PLAYING:
++    case GST_STATE_CHANGE_PLAYING_TO_PAUSED:
++      /* Destroy pending redraw callback otherwise
++       * element may freeze */
++      g_mutex_lock (&priv->render_lock);
++      if (priv->callback) {
++        wl_callback_destroy (priv->callback);
++        priv->callback = NULL;
++      }
++      priv->redraw_pending = FALSE;
++      g_mutex_unlock (&priv->render_lock);
++      break;
+     default:
+       break;
+   }
+-- 
+2.25.1
+

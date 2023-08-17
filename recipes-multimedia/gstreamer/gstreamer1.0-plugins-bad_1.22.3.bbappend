@@ -28,6 +28,7 @@ SRC_URI:append = " \
     file://0027-waylandsink-HACK-disable-frame-dropping-while-redraw.patch \
     file://0028-v4l2codecs-add-key-frame-signaling.patch \
     file://0029-gtkwaylandsink-HACK-disable-frame-dropping-while-red.patch \
+    file://0030-gtkwaylandsink-cancel-pending-redraw-callback-on-pau.patch \
 "
 
 PACKAGECONFIG_GL ?= "${@bb.utils.contains('DISTRO_FEATURES', 'opengl', 'gles2 egl', '', d)}"
