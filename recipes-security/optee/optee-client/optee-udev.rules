@@ -1,2 +1,2 @@
-KERNEL=="tee[0-9]*", MODE="0660", OWNER="root", GROUP="teeclnt"
-KERNEL=="teepriv[0-9]*", MODE="0660", OWNER="root", GROUP="tee"
+KERNEL=="tee[0-9]*", MODE="0660", OWNER="root", GROUP="teeclnt", TAG+="systemd", ENV{SYSTEMD_WANTS}+="tee.device"
+KERNEL=="teepriv[0-9]*", MODE="0660", OWNER="root", GROUP="tee", TAG+="systemd", ENV{SYSTEMD_WANTS}+="teepriv.device"
