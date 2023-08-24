@@ -6,7 +6,7 @@ After=systemd-remount-fs.service
 DefaultDependencies=no
 
 [Service]
-Type=forking
+Type=simple
 RemainAfterExit=yes
 KillMode=mixed
 SendSIGKILL=no
