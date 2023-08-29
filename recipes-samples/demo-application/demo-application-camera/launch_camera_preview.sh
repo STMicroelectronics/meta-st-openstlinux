@@ -133,8 +133,8 @@ else
         COMPATIBLE_BOARD=$(cat /proc/device-tree/compatible | sed "s|st,|,|g" | cut -d ',' -f2)
         case $COMPATIBLE_BOARD in
         stm32mp15*)
-            WIDTH=320
-            HEIGHT=240
+            WIDTH=640
+            HEIGHT=480
             ;;
         *)
             WIDTH=640
