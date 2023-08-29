@@ -5,7 +5,7 @@ OPENSTLINUX_RELEASE ??= "snapshot"
 
 DISTRO = "openstlinux"
 DISTRO_NAME = "ST OpenSTLinux (A Yocto Project Based Distro)"
-DISTRO_VERSION = "3.1.20-${@bb.utils.contains('OPENSTLINUX_RELEASE', 'snapshot', 'snapshot-${DATE}', '${OPENSTLINUX_RELEASE}', d)}"
+DISTRO_VERSION = "3.1.27-${@bb.utils.contains('OPENSTLINUX_RELEASE', 'snapshot', 'snapshot-${DATE}', '${OPENSTLINUX_RELEASE}', d)}"
 # Don't include the DATE variable in the sstate package signatures
 DISTRO_VERSION[vardepsexclude] = "DATE"
 DISTRO_CODENAME = "dunfell"
@@ -29,3 +29,10 @@ SDK_NAME = "${IMAGE_LINK_NAME}-${SDK_ARCH}"
 SDKPATHINSTALL = "/opt/st/${MACHINE}/${SDK_VERSION}"
 # Don't include the DATE variable in the sstate package signatures
 SDKPATHINSTALL[vardepsexclude] = "DATE"
+
+#FIXME force keeping 3.9 uninative version instead of 4.0
+UNINATIVE_VERSION_forcevariable = "3.9"
+
+UNINATIVE_CHECKSUM[aarch64] ?= "de35708c95c34573af140da910132c3291ba4fd26ebf7b74b755ada432cdf07b"
+UNINATIVE_CHECKSUM[i686] ?= "adac07b08adb88eb26fc7fd87fee0cec9d5be167bf7c5ffd3a549a2a6699c29c"
+UNINATIVE_CHECKSUM[x86_64] ?= "3dd82c3fbdb59e87bf091c3eef555a05fae528eeda3083828f76cd4deaceca8b"
