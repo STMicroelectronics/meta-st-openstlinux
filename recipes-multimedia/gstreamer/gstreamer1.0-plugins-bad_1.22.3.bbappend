@@ -29,6 +29,7 @@ SRC_URI:append = " \
     file://0028-v4l2codecs-add-key-frame-signaling.patch \
     file://0029-gtkwaylandsink-HACK-disable-frame-dropping-while-red.patch \
     file://0030-gtkwaylandsink-cancel-pending-redraw-callback-on-pau.patch \
+    file://0031-v4l2codecs-fix-support-of-unaligned-videos.patch \
 "
 
 PACKAGECONFIG_GL ?= "${@bb.utils.contains('DISTRO_FEATURES', 'opengl', 'gles2 egl', '', d)}"
