@@ -20,6 +20,11 @@ SRC_URI:append = " \
     file://0018-GTKWAYLANDSINK-use-card0-as-default-drm-device.patch \
     file://0019-waylandsink-Emit-map-signal-boarder-surface-is-ready.patch \
     file://0020-gtkwaylandsink-do-not-use-drm-dumb-pool-with-DMAbuf-.patch \
+    file://0022-codecs-Add-base-class-for-stateless-vp8-encoder.patch \
+    file://0023-v4l2codecs-Add-V4L2-VP8-stateless-encode-uAPI.patch \
+    file://0024-v4l2codecs-Add-v4l2-encoder-class.patch \
+    file://0025-v4l2codecs-Add-V4L2-stateless-VP8-encoder.patch \
+    file://0026-v4l2codecs-Register-V4L2-stateless-Vp8-encoder.patch \
 "
 
 PACKAGECONFIG_GL ?= "${@bb.utils.contains('DISTRO_FEATURES', 'opengl', 'gles2 egl', '', d)}"
