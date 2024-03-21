@@ -1,5 +1,5 @@
 [Unit]
-Description=USB-IP Bindind
+Description=USB-IP Binding
 After=network.target
 Wants=network.target
 
