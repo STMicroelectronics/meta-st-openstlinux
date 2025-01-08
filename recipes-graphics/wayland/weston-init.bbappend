@@ -67,9 +67,8 @@ do_install:append() {
 
     install -d ${D}${systemd_system_unitdir} ${D}${sbindir}
 
-    install -d ${D}/lib/systemd/system/
-    if [ -e ${D}/lib/systemd/system/weston.service ]; then
-        rm ${D}/lib/systemd/system/weston.service ${D}/lib/systemd/system/weston.socket
+    if [ -e ${D}${systemd_system_unitdir}/weston.service ]; then
+        rm ${D}${systemd_system_unitdir}/weston.service ${D}${systemd_system_unitdir}/weston.socket
         install -D -p -m0644 ${WORKDIR}/weston-graphical-session.service ${D}${systemd_system_unitdir}/weston-graphical-session.service
         sed -i -e s:/etc:${sysconfdir}:g \
             -e s:/usr/bin:${bindir}:g \
@@ -77,7 +76,7 @@ do_install:append() {
             ${D}${systemd_unitdir}/system/weston-graphical-session.service
         install -d ${D}${sysconfdir}/systemd/system/multi-user.target.wants/
         install -D -m 0755 ${WORKDIR}/systemd-graphical-weston-session.sh ${D}${bindir}/systemd-graphical-weston-session.sh
-        #ln -s /lib/systemd/system/weston-launch.service ${D}${sysconfdir}/systemd/system/multi-user.target.wants/display-manager.service
+        #ln -s ${systemd_system_unitdir}/weston-launch.service ${D}${sysconfdir}/systemd/system/multi-user.target.wants/display-manager.service
         install -D -p -m0644 ${WORKDIR}/weston-checkgpu.service ${D}${systemd_system_unitdir}/weston-checkgpu.service
 
         install -d ${D}${systemd_user_unitdir}
