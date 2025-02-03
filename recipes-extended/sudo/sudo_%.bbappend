@@ -13,6 +13,9 @@ CONFFILES:${PN}-lib:append = " \
 do_install:append() {
     install -d ${D}${sysconfdir}/sudoers.d
     install -m 0644 ${WORKDIR}/weston-apt ${D}${sysconfdir}/sudoers.d
+
+    # for sdk purpose
+    chmod 4755 ${D}${bindir}/sudo
 }
 
 do_install:append:class-nativesdk() {
