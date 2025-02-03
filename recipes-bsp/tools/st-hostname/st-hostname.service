@@ -1,8 +1,7 @@
 [Unit]
 Description=ST hostname
 DefaultDependencies=false
-After=mount-partitions.service
-Before=local-fs.target serial-getty@ttySTM0.service systemd-networkd.service
+After=mount-partitions.service network.target
 
 [Service]
 Type=oneshot
