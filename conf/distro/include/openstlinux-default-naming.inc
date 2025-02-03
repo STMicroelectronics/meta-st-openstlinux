@@ -5,7 +5,7 @@ OPENSTLINUX_RELEASE ??= "snapshot"
 
 DISTRO = "openstlinux"
 DISTRO_NAME = "ST OpenSTLinux (A Yocto Project Based Distro)"
-DISTRO_VERSION = "5.0.3-${@bb.utils.contains('OPENSTLINUX_RELEASE', 'snapshot', 'snapshot-${DATE}', '${OPENSTLINUX_RELEASE}', d)}"
+DISTRO_VERSION = "5.0.6-${@bb.utils.contains('OPENSTLINUX_RELEASE', 'snapshot', 'snapshot-${DATE}', '${OPENSTLINUX_RELEASE}', d)}"
 # Don't include the DATE variable in the sstate package signatures
 DISTRO_VERSION[vardepsexclude] = "DATE"
 DISTRO_CODENAME = "scarthgap"
@@ -15,6 +15,8 @@ SDK_VENDOR = "-ostl_sdk"
 SDK_VERSION := "${@'${DISTRO_VERSION}'.replace('snapshot-${DATE}','snapshot')}"
 # Don't include the DATE variable in the sstate package signatures
 SDK_VERSION[vardepsexclude] = "DATE"
+SDKIMAGE_FEATURES ?= "dev-pkgs dbg-pkgs src-pkgs staticdev-pkgs ${@bb.utils.contains('DISTRO_FEATURES', 'api-documentation', 'doc-pkgs', '', d)}"
+
 
 MAINTAINER = "Christophe Priouzeau <christophe.priouzeau@st.com>"
 
