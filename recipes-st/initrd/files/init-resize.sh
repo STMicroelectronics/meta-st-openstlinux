@@ -32,7 +32,7 @@ resize_run() {
                 if [ -e "$bootparam_root" ]; then
                     bootparam_root_device=$(busybox readlink $bootparam_root -f)
                     j=$(echo $bootparam_root_device | sed "s|/dev/mmcblk\([0-2]\)p.*|\1|")
-                    for i in 3 4 5 6 7 8 9 10 11 12 13 14 15 16;
+                    for i in 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20;
                     do
                         DEVICE="/dev/mmcblk"$j"p"$i
                         if [ -e $DEVICE ]; then
