@@ -36,48 +36,56 @@ ICON_SIZE_480 = 128
 ICON_SIZE_272 = 48
 
 TREELIST_HEIGHT_1080 = 500
-TREELIST_HEIGHT_720 = 400
+TREELIST_HEIGHT_720 = 360
+TREELIST_HEIGHT_600 = 300
 TREELIST_HEIGHT_480 = 160
-TREELIST_HEIGHT_272 = 68
+TREELIST_HEIGHT_272 = 86
 
 # return format:
-# [ icon_size, font_size, treelist_height, button_height ]
+# [ icon_size, font_size, treelist_height, button_height, font_increased ]
 SIZES_ID_ICON_SIZE = 0
 SIZES_ID_FONT_SIZE = 1
 SIZES_ID_TREELIST_HEIGHT = 2
 SIZES_ID_BUTTON_HEIGHT = 3
+SIZES_ID_FONT_SIZE_INCREASE = 4
 def get_sizes_from_screen_size(width, height):
     minsize =  min(width, height)
     icon_size = None
     font_size = None
+    font_size_increase = None
     treelist_height = None
     button_height = None
     if minsize == 720:
         icon_size = ICON_SIZE_720
         font_size = 25
+        font_size_increase = 5
         treelist_height = TREELIST_HEIGHT_720
         button_height = 60
     elif minsize == 480:
         icon_size = ICON_SIZE_480
         font_size = 20
+        font_size_increase = 2
         treelist_height = TREELIST_HEIGHT_480
         button_height = 60
     elif minsize == 272:
         icon_size = ICON_SIZE_272
-        font_size = 15
+        font_size = 8
+        font_size_increase = 1
         treelist_height = TREELIST_HEIGHT_272
         button_height = 25
     elif minsize == 600:
         icon_size = ICON_SIZE_720
         font_size = 15
+        font_size_increase = 5
         treelist_height = TREELIST_HEIGHT_720
         button_height = 60
     elif minsize >= 1080:
         icon_size = ICON_SIZE_1080
         font_size = 32
+        font_size_increase = 5
         treelist_height = TREELIST_HEIGHT_1080
         button_height = 80
-    return [icon_size, font_size, treelist_height, button_height]
+    return [icon_size, font_size, treelist_height, button_height, font_size_increase]
 
 def get_treelist_height_from_screen_size(width, height):
     minsize =  min(width, height)
@@ -88,9 +96,9 @@ def get_treelist_height_from_screen_size(width, height):
     elif minsize == 272:
         return TREELIST_HEIGHT_272
     elif minsize == 600:
-        return ICON_SIZE_1080
+        return TREELIST_HEIGHT_600
     elif minsize >= 1080:
-        return ICON_SIZE_1080
+        return TREELIST_HEIGHT_1080
 
 # -------------------------------------------------------------------
 # -------------------------------------------------------------------
@@ -110,6 +118,7 @@ Item_info_dev = ['Headset', 'AudioSink', 'Connected', 'Paired']
 
 regexps_devinfo = [
    re.compile(r"00001108-(?P<Headset>.+)$"),
+   re.compile(r"00001108-(?P<Handsfree>.+)$"),
    re.compile(r"0000110b-(?P<AudioSink>.+)$"),
    re.compile(r"Connected:(?P<Connected>.+)$"),
    re.compile(r"Paired:(?P<Paired>.+)$"),
@@ -200,13 +209,13 @@ def status_playback(self):
               if sk['Name'] == bt_dev_conn['name']:
                   if mess_bt != "":
                       mess_bt = mess_bt + "\n"
-                  mess_bt = mess_bt + "The audio BT device " + sk['Name'] + " is connected"
+                  mess_bt = mess_bt + "The audio BT device " + sk['Name'] + "\n is connected"
                   sink_ident.append({'name': sk['Name'], 'ident': sk['Ident']})
 
     if mess_bt == "":
         mess_bt = "Device not connected"
 
-    self.label_audio.set_markup("<span font='20' color='#000000'>%s</span>" % mess_bt)
+    self.label_audio.set_markup("<span font='%d' color='#000000'>%s</span>" % (self.font_size+self.font_size_increase, mess_bt))
     self.label_audio.set_justify(Gtk.Justification.LEFT)
     self.label_audio.set_line_wrap(True)
     return [stream_ident, sink_ident]
@@ -258,6 +267,8 @@ def list_devices(self, paired = False):
                   l_elt.append('yes')
               else:
                   l_elt.append('no')
+              if elt_info['Paired']:
+                  l_elt.append(elt_info['Paired'])
 
               if elt_info['Connected'] == " yes":
                   if elt not in self.list_dev_connect:
@@ -347,6 +358,7 @@ class BluetoothWindow(Gtk.Dialog):
         self.treelist_height = get_treelist_height_from_screen_size(self.screen_width, self.screen_height)
         sizes = get_sizes_from_screen_size(self.screen_width, self.screen_height)
         self.font_size = sizes[SIZES_ID_FONT_SIZE]
+        self.font_size_increase = sizes[SIZES_ID_FONT_SIZE_INCREASE]
         self.button_height = sizes[SIZES_ID_BUTTON_HEIGHT]
 
         self.connect("button-release-event", self.on_page_press_event)
@@ -364,7 +376,7 @@ class BluetoothWindow(Gtk.Dialog):
         self.page_bluetooth.set_border_width(15)
 
         self.title = Gtk.Label()
-        self.title.set_markup("<span font='%d' color='#00000000'>Connect bluetooth headset</span>" % (self.font_size+5))
+        self.title.set_markup("<span font='%d' color='#00000000'>Connect bluetooth headset</span>" % (self.font_size+self.font_size_increase))
         self.page_bluetooth.add(self.title)
 
         self.ButtonBox = Gtk.HBox(homogeneous=True)
@@ -394,10 +406,10 @@ class BluetoothWindow(Gtk.Dialog):
 
         self.tree_list_vbox = Gtk.VBox(homogeneous=True)
 
-        self.bluetooth_liststore = Gtk.ListStore(int, str, str, str)
+        self.bluetooth_liststore = Gtk.ListStore(int, str, str, str, str)
         self.bluetooth_treeview = Gtk.TreeView(self.bluetooth_liststore)
 
-        l_col = ["n°", "name", "connected", "Audio"]
+        l_col = ["n°", "name", "connected", "Audio", "Paired"]
         for i, column_title in enumerate(l_col):
             renderer = Gtk.CellRendererText()
             renderer.set_property('font', "%d" % self.font_size)
@@ -550,6 +562,7 @@ class BluetoothWindow(Gtk.Dialog):
                     print("[WARNING] A BT device is already connected :\ndisconnect it before connecting a new device\n")
                     self.display_message("<span font='15' color='#000000'>A BT device is already connected :\nPlease disconnect it before connecting a new device\n</span>")
             else:
+                self.bl.set_prompt("bluetooth")
                 connect_res=self.bl.blctl_disconnect(device['mac_address'])
                 self.lb_button_connect.set_markup("<span font='%d' color='#88888888'>connect</span>" % self.font_size)
                 self.update_display()

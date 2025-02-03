@@ -114,6 +114,7 @@ class wrapper_blctl:
     #build the list of bluetoothctl prompts
     def set_prompt(self, prompt):
         prpt = "\["+prompt+"\]"
+        self.print_debug(3, "set_prompt >%s<"% prpt)
         if prpt not in self.prompt:
             self.prompt.insert(0, prpt)
 
