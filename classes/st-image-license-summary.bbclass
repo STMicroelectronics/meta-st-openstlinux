@@ -26,6 +26,7 @@ def license_create_summary(d):
     license_deploy_dir = d.expand("${DEPLOY_DIR}/licenses")
     pkgdata_dir = d.expand("${TMPDIR}/pkgdata/${MACHINE}")
     machine = d.expand("${MACHINE}")
+    machine_underscore = machine.replace("-", "_")
 
     license_summary_deploydir = d.getVar('LICENSE_SUMMARY_DIR')
     license_summary_name = d.getVar('LICENSE_SUMMARY_NAME')
@@ -511,7 +512,7 @@ def license_create_summary(d):
 
             if _image_prefix == ref_image_name:
                 _image_package = "image_license.manifest"
-                boot_file_to_read = license_deploy_dir + "/" + machine + "/" + _image_prefix +  "-" + _image_date + "/" + _image_package
+                boot_file_to_read = license_deploy_dir + "/" + machine_underscore + "/" + _image_prefix +  "-" + _image_date + "/" + _image_package
 
         if boot_file_to_read:
             contents = private_open(boot_file_to_read)
@@ -591,7 +592,7 @@ def license_create_summary(d):
             html.stopTable()
 
             _image_package="package.manifest"
-            file_to_read = license_deploy_dir + "/" + machine + "/" + _image_prefix + "-" + _image_date + "/" + _image_package
+            file_to_read = license_deploy_dir + "/" + machine_underscore + "/" + _image_prefix + "-" + _image_date + "/" + _image_package
             contents = private_open(file_to_read)
             #print("Process for %s" % _image_prefix)
 
