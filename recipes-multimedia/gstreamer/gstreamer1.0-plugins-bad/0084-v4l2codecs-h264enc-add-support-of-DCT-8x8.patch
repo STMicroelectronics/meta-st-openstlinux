@@ -1,0 +1,147 @@
+From a379e9e5b378c75b5d22302266729830b8095bd3 Mon Sep 17 00:00:00 2001
+From: Hugues Fruchet <hugues.fruchet@foss.st.com>
+Date: Thu, 12 Dec 2024 15:21:45 +0100
+Subject: [PATCH] v4l2codecs: h264enc: add support of DCT 8x8
+
+Add support of DCT 8x8, this tool is part of high profile.
+
+gst-launch-1.0 videotestsrc num-buffers=100 ! videoconvert ! v4l2slh264enc dct8x8=true ! "video/x-h264, profile=(string)high" ! h264parse ! qtmux ! filesink location=qvga_high_dct8x8.mp4
+gst-play-1.0 qvga_high_dct8x8.mp4
+
+gst-launch-1.0 videotestsrc num-buffers=100 ! videoconvert ! v4l2slh264enc dct8x8=true ! "video/x-h264, profile=(string)high" ! filesink location=qvga_high_dct8x8.bits
+gst-play-1.0 qvga_high_dct8x8.bits
+
+Upstream-Status: Pending
+---
+ gst-libs/gst/codecs/gsth264encoder.c | 18 ++++++++++++++++++
+ sys/v4l2codecs/gstv4l2codech264enc.c | 22 +++++++++++++++++++++-
+ 2 files changed, 39 insertions(+), 1 deletion(-)
+
+diff --git a/gst-libs/gst/codecs/gsth264encoder.c b/gst-libs/gst/codecs/gsth264encoder.c
+index f1b0200..7dc4fb8 100644
+--- a/gst-libs/gst/codecs/gsth264encoder.c
++++ b/gst-libs/gst/codecs/gsth264encoder.c
+@@ -51,6 +51,7 @@ enum
+   PROP_BITRATE,
+   PROP_CABAC,
+   PROP_CABAC_INIT_IDC,
++  PROP_DCT8X8,
+   PROP_RATE_CONTROL,
+ };
+ 
+@@ -63,6 +64,7 @@ struct _GstH264EncoderPrivate
+   gint keyframe_interval;
+   gboolean cabac;
+   guint cabac_init_idc;
++  gboolean dct8x8;
+ };
+ 
+ #define parent_class gst_h264_encoder_parent_class
+@@ -224,6 +226,9 @@ gst_h264_encoder_get_property (GObject * object, guint property_id,
+     case PROP_CABAC_INIT_IDC:
+       g_value_set_uint (value, priv->cabac_init_idc);
+       break;
++    case PROP_DCT8X8:
++      g_value_set_boolean (value, priv->dct8x8);
++      break;
+     default:
+       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
+       break;
+@@ -269,6 +274,9 @@ gst_h264_encoder_set_property (GObject * object, guint property_id,
+     case PROP_CABAC_INIT_IDC:
+       priv->cabac_init_idc = g_value_get_uint (value);
+       break;
++    case PROP_DCT8X8:
++      priv->dct8x8 = g_value_get_boolean (value);
++      break;
+     default:
+       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
+       break;
+@@ -381,6 +389,16 @@ gst_h264_encoder_class_init (GstH264EncoderClass * klass)
+           0, 2, 0,
+           G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS | G_PARAM_CONSTRUCT));
+ 
++  /**
++  * GstH264Encoder:dct8x8:
++  * Note: Supported only on high profile
++  *
++  * Since: 1.2x
++  */
++  g_object_class_install_property (object_class, PROP_DCT8X8,
++      g_param_spec_boolean ("dct8x8", "DCT8X8",
++          "Adaptive spatial transform size", FALSE, G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
++
+   /**
+   * GstH264Encoder:rate-control:
+   *
+diff --git a/sys/v4l2codecs/gstv4l2codech264enc.c b/sys/v4l2codecs/gstv4l2codech264enc.c
+index 921302a..eac5300 100644
+--- a/sys/v4l2codecs/gstv4l2codech264enc.c
++++ b/sys/v4l2codecs/gstv4l2codech264enc.c
+@@ -56,7 +56,7 @@ static GstStaticPadTemplate src_template = GST_STATIC_PAD_TEMPLATE ("src",
+         "width = (int) [ 1, MAX ], " "height = (int) [ 1, MAX ], "
+         "stream-format = (string) byte-stream, "
+         "alignment = (string) au, "
+-        "profile = (string) { main, constrained-baseline, baseline}")
++        "profile = (string) { high, main, constrained-baseline, baseline}")
+     );
+ 
+ /* Maximum sizes for common headers (in bits) */
+@@ -84,6 +84,7 @@ struct _GstV4l2CodecH264Enc
+   gint qp_init, qp_max, qp_min;
+   gboolean cabac;
+   guint cabac_init_idc;
++  gboolean dct8x8;
+ 
+   gchar *profile_name;
+   guint level_idc;
+@@ -543,6 +544,7 @@ gst_v4l2_codec_h264_enc_init_sps_pps (GstV4l2CodecH264Enc * self,
+   self->pps.second_chroma_qp_index_offset = self->pps.chroma_qp_index_offset;
+   self->pps.deblocking_filter_control_present_flag = 1;
+   self->pps.entropy_coding_mode_flag = self->cabac;
++  self->pps.transform_8x8_mode_flag = self->dct8x8;
+ }
+ 
+ /* Begin of code taken from VA plugin */
+@@ -600,6 +602,9 @@ gst_v4l2_codec_h264_enc_decide_profile_and_level (GstV4l2CodecH264Enc * self,
+   g_object_get (self, "cabac", &self->cabac, "cabac-init-idc",
+       &self->cabac_init_idc, NULL);
+ 
++  g_object_get (self, "dct8x8", &self->dct8x8, "dct8x8",
++      &self->dct8x8, NULL);
++
+   /* First, check whether the downstream requires a specified profile. */
+   allowed_caps = gst_pad_get_allowed_caps (GST_VIDEO_ENCODER_SRC_PAD (self));
+   if (!allowed_caps)
+@@ -620,6 +625,15 @@ gst_v4l2_codec_h264_enc_decide_profile_and_level (GstV4l2CodecH264Enc * self,
+     }
+   }
+ 
++  if (self->dct8x8) {
++    if (!g_strstr_len (profile_name, -1, "high")) {
++      GST_WARNING_OBJECT (self,
++          "DCT 8x8 is not supported by user selected profile '%s'"
++          ", disabling this features", profile_name);
++      self->dct8x8 = FALSE;
++    }
++  }
++
+   g_free (self->profile_name);
+   self->profile_name = g_strdup (profile_name);
+ 
+@@ -975,6 +989,12 @@ gst_v4l2_codec_h264_enc_fill_encode_params (GstH264Encoder * encoder,
+     self->encode_params.flags &= ~V4L2_H264_ENCODE_FLAG_ENTROPY_CABAC;
+   }
+ 
++  if (self->dct8x8) {
++    self->encode_params.flags |= V4L2_H264_ENCODE_FLAG_TRANSFORM_8X8_MODE;
++  } else {
++    self->encode_params.flags &= ~V4L2_H264_ENCODE_FLAG_TRANSFORM_8X8_MODE;
++  }
++
+   self->encode_params.pic_parameter_set_id = 0;
+   self->encode_params.cabac_init_idc = self->cabac_init_idc;
+ 
+-- 
+2.25.1
+

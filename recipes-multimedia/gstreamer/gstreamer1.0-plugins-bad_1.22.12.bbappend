@@ -78,6 +78,7 @@ SRC_URI:append = " \
     file://0081-v4l2codecs-add-support-of-encoding-from-RGBA.patch \
     file://0082-Revert-waylandsink-match-drm-kernel-driver-alignment.patch \
     file://0083-Revert-gtkwaylandsink-match-drm-kernel-driver-alignm.patch \
+    file://0084-v4l2codecs-h264enc-add-support-of-DCT-8x8.patch \
 "
 
 PACKAGECONFIG_GL ?= "${@bb.utils.contains('DISTRO_FEATURES', 'opengl', 'gles2 egl', '', d)}"
