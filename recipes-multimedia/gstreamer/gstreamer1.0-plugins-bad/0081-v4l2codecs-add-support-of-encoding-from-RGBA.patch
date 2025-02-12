@@ -1,0 +1,48 @@
+From b8fd1214cd9e9651ea076fdeabb98dcee5b3354f Mon Sep 17 00:00:00 2001
+From: Hugues Fruchet <hugues.fruchet@foss.st.com>
+Date: Wed, 30 Oct 2024 16:22:00 +0100
+Subject: [PATCH] v4l2codecs: add support of encoding from RGBA
+
+Add support of encoding from RGBA, BGRA, ARGB, ABGR
+
+Upstream-Status: Pending
+---
+ sys/v4l2codecs/gstv4l2format.c | 4 ++++
+ sys/v4l2codecs/gstv4l2format.h | 2 +-
+ 2 files changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/sys/v4l2codecs/gstv4l2format.c b/sys/v4l2codecs/gstv4l2format.c
+index 33cef56..2d930d1 100644
+--- a/sys/v4l2codecs/gstv4l2format.c
++++ b/sys/v4l2codecs/gstv4l2format.c
+@@ -42,10 +42,14 @@ static struct FormatEntry format_map[] = {
+   {V4L2_PIX_FMT_P010, 1, GST_VIDEO_FORMAT_P010_10LE, 16, 420},
+   {V4L2_PIX_FMT_RGB565, 1, GST_VIDEO_FORMAT_RGB16, 16, 0},
+   {V4L2_PIX_FMT_XBGR32, 1, GST_VIDEO_FORMAT_BGRx, 32, 0},
++  {V4L2_PIX_FMT_ABGR32, 1, GST_VIDEO_FORMAT_BGRA, 32, 0},
+   {V4L2_PIX_FMT_BGR32, 1, GST_VIDEO_FORMAT_BGRx, 32, 0},
+   {V4L2_PIX_FMT_RGBX32, 1, GST_VIDEO_FORMAT_RGBx, 32, 0},
++  {V4L2_PIX_FMT_RGBA32, 1, GST_VIDEO_FORMAT_RGBA, 32, 0},
+   {V4L2_PIX_FMT_BGRX32, 1, GST_VIDEO_FORMAT_xBGR, 32, 0},
++  {V4L2_PIX_FMT_BGRA32, 1, GST_VIDEO_FORMAT_ABGR, 32, 0},
+   {V4L2_PIX_FMT_XRGB32, 1, GST_VIDEO_FORMAT_xRGB, 32, 0},
++  {V4L2_PIX_FMT_ARGB32, 1, GST_VIDEO_FORMAT_ARGB, 32, 0},
+   {V4L2_PIX_FMT_RGB32, 1, GST_VIDEO_FORMAT_xRGB, 32, 0},
+   {0,}
+ };
+diff --git a/sys/v4l2codecs/gstv4l2format.h b/sys/v4l2codecs/gstv4l2format.h
+index 1f634ee..2bf675f 100644
+--- a/sys/v4l2codecs/gstv4l2format.h
++++ b/sys/v4l2codecs/gstv4l2format.h
+@@ -24,7 +24,7 @@
+ #include <gst/video/video.h>
+ #include "linux/videodev2.h"
+ 
+-#define GST_V4L2_DEFAULT_VIDEO_FORMATS "{ NV12, YUY2, NV12_4L4, NV12_32L32, NV12_16L32S, I420, P010_10LE, RGB16, BGRx, RGBx, xBGR, xRGB}"
++#define GST_V4L2_DEFAULT_VIDEO_FORMATS "{ NV12, YUY2, NV12_4L4, NV12_32L32, NV12_16L32S, I420, P010_10LE, RGB16, BGRx, BGRA, RGBx, RGBA, xBGR, ABGR, xRGB, ARGB}"
+ 
+ gboolean   gst_v4l2_format_to_video_info (struct v4l2_format * fmt,
+                                           GstVideoInfo * out_info);
+-- 
+2.25.1
+
