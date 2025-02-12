@@ -1,0 +1,46 @@
+From 658760663e957a688b9e4a7791438556e464dcdc Mon Sep 17 00:00:00 2001
+From: Hugues Fruchet <hugues.fruchet@foss.st.com>
+Date: Wed, 4 Dec 2024 09:15:11 +0100
+Subject: [PATCH 2/2] Revert "gtkwaylandsink: match drm kernel driver
+ alignment"
+
+This reverts commit cc4d700ec4e9737974cd2945119b100dd075b8e3.
+
+Upstream-Status: Pending
+---
+ ext/gtk/gstgtkwaylandsink.c | 12 ------------
+ 1 file changed, 12 deletions(-)
+
+diff --git a/ext/gtk/gstgtkwaylandsink.c b/ext/gtk/gstgtkwaylandsink.c
+index fbe05be..658effd 100644
+--- a/ext/gtk/gstgtkwaylandsink.c
++++ b/ext/gtk/gstgtkwaylandsink.c
+@@ -949,8 +949,6 @@ gst_gtk_wayland_sink_set_caps (GstBaseSink * bsink, GstCaps * caps)
+       gst_gtk_wayland_sink_get_instance_private (self);
+   gboolean use_dmabuf;
+   GstVideoFormat format;
+-  GstVideoAlignment alignment;
+-  guint width;
+ 
+   GST_DEBUG_OBJECT (self, "set caps %" GST_PTR_FORMAT, caps);
+ 
+@@ -958,16 +956,6 @@ gst_gtk_wayland_sink_set_caps (GstBaseSink * bsink, GstCaps * caps)
+   if (!gst_video_info_from_caps (&priv->video_info, caps))
+     goto invalid_format;
+ 
+-  /*
+-   * stick to DRM kernel driver alignment (128 bytes) to avoid
+-   * any board effects due to size mismatch when switching
+-   * later-on with DRM dumb allocated buffers
+-   */
+-  gst_video_alignment_reset (&alignment);
+-  width = GST_VIDEO_INFO_WIDTH (&priv->video_info);
+-  alignment.padding_right = GST_ROUND_UP_128 (width) - width;
+-  gst_video_info_align (&priv->video_info, &alignment);
+-
+   format = GST_VIDEO_INFO_FORMAT (&priv->video_info);
+   priv->video_info_changed = TRUE;
+   priv->skip_dumb_buffer_copy = FALSE;
+-- 
+2.25.1
+

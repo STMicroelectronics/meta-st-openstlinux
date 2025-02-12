@@ -76,6 +76,8 @@ SRC_URI:append = " \
     file://0079-waylandsink-config-buffer-pool-with-query-size-when-.patch \
     file://0080-gtkwaylandsink-config-buffer-pool-with-query-size-wh.patch \
     file://0081-v4l2codecs-add-support-of-encoding-from-RGBA.patch \
+    file://0082-Revert-waylandsink-match-drm-kernel-driver-alignment.patch \
+    file://0083-Revert-gtkwaylandsink-match-drm-kernel-driver-alignm.patch \
 "
 
 PACKAGECONFIG_GL ?= "${@bb.utils.contains('DISTRO_FEATURES', 'opengl', 'gles2 egl', '', d)}"

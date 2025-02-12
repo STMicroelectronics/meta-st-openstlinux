@@ -1,0 +1,45 @@
+From be6728ba8e66dfc2f50d1af21eb0579e785765bb Mon Sep 17 00:00:00 2001
+From: Hugues Fruchet <hugues.fruchet@foss.st.com>
+Date: Tue, 3 Dec 2024 14:37:29 +0100
+Subject: [PATCH 1/2] Revert "waylandsink: match drm kernel driver alignment"
+
+This reverts commit 9468d8cb21818d7fcdbc569119f6056806673cc3.
+
+Upstream-Status: Pending
+---
+ ext/wayland/gstwaylandsink.c | 12 ------------
+ 1 file changed, 12 deletions(-)
+
+diff --git a/ext/wayland/gstwaylandsink.c b/ext/wayland/gstwaylandsink.c
+index 066f05e..c93fec9 100644
+--- a/ext/wayland/gstwaylandsink.c
++++ b/ext/wayland/gstwaylandsink.c
+@@ -692,8 +692,6 @@ gst_wayland_sink_set_caps (GstBaseSink * bsink, GstCaps * caps)
+   GstWaylandSink *self = GST_WAYLAND_SINK (bsink);;
+   gboolean use_dmabuf;
+   GstVideoFormat format;
+-  GstVideoAlignment alignment;
+-  guint width;
+ 
+   GST_DEBUG_OBJECT (self, "set caps %" GST_PTR_FORMAT, caps);
+ 
+@@ -701,16 +699,6 @@ gst_wayland_sink_set_caps (GstBaseSink * bsink, GstCaps * caps)
+   if (!gst_video_info_from_caps (&self->video_info, caps))
+     goto invalid_format;
+ 
+-  /*
+-   * stick to DRM kernel driver alignment (128 bytes) to avoid
+-   * any board effects due to size mismatch when switching
+-   * later-on with DRM dumb allocated buffers
+-   */
+-  gst_video_alignment_reset (&alignment);
+-  width = GST_VIDEO_INFO_WIDTH (&self->video_info);
+-  alignment.padding_right = GST_ROUND_UP_128 (width) - width;
+-  gst_video_info_align (&self->video_info, &alignment);
+-
+   format = GST_VIDEO_INFO_FORMAT (&self->video_info);
+   self->video_info_changed = TRUE;
+   self->skip_dumb_buffer_copy = FALSE;
+-- 
+2.25.1
+
