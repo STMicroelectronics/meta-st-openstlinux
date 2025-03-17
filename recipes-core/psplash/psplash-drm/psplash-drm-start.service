@@ -11,6 +11,7 @@ RemainAfterExit=yes
 KillMode=mixed
 SendSIGKILL=no
 ExecStart=/usr/bin/psplash-drm-start.sh
+ExecStop=/usr/bin/psplash-drm-quit
 
 [Install]
 WantedBy=local-fs.target
