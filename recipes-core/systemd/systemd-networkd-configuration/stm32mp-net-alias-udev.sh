@@ -5,6 +5,7 @@ DEBUG=0
 debug() {
     if [ $DEBUG -eq 1 ]; then
         echo $@ >> /tmp/stm32mp-net-alias-udev.log
+        echo "NET ALIAS $@" > /dev/kmsg
     fi
 }
 
@@ -40,7 +41,7 @@ interface)
             tmp_alias_path=$(cat $talias)
             if $(echo $devpath | grep -q $tmp_alias_path) ; then
                 alias=$(basename $talias)
-                interface=$(basename $devpath)
+                interface=$(ls -1 /sys/$tmp_alias_path/net | head -n 1)
                 soc_interface=$(basename $tmp_alias_path |  sed 's/\(.*\)\.\(.*\)/\2/' )
                 debug "===> FOUND for $alias"
                 debug "'    ' alias=$alias"
