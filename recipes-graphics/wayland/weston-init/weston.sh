@@ -28,7 +28,9 @@ case "$1" in
      PSPLASH_PID=`pgrep psplash`
      if [ ! -z $PSPLASH_PID ]; then
         echo -n "Stop psplash: "
-        /usr/bin/psplash-write QUIT
+        if [ -e /usr/bin/psplash-write ]; then
+            /usr/bin/psplash-write QUIT
+        fi
         #kill -9 $PSPLASH_PID
         echo "done."
      fi

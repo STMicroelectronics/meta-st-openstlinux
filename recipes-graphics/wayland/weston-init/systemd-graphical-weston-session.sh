@@ -6,7 +6,9 @@ start)
    systemctl --user start pipewire-pulse
    systemctl --user start wireplumber.service
    /bin/sleep 5
-   /usr/bin/psplash-drm-quit
+   if [ -e /usr/bin/psplash-drm-quit ]; then
+        /usr/bin/psplash-drm-quit
+   fi
    ;;
 stop)
    systemctl --user stop weston.service weston.socket

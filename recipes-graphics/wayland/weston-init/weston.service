@@ -12,8 +12,8 @@ Before=graphical-session.target
 
 [Service]
 Type=notify
-TimeoutStartSec=60
-WatchdogSec=20
+#TimeoutStartSec=60
+#WatchdogSec=20
 # Defaults to journal
 #StandardOutput=journal
 StandardError=journal
