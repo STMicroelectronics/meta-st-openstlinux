@@ -1,0 +1,35 @@
+From fc2449a4d30bd39c9491a2e81a0c037f0a2b0e1d Mon Sep 17 00:00:00 2001
+From: Yannick Fertre <yannick.fertre@foss.st.com>
+Date: Fri, 31 Jan 2025 16:55:43 +0100
+Subject: [PATCH] Stop crtc before destroy
+
+In order to avoid having a crtc still enable after weston closes,
+back-end must stop crtc before destroying it.
+
+Upstream-Status: Pending
+Signed-off-by: Yannick Fertre <yannick.fertre@foss.st.com>
+---
+ libweston/backend-drm/drm.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/libweston/backend-drm/drm.c b/libweston/backend-drm/drm.c
+index b46ed63..8e96f29 100644
+--- a/libweston/backend-drm/drm.c
++++ b/libweston/backend-drm/drm.c
+@@ -3369,8 +3369,12 @@ drm_destroy(struct weston_backend *backend)
+ 
+ 	wl_list_remove(&b->base.link);
+ 
+-	wl_list_for_each_safe(crtc, crtc_tmp, &b->drm->crtc_list, link)
++	wl_list_for_each_safe(crtc, crtc_tmp, &b->drm->crtc_list, link) {
++		/* Stop the crtc & destroy it */
++		drmModeSetCrtc(device->drm.fd, crtc->crtc_id, 0, 0, 0,
++			       NULL, 0, NULL);
+ 		drm_crtc_destroy(crtc);
++	}
+ 
+ 	wl_list_for_each_safe(base, next, &ec->head_list, compositor_link) {
+ 		if (to_drm_head(base))
+-- 
+2.34.1
+
