@@ -88,8 +88,8 @@ RDEPENDS:packagegroup-framework-tools-audio = "\
     ${@bb.utils.contains('DISTRO_FEATURES', 'pipewire', 'pipewire-tools', '', d)}               \
     ${@bb.utils.contains('DISTRO_FEATURES', 'pipewire', 'wireplumber', '', d)}                  \
     ${@bb.utils.contains('DISTRO_FEATURES', 'pipewire', 'pulseaudio-tools pipewire-spa-tools', '', d)}             \
-    ${@bb.utils.contains('DISTRO_FEATURES', 'pipewire', 'libcamera', '', d)}                    \
-    ${@bb.utils.contains('DISTRO_FEATURES', 'pipewire', 'libcamera-gst', '', d)}                \
+    ${@bb.utils.contains('DISTRO_FEATURES', 'pipewire', 'libcamera-stm32mp', '', d)}            \
+    ${@bb.utils.contains('DISTRO_FEATURES', 'pipewire', 'libcamera-stm32mp-gst', '', d)}        \
     "
 
 SUMMARY:packagegroup-framework-tools-ui = "Framework tools components for ui"

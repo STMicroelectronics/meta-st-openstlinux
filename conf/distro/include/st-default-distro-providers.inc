@@ -9,6 +9,9 @@ PREFERRED_PROVIDER_jpeg-native = "libjpeg-turbo-native"
 # for openvt tools
 PREFERRED_PROVIDER_console-tools = "kbd"
 
+# for libcamera
+PREFERRED_PROVIDER_libcamera = "libcamera-stm32mp"
+
 #--------------------------
 # Preferred provider
 # splash
