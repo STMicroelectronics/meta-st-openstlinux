@@ -13,6 +13,25 @@ def found_perf():
                 return (os.path.join(root, d))
     return None
 
+def get_clock_rate(clock):
+    # first search clock in stm32_clk_summary
+    if os.path.isfile('/sys/kernel/debug/clk/stm32_clk_summary'):
+        clk_re = re.compile(r"^ *%s *([0-9]+) *(Y|N)" % clock)
+        with open('/sys/kernel/debug/clk/stm32_clk_summary', 'r') as stm32_clk_summary:
+            for line in stm32_clk_summary:
+                mo = clk_re.match(line)
+                if mo:
+                    return int(mo.group(1))
+
+    # if stm32_clk_summary does not exist or clock not found in stm32_clk_summary,
+    # look for clock existence in clk framework
+    clk_rate_filename = '/sys/kernel/debug/clk/%s/clk_rate' % clock
+    if os.path.isfile(clk_rate_filename):
+        with open(clk_rate_filename, 'r') as clk_rate:
+            return int(clk_rate.readline().strip())
+
+    return None
+
 with open('/proc/device-tree/compatible', 'r') as compatible:
     compatible_string = compatible.read()
     if 'stm32mp15' in compatible_string:
@@ -35,8 +54,8 @@ with open('/proc/device-tree/compatible', 'r') as compatible:
             word_length  = 4    # Bytes
             ddr_freq = 1200
         if 'stm32mp23' in compatible_string:
-            # 32 bits
-            word_length  = 4    # Bytes
+            # 16 bits
+            word_length  = 2    # Bytes
             ddr_freq = 1200
         if 'stm32mp21' in compatible_string:
             # 16 bits
@@ -95,14 +114,13 @@ def usage():
 perf_file = None
 dic = {}
 
-with open('/sys/kernel/debug/clk/' + clock_name + '/clk_rate', 'r') as clk_rate:
-    clk_rate_Hz = int(clk_rate.readline().strip())
-    clk_rate_MHz = clk_rate_Hz / 1000000
+clk_rate = get_clock_rate(clock_name)
+if clk_rate:
+    clk_rate /= 1000000
     if 'stm32mp2' in compatible_string:
-        clk_rate_MHz = clk_rate_MHz * 2
-if (clk_rate_MHz):
-    print("Found ddr frequency of %s MHz" % clk_rate_MHz)
-    ddr_freq = clk_rate_MHz
+        clk_rate *= 2
+    print("Found ddr frequency of %s MHz" % clk_rate)
+    ddr_freq = clk_rate
 else :
     print('Warning: cannot find ddr clock summary entry, fallback to default value else specified')
 
