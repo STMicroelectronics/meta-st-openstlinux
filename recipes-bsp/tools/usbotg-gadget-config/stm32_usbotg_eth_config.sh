@@ -65,8 +65,14 @@ do_start() {
     mkdir -p "${d}/configs/${c}"
     mkdir -p "${d}/configs/${c}/strings/0x409"
     echo "Config 1: NCM" > "${d}/configs/${c}/strings/0x409/configuration"
-    echo 0 > "${d}/configs/${c}/MaxPower"
-    echo 0xC0 > "${d}/configs/${c}/bmAttributes" # self powered device
+
+    if $(cat /proc/device-tree/compatible | grep -q "stm32mp215f-dk") ; then
+        echo 500 > "${d}/configs/${c}/MaxPower"
+        echo 0x80 > "${d}/configs/${c}/bmAttributes" # Bus powered device
+    else
+        echo 0 > "${d}/configs/${c}/MaxPower"
+        echo 0xC0 > "${d}/configs/${c}/bmAttributes" # self powered device
+    fi
 
     # Enable use of OS descriptor (for windows to bind drivers like NCM, RNDIS...
     # without additional .inf file)
