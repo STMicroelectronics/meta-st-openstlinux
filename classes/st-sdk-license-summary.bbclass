@@ -502,6 +502,8 @@ def license_sdk_create_summary(d):
                 else:
                     html.addColumnContent("", style)
                 if package_license:
+                    package_license = package_license.replace('&', 'AND')
+                    package_license = package_license.replace('|', 'OR')
                     html.addColumnContent(package_license, style)
                 else:
                     html.addColumnContent("", style)

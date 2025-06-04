@@ -545,6 +545,8 @@ def license_create_summary(d):
                 elif m.group(1) == "FILES":
                     new_boot = 1
                 if new_boot == 1:
+                    boot_license = boot_license.replace('&', 'AND')
+                    boot_license = boot_license.replace('|', 'OR')
                     if findWholeWord("GPLv3")(boot_license):
                         html.startRow(red)
                         # Recipe Name
@@ -630,7 +632,7 @@ def license_create_summary(d):
                             package_summary = m.group(2)
                         elif m.group(1).startswith("FILES_INFO"):
                             file_info = m.group(2)
-                if findWholeWord("GPLv3")(package_license):
+                if package_license and findWholeWord("GPLv3")(package_license):
                     style = html.red
                     style_wrapped = html.wrap_red_format
                 else:
@@ -668,6 +670,8 @@ def license_create_summary(d):
                 else:
                     html.addColumnContent("", style)
                 if package_license:
+                    package_license = package_license.replace("&", "AND")
+                    package_license = package_license.replace("|", "OR")
                     html.addColumnContent(package_license, style)
                 else:
                     html.addColumnContent("", style)
