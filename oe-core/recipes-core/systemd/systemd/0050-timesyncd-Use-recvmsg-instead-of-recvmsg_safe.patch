@@ -13,10 +13,9 @@ NTP with IPv6.
 Before 3691bcf3c5e the code works fine. So revert the piece of code to
 use recvmsg() and the issue is gone.
 
+Upstream-Status: Inappropriate
 Signed-off-by: Lei YU <yulei.sh@bytedance.com>
 ---
-Upstream-Status: Inappropriate
-
  src/timesync/timesyncd-manager.c | 7 ++++---
  1 file changed, 4 insertions(+), 3 deletions(-)
 
