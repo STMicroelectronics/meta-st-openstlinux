@@ -4,9 +4,8 @@ Date: Fri, 14 Feb 2020 15:25:05 +0100
 Subject: [PATCH] authorize pulse audio/pipewire request via dbus
 
 Signed-off-by: Christophe Priouzeau <christophe.priouzeau@st.com>
----
 Upstream-Status: Inappropriate [OE specific]
-
+---
  src/bluetooth.conf | 17 +++++++++++++++++
  1 file changed, 17 insertions(+)
 
