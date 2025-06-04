@@ -8,14 +8,21 @@ LIC_FILES_CHKSUM = "\
     file://LICENSES/LGPL-2.1-or-later.txt;md5=2a4f4fd2128ea2f65047ee63fbca9f68 \
 "
 
+# 0.3.0
 SRC_URI = " \
         git://git.libcamera.org/libcamera/libcamera.git;protocol=https;branch=master \
         file://0001-media_device-Add-bool-return-type-to-unlock.patch \
         file://0002-options-Replace-use-of-VLAs-in-C.patch \
         file://0001-rpi-Use-alloca-instead-of-variable-length-arrays.patch \
 "
-
 SRCREV = "aee16c06913422a0ac84ee3217f87a9795e3c2d9"
+
+SRC_URI += " \
+        file://0001-0.3.0-stm32mp-add-dcmipp-ipa.patch \
+"
+PV = "v0.3.0-stm32mp"
+
+PROVIDES += "libcamera"
 
 PE = "1"
 
@@ -26,10 +33,12 @@ DEPENDS += "${@bb.utils.contains('DISTRO_FEATURES', 'qt', 'qtbase qtbase-native'
 
 PACKAGES =+ "${PN}-gst"
 
-PACKAGECONFIG ??= ""
+PACKAGECONFIG ??= "gst python"
 PACKAGECONFIG[gst] = "-Dgstreamer=enabled,-Dgstreamer=disabled,gstreamer1.0 gstreamer1.0-plugins-base"
+PACKAGECONFIG[python] = "-Dpycamera=enabled,-Dpycamera=disabled,python3-pybind11"
 
-LIBCAMERA_PIPELINES ??= "auto"
+LIBCAMERA_PIPELINES ??= "dcmipp"
+LIBCAMERA_IPAS = "dcmipp"
 
 EXTRA_OEMESON = " \
     -Dpipelines=${LIBCAMERA_PIPELINES} \
@@ -39,10 +48,14 @@ EXTRA_OEMESON = " \
     -Dtest=false \
     -Ddocumentation=disabled \
 "
+EXTRA_OEMESON += " \
+    -Dipas=${LIBCAMERA_IPAS} \
+"
+
 
 RDEPENDS:${PN} = "${@bb.utils.contains('DISTRO_FEATURES', 'wayland qt', 'qtwayland', '', d)}"
 
-inherit meson pkgconfig python3native
+inherit meson pkgconfig python3native python3-dir
 
 do_configure:prepend() {
     sed -i -e 's|py_compile=True,||' ${S}/utils/ipc/mojo/public/tools/mojom/mojom/generate/template_expander.py
@@ -70,6 +83,7 @@ do_package_recalculate_ipa_signatures() {
 }
 
 FILES:${PN} += " ${libexecdir}/libcamera/v4l2-compat.so"
+FILES:${PN} += "${datadir} ${libdir} ${PYTHON_SITEPACKAGES_DIR}"
 FILES:${PN}-gst = "${libdir}/gstreamer-1.0"
 
 # libcamera-v4l2 explicitly sets _FILE_OFFSET_BITS=32 to get access to

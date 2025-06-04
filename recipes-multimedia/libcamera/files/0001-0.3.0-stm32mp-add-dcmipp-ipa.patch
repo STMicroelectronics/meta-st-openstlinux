@@ -1,55 +1,59 @@
-From 5ebafc7fbf6fe5870661310db52be6fb2a9b852f Mon Sep 17 00:00:00 2001
+From 3a1b1068ecae127ab97cf4b3f6fd638893a8380a Mon Sep 17 00:00:00 2001
 From: Christophe Priouzeau <christophe.priouzeau@foss.st.com>
-Date: Mon, 4 Nov 2024 09:33:59 +0100
-Subject: [PATCH] 0.3.0-stm32mp add dcmipp ipa
+Date: Wed, 4 Jun 2025 13:47:46 +0200
+Subject: [PATCH] 0.3.0-stm32mp-add-dcmipp-ipa
 
 ---
  README.rst                                    |   16 +
  include/libcamera/internal/media_device.h     |    2 +-
- include/libcamera/ipa/dcmipp.mojom            |   35 +
+ include/libcamera/ipa/dcmipp.mojom            |   36 +
  include/libcamera/ipa/meson.build             |    1 +
- include/linux/stm32-dcmipp-config.h           |  194 +++
+ include/linux/stm32-dcmipp-config.h           |  196 +++
  include/linux/v4l2-controls.h                 |   41 +
  include/linux/videodev2.h                     |    5 +
  meson.build                                   |    1 +
- meson_options.txt                             |    5 +-
+ meson_options.txt                             |   10 +-
  src/apps/cam/camera_session.cpp               |   11 +-
  src/apps/common/options.cpp                   |   12 +-
  src/gstreamer/gstlibcamera-utils.cpp          |   16 +
  src/gstreamer/gstlibcamerapad.cpp             |    4 +
- src/gstreamer/gstlibcamerasrc.cpp             |  139 +-
- src/ipa/dcmipp/algorithms/aec.cpp             |  221 +++
- src/ipa/dcmipp/algorithms/aec.h               |   50 +
+ src/gstreamer/gstlibcamerasrc.cpp             | 1124 +++++++++++++-
+ src/ipa/dcmipp/algorithms/aec.cpp             |  704 +++++++++
+ src/ipa/dcmipp/algorithms/aec.h               |   68 +
  src/ipa/dcmipp/algorithms/algorithm.h         |   35 +
- src/ipa/dcmipp/algorithms/awb.cpp             |  492 +++++++
- src/ipa/dcmipp/algorithms/awb.h               |   61 +
- src/ipa/dcmipp/algorithms/badpixel.cpp        |  148 ++
+ src/ipa/dcmipp/algorithms/awb.cpp             |  948 ++++++++++++
+ src/ipa/dcmipp/algorithms/awb.h               |   65 +
+ src/ipa/dcmipp/algorithms/badpixel.cpp        |  185 +++
  src/ipa/dcmipp/algorithms/badpixel.h          |   50 +
- src/ipa/dcmipp/algorithms/blc.cpp             |  121 ++
+ src/ipa/dcmipp/algorithms/blc.cpp             |  145 ++
  src/ipa/dcmipp/algorithms/blc.h               |   44 +
- src/ipa/dcmipp/algorithms/contrast.cpp        |  119 ++
+ src/ipa/dcmipp/algorithms/contrast.cpp        |  141 ++
  src/ipa/dcmipp/algorithms/contrast.h          |   44 +
- src/ipa/dcmipp/algorithms/demosaicing.cpp     |  110 ++
+ src/ipa/dcmipp/algorithms/demosaicing.cpp     |  146 ++
  src/ipa/dcmipp/algorithms/demosaicing.h       |   44 +
- src/ipa/dcmipp/algorithms/meson.build         |   11 +
- src/ipa/dcmipp/algorithms/statistic.cpp       |  177 +++
+ src/ipa/dcmipp/algorithms/gamma.cpp           |   91 ++
+ src/ipa/dcmipp/algorithms/gamma.h             |   44 +
+ src/ipa/dcmipp/algorithms/meson.build         |   12 +
+ src/ipa/dcmipp/algorithms/statistic.cpp       |  215 +++
  src/ipa/dcmipp/algorithms/statistic.h         |   44 +
- src/ipa/dcmipp/data/imx335.yaml               |   54 +
+ src/ipa/dcmipp/data/imx335.yaml               |   57 +
+ .../dcmipp/data/imx335_judge2_light_box.yaml  |   54 +
+ .../dcmipp/data/imx335_mini_light_box.yaml    |   54 +
  src/ipa/dcmipp/data/meson.build               |    9 +
- src/ipa/dcmipp/dcmipp.cpp                     |  558 +++++++
- src/ipa/dcmipp/ipa_context.h                  |  120 ++
- src/ipa/dcmipp/meson.build                    |   32 +
+ src/ipa/dcmipp/dcmipp.cpp                     |  567 +++++++
+ src/ipa/dcmipp/ipa_context.h                  |  132 ++
+ src/ipa/dcmipp/meson.build                    |   39 +
  src/ipa/dcmipp/module.h                       |   27 +
  src/ipa/rpi/controller/rpi/alsc.cpp           |    7 +-
- src/libcamera/control_ids_draft.yaml          |  207 +++
+ src/libcamera/control_ids_draft.yaml          |  244 +++
  src/libcamera/ipc_unixsocket.cpp              |   13 +-
  src/libcamera/media_device.cpp                |    6 +-
- src/libcamera/pipeline/dcmipp/dcmipp.cpp      | 1311 +++++++++++++++++
- src/libcamera/pipeline/dcmipp/dcmipp.h        |  131 ++
- src/libcamera/pipeline/dcmipp/dcmipp_path.cpp |  513 +++++++
+ src/libcamera/pipeline/dcmipp/dcmipp.cpp      | 1363 +++++++++++++++++
+ src/libcamera/pipeline/dcmipp/dcmipp.h        |  120 ++
+ src/libcamera/pipeline/dcmipp/dcmipp_path.cpp |  496 ++++++
  src/libcamera/pipeline/dcmipp/meson.build     |    5 +
  src/libcamera/v4l2_device.cpp                 |   20 +-
- 45 files changed, 5227 insertions(+), 39 deletions(-)
+ 49 files changed, 7674 insertions(+), 39 deletions(-)
  create mode 100644 include/libcamera/ipa/dcmipp.mojom
  create mode 100644 include/linux/stm32-dcmipp-config.h
  create mode 100644 src/ipa/dcmipp/algorithms/aec.cpp
@@ -65,10 +69,14 @@ Subject: [PATCH] 0.3.0-stm32mp add dcmipp ipa
  create mode 100644 src/ipa/dcmipp/algorithms/contrast.h
  create mode 100644 src/ipa/dcmipp/algorithms/demosaicing.cpp
  create mode 100644 src/ipa/dcmipp/algorithms/demosaicing.h
+ create mode 100644 src/ipa/dcmipp/algorithms/gamma.cpp
+ create mode 100644 src/ipa/dcmipp/algorithms/gamma.h
  create mode 100644 src/ipa/dcmipp/algorithms/meson.build
  create mode 100644 src/ipa/dcmipp/algorithms/statistic.cpp
  create mode 100644 src/ipa/dcmipp/algorithms/statistic.h
  create mode 100644 src/ipa/dcmipp/data/imx335.yaml
+ create mode 100644 src/ipa/dcmipp/data/imx335_judge2_light_box.yaml
+ create mode 100644 src/ipa/dcmipp/data/imx335_mini_light_box.yaml
  create mode 100644 src/ipa/dcmipp/data/meson.build
  create mode 100644 src/ipa/dcmipp/dcmipp.cpp
  create mode 100644 src/ipa/dcmipp/ipa_context.h
@@ -121,10 +129,10 @@ index 3b624e00..bf2e475d 100644
  	bool isValid() const { return valid_; }
 diff --git a/include/libcamera/ipa/dcmipp.mojom b/include/libcamera/ipa/dcmipp.mojom
 new file mode 100644
-index 00000000..b784543c
+index 00000000..810c0f6c
 --- /dev/null
 +++ b/include/libcamera/ipa/dcmipp.mojom
-@@ -0,0 +1,35 @@
+@@ -0,0 +1,36 @@
 +/* SPDX-License-Identifier: LGPL-2.1-or-later */
 +
 +module ipa.dcmipp;
@@ -159,6 +167,7 @@ index 00000000..b784543c
 +	metadataReady(uint32 frame, libcamera.ControlList sensorControls);
 +	setSensorControls(uint32 frame, libcamera.ControlList sensorControls);
 +	setIspControls(uint32 frame, libcamera.ControlList ispControls);
++	setPostprocControls(uint32 frame, libcamera.ControlList postprocControls);
 +};
 diff --git a/include/libcamera/ipa/meson.build b/include/libcamera/ipa/meson.build
 index 3352d08f..925aad2b 100644
@@ -174,10 +183,10 @@ index 3352d08f..925aad2b 100644
      'rpi/vc4': 'raspberrypi.mojom',
 diff --git a/include/linux/stm32-dcmipp-config.h b/include/linux/stm32-dcmipp-config.h
 new file mode 100644
-index 00000000..af80b3b3
+index 00000000..85b4cf73
 --- /dev/null
 +++ b/include/linux/stm32-dcmipp-config.h
-@@ -0,0 +1,194 @@
+@@ -0,0 +1,196 @@
 +/* SPDX-License-Identifier: ((GPL-2.0+ WITH Linux-syscall-note) OR MIT) */
 +/*
 + * STM32 DCMIPP ISP userspace API
@@ -252,12 +261,14 @@ index 00000000..af80b3b3
 +/**
 + * struct stm32_dcmipp_isp_dm_cfg - STM32 DCMIPP ISP demosaicing filters
 + *
++ * @en: enable / disable the demosaicing block
 + * @edge: strength of the edge detection
 + * @lineh: strength of the horizontal line detection
 + * @linev: strength of the vertical line detection
 + * @peak: strength of the peak detection
 + */
 +struct stm32_dcmipp_isp_dm_cfg {
++	__u32 en;
 +	__u8 edge;
 +	__u8 lineh;
 +	__u8 linev;
@@ -460,7 +471,7 @@ index 1902ea2f..c0f49810 100644
      'vimc':         ['test'],
  }
 diff --git a/meson_options.txt b/meson_options.txt
-index 7aa41249..933833ea 100644
+index 7aa41249..0674d2b2 100644
 --- a/meson_options.txt
 +++ b/meson_options.txt
 @@ -32,7 +32,7 @@ option('gstreamer',
@@ -482,6 +493,15 @@ index 7aa41249..933833ea 100644
          ],
          description : 'Select which pipeline handlers to build. If this is set to "auto", all the pipelines applicable to the target architecture will be built. If this is set to "all", all the pipelines will be built. If both are selected then "all" will take precedence.')
  
+@@ -86,3 +87,8 @@ option('v4l2',
+         type : 'boolean',
+         value : false,
+         description : 'Compile the V4L2 compatibility layer')
++
++option('evision_algo',
++        type : 'boolean',
++        value : false,
++        description : 'Compile dcmipp with algorithms from evision libraries')
 diff --git a/src/apps/cam/camera_session.cpp b/src/apps/cam/camera_session.cpp
 index f13355ba..35e2451a 100644
 --- a/src/apps/cam/camera_session.cpp
@@ -594,10 +614,18 @@ index 7b22aebe..af0fe477 100644
  		{ 0, NULL, NULL }
  	};
 diff --git a/src/gstreamer/gstlibcamerasrc.cpp b/src/gstreamer/gstlibcamerasrc.cpp
-index 6a95b6af..765fdb74 100644
+index 6a95b6af..164092bc 100644
 --- a/src/gstreamer/gstlibcamerasrc.cpp
 +++ b/src/gstreamer/gstlibcamerasrc.cpp
-@@ -129,6 +129,9 @@ struct GstLibcameraSrcState {
+@@ -30,6 +30,7 @@
+ #include <atomic>
+ #include <queue>
+ #include <vector>
++#include <sstream>
+ 
+ #include <libcamera/camera.h>
+ #include <libcamera/camera_manager.h>
+@@ -129,6 +130,9 @@ struct GstLibcameraSrcState {
  	ControlList initControls_;
  	guint group_id_;
  
@@ -607,25 +635,98 @@ index 6a95b6af..765fdb74 100644
  	int queueRequest();
  	void requestCompleted(Request *request);
  	int processRequest();
-@@ -144,6 +147,12 @@ struct _GstLibcameraSrc {
+@@ -144,6 +148,48 @@ struct _GstLibcameraSrc {
  	gchar *camera_name;
  	controls::AfModeEnum auto_focus_mode = controls::AfModeManual;
  
 +	struct LibCameraControls {
 +		/* Add all ISP controls */
++		int hwrevision[2];
++		int decimation;
 +		bool black_level_enable;
 +		int black_level_values[3];
++		libcamera::Rectangle statistic_area;
++		bool contrast_enable;
++		int contrast_values[9];
++		bool aec_algo_enable;
++		float aec_algo_exposure_compensation;
++		int aec_algo_exposure_target;
++		int aec_algo_antiflicker_frequency;
++		float sensor_gain_dB;
++		int sensor_exposure;
++		int sensor_delay;
++		int sensor_delay_measure;
++		bool badpix_enable;
++		int badpix_strength;
++		int badpix_count;
++		int badpix_algo_threshold;
++		bool ispgain_enable;
++		int ispgain_values[3];
++		bool ccm_enable;
++		int ccm_values[9];
++		bool awb_algo_enable;
++		std::array<std::string, 5> awb_algo_profile_names;
++		std::array<int, 5> awb_algo_profile_color_temps;
++		std::array<int, 5 * 3> awb_algo_profile_isp_gains;
++		std::array<int, 5 * 3 * 3> awb_algo_profile_ccms;
++		std::string awb_current_profile_name;
++		int awb_current_profile_color_temp;
++		bool demosaicing_enable;
++		std::array<int, 4> demosaicing_filters;
++		int statistic_profile;
++		std::array<int, 4> statistic_avg_up;
++		std::array<int, 4> statistic_avg_down;
++		std::array<int, 12> statistic_hist_up;
++		std::array<int, 12> statistic_hist_down;
++		bool gamma_enable;
 +	} ctrl;
 +
  	std::atomic<GstEvent *> pending_eos;
  
  	GstLibcameraSrcState *state;
-@@ -155,9 +164,16 @@ enum {
+@@ -155,9 +201,53 @@ enum {
  	PROP_0,
  	PROP_CAMERA_NAME,
  	PROP_AUTO_FOCUS_MODE,
++	PROP_HW_REVISION,
++	PROP_DECIMATION,
 +	PROP_BLACK_LEVEL_ENABLE,
 +	PROP_BLACK_LEVEL_VALUES,
++	PROP_STATISTIC_AREA,
++	PROP_CONTRAST_ENABLE,
++	PROP_CONTRAST_VALUES,
++	PROP_AEC_ALGO_ENABLE,
++	PROP_AEC_ALGO_EXPOSURE_COMPENSATION,
++	PROP_AEC_ALGO_EXPOSURE_TARGET,
++	PROP_AEC_ALGO_ANTIFLICKER_FREQUENCY,
++	PROP_SENSOR_GAIN,
++	PROP_SENSOR_EXPOSURE,
++	PROP_SENSOR_DELAY,
++	PROP_SENSOR_DELAY_MEASURE,
++	PROP_DO_SENSOR_DELAY_MEASURE,
++	PROP_BADPIX_ENABLE,
++	PROP_BADPIX_STRENGTH,
++	PROP_BADPIX_COUNT,
++	PROP_BADPIX_ALGO_THRESHOLD,
++	PROP_ISP_GAIN_ENABLE,
++	PROP_ISP_GAIN_VALUES,
++	PROP_CCM_ENABLE,
++	PROP_CCM_VALUES,
++	PROP_AWB_ALGO_ENABLE,
++	PROP_AWB_ALGO_PROFILE_NAMES,
++	PROP_AWB_ALGO_PROFILE_COLOR_TEMPS,
++	PROP_AWB_ALGO_PROFILE_ISP_GAINS,
++	PROP_AWB_ALGO_PROFILE_CCMS,
++	PROP_AWB_CURRENT_PROFILE_NAME,
++	PROP_AWB_CURRENT_PROFILE_COLOR_TEMP,
++	PROP_DEMOSAICING_ENABLE,
++	PROP_DEMOSAICING_FILTERS,
++	PROP_STATISTIC_PROFILE,
++	PROP_STATISTIC_GET_AVERAGE_UP,
++	PROP_STATISTIC_GET_AVERAGE_DOWN,
++	PROP_STATISTIC_GET_HISTOGRAM_UP,
++	PROP_STATISTIC_GET_HISTOGRAM_DOWN,
++	PROP_GAMMA_ENABLE,
  };
  
 +static void gst_libcamera_src_child_proxy_init(gpointer g_iface,
@@ -637,7 +738,7 @@ index 6a95b6af..765fdb74 100644
  			GST_DEBUG_CATEGORY_INIT(source_debug, "libcamerasrc", 0,
  						"libcamera Source"))
  
-@@ -203,7 +219,19 @@ int GstLibcameraSrcState::queueRequest()
+@@ -203,7 +293,19 @@ int GstLibcameraSrcState::queueRequest()
  	}
  
  	GST_TRACE_OBJECT(src_, "Requesting buffers");
@@ -658,28 +759,184 @@ index 6a95b6af..765fdb74 100644
  
  	{
  		GLibLocker locker(&lock_);
-@@ -234,6 +262,20 @@ GstLibcameraSrcState::requestCompleted(Request *request)
+@@ -234,6 +336,176 @@ GstLibcameraSrcState::requestCompleted(Request *request)
  		return;
  	}
  
-+
 +	/* Update the properties from the libcamera metadata */
++	const auto HwRevision = request->metadata().get(controls::draft::PipelineHwRevision);
++	if (HwRevision) {
++		src_->ctrl.hwrevision[0] = *HwRevision >> 4;    /* Major */
++		src_->ctrl.hwrevision[1] = *HwRevision & 0x0F;  /* Minor */
++	}
++	const auto IspDecimation = request->metadata().get(controls::draft::IspDecimationRatio);
++	if (IspDecimation) {
++		src_->ctrl.decimation = *IspDecimation;
++	}
 +	const auto BlackLevelEnable = request->metadata().get(controls::draft::BlackLevelCorrectionEnable);
 +	if (BlackLevelEnable) {
 +		src_->ctrl.black_level_enable = *BlackLevelEnable;
 +	}
-+	/* Update the properties from the libcamera metadata */
 +	const auto BlackLevel = request->metadata().get(controls::draft::BlackLevelCorrectionLevels);
 +	if (BlackLevel) {
 +		src_->ctrl.black_level_values[0] = (*BlackLevel)[0];
 +		src_->ctrl.black_level_values[1] = (*BlackLevel)[1];
 +		src_->ctrl.black_level_values[2] = (*BlackLevel)[2];
 +	}
++	const auto StatisticArea = request->metadata().get(controls::draft::StatisticArea);
++	if (StatisticArea) {
++		src_->ctrl.statistic_area = *StatisticArea;
++	}
++	const auto ContrastEnable = request->metadata().get(controls::draft::ContrastLuminanceEnable);
++	if (ContrastEnable) {
++		src_->ctrl.contrast_enable = *ContrastEnable;
++	}
++	const auto ContrastLevel = request->metadata().get(controls::draft::ContrastLuminance);
++	if (ContrastLevel) {
++		for (unsigned int i = 0; i < 9; i++) {
++			src_->ctrl.contrast_values[i] = (*ContrastLevel)[i];
++		}
++	}
++	const auto AecAlgoEnable = request->metadata().get(controls::AeEnable);
++	if (AecAlgoEnable) {
++		src_->ctrl.aec_algo_enable = *AecAlgoEnable;
++	}
++	const auto AecAlgoExposureCompensation = request->metadata().get(controls::ExposureValue);
++	if (AecAlgoExposureCompensation) {
++		src_->ctrl.aec_algo_exposure_compensation = *AecAlgoExposureCompensation;
++	}
++	const auto AecAlgoExposureTarget = request->metadata().get(controls::draft::AeExposureTarget);
++	if (AecAlgoExposureTarget) {
++		src_->ctrl.aec_algo_exposure_target = *AecAlgoExposureTarget;
++	}
++	const auto AecAntiFlickerFrequency = request->metadata().get(controls::draft::AntiFlickerFreq);
++	if (AecAntiFlickerFrequency) {
++		src_->ctrl.aec_algo_antiflicker_frequency = *AecAntiFlickerFrequency;
++	}
++	const auto SensorGaindB = request->metadata().get(controls::draft::AnalogueGain_dB);
++	if (SensorGaindB) {
++		src_->ctrl.sensor_gain_dB = *SensorGaindB;
++	}
++	const auto SensorExposure = request->metadata().get(controls::ExposureTime);
++	if (SensorExposure) {
++		src_->ctrl.sensor_exposure = *SensorExposure;
++	}
++	const auto SensorDelay = request->metadata().get(controls::draft::SensorDelay);
++	if (SensorDelay) {
++		src_->ctrl.sensor_delay = *SensorDelay;
++	}
++	const auto SensorDelayMeasure = request->metadata().get(controls::draft::SensorDelayMeasure);
++	if (SensorDelayMeasure) {
++		src_->ctrl.sensor_delay_measure = *SensorDelayMeasure;
++	}
++	const auto BadPixEnable = request->metadata().get(controls::draft::BadPixelRemovalEnable);
++	if (BadPixEnable) {
++		src_->ctrl.badpix_enable = *BadPixEnable;
++	}
++	const auto BadPixStrength = request->metadata().get(controls::draft::BadPixelRemovalStrength);
++	if (BadPixStrength) {
++		src_->ctrl.badpix_strength = *BadPixStrength;
++	}
++	const auto BadPixCount = request->metadata().get(controls::draft::BadPixelRemovalCount);
++	if (BadPixCount) {
++		src_->ctrl.badpix_count = *BadPixCount;
++	}
++	const auto BadPixAlgoThreshold = request->metadata().get(controls::draft::BadPixelRemovalThreshold);
++	if (BadPixAlgoThreshold) {
++		src_->ctrl.badpix_algo_threshold = *BadPixAlgoThreshold;
++	}
++	const auto IspGainEnable = request->metadata().get(controls::draft::ColourGains3Enable);
++	if (IspGainEnable) {
++		src_->ctrl.ispgain_enable = *IspGainEnable;
++	}
++	const auto IspGainValues = request->metadata().get(controls::draft::ColourGains3);
++	if (IspGainValues) {
++		for (unsigned int i = 0; i < 3; i++) {
++			src_->ctrl.ispgain_values[i] = (*IspGainValues)[i];
++		}
++	}
++	const auto CcmEnable = request->metadata().get(controls::draft::ColourCorrectionEnable);
++	if (CcmEnable) {
++		src_->ctrl.ccm_enable = *CcmEnable;
++	}
++	const auto CcmValues = request->metadata().get(controls::draft::ColourCorrection);
++	if (CcmValues) {
++		for (unsigned int i = 0; i < 9; i++) {
++			src_->ctrl.ccm_values[i] = (*CcmValues)[i];
++		}
++	}
++	const auto AwbAlgoEnable = request->metadata().get(controls::AwbEnable);
++	if (AwbAlgoEnable) {
++		src_->ctrl.awb_algo_enable = *AwbAlgoEnable;
++	}
++	const auto AwbAlgoProfileNames = request->metadata().get(controls::draft::AwbProfileName);
++	if (AwbAlgoProfileNames) {
++		/* The Controls class does not support array of string. So, split the concatenated string */
++		std::string token;
++		std::stringstream ss(*AwbAlgoProfileNames);
++		for (int i = 0; i < (int)src_->ctrl.awb_algo_profile_names.size(); i++) {
++			if (!getline(ss, token, '$'))
++				token = "";
++			src_->ctrl.awb_algo_profile_names[i] = token;
++		}
++	}
++	const auto AwbAlgoProfileColorTemps = request->metadata().get(controls::draft::AwbReferenceColorTemperature);
++	if (AwbAlgoProfileColorTemps) {
++		std::copy(std::begin(*AwbAlgoProfileColorTemps), std::end(*AwbAlgoProfileColorTemps), src_->ctrl.awb_algo_profile_color_temps.begin());
++	}
++	const auto AwbAlgoProfileIspGains = request->metadata().get(controls::draft::AwbColourGains3);
++	if (AwbAlgoProfileIspGains) {
++		std::copy(std::begin(*AwbAlgoProfileIspGains), std::end(*AwbAlgoProfileIspGains), src_->ctrl.awb_algo_profile_isp_gains.begin());
++	}
++	const auto AwbAlgoProfilesCcms = request->metadata().get(controls::draft::AwbColourCorrection);
++	if (AwbAlgoProfilesCcms) {
++		std::copy(std::begin(*AwbAlgoProfilesCcms), std::end(*AwbAlgoProfilesCcms), src_->ctrl.awb_algo_profile_ccms.begin());
++	}
++	const auto AwbCurProfileName = request->metadata().get(controls::draft::AwbCurrentProfileName);
++	if (AwbCurProfileName) {
++		src_->ctrl.awb_current_profile_name = *AwbCurProfileName;
++	}
++	const auto AwbCurProfileColorTemp = request->metadata().get(controls::ColourTemperature);
++	if (AwbCurProfileColorTemp) {
++		src_->ctrl.awb_current_profile_color_temp = *AwbCurProfileColorTemp;
++	}
++	const auto DemosaicingEnable = request->metadata().get(controls::draft::DemosaicingEnable);
++	if (DemosaicingEnable) {
++		src_->ctrl.demosaicing_enable = *DemosaicingEnable;
++	}
++	const auto DemosaicingFilters = request->metadata().get(controls::draft::DemosaicingFilter);
++	if (DemosaicingFilters) {
++		std::copy(std::begin(*DemosaicingFilters), std::end(*DemosaicingFilters), src_->ctrl.demosaicing_filters.begin());
++	}
++	const auto StatProfile = request->metadata().get(controls::draft::StatisticProfile);
++	if (StatProfile) {
++		src_->ctrl.statistic_profile = *StatProfile;
++	}
++	const auto StatAvgUp = request->metadata().get(controls::draft::StatisticAverageUp);
++	if (StatAvgUp) {
++		std::copy(std::begin(*StatAvgUp), std::end(*StatAvgUp), src_->ctrl.statistic_avg_up.begin());
++	}
++	const auto StatAvgDown = request->metadata().get(controls::draft::StatisticAverageDown);
++	if (StatAvgDown) {
++		std::copy(std::begin(*StatAvgDown), std::end(*StatAvgDown), src_->ctrl.statistic_avg_down.begin());
++	}
++	const auto StatHistUp = request->metadata().get(controls::draft::StatisticBinsUp);
++	if (StatHistUp) {
++		std::copy(std::begin(*StatHistUp), std::end(*StatHistUp), src_->ctrl.statistic_hist_up.begin());
++	}
++	const auto StatHistDown = request->metadata().get(controls::draft::StatisticBinsDown);
++	if (StatHistDown) {
++		std::copy(std::begin(*StatHistDown), std::end(*StatHistDown), src_->ctrl.statistic_hist_down.begin());
++	}
++	const auto GammaEnable = request->metadata().get(controls::draft::GammaCorrectionEnable);
++	if (GammaEnable) {
++		src_->ctrl.gamma_enable = *GammaEnable;
++	}
 +
  	if (GST_ELEMENT_CLOCK(src_)) {
  		int64_t timestamp = request->metadata().get(controls::SensorTimestamp).value_or(0);
  
-@@ -669,6 +711,7 @@ gst_libcamera_src_task_enter(GstTask *task, [[maybe_unused]] GThread *thread,
+@@ -669,6 +941,7 @@ gst_libcamera_src_task_enter(GstTask *task, [[maybe_unused]] GThread *thread,
  		}
  	}
  
@@ -687,7 +944,7 @@ index 6a95b6af..765fdb74 100644
  	ret = state->cam_->start(&state->initControls_);
  	if (ret) {
  		GST_ELEMENT_ERROR(self, RESOURCE, SETTINGS,
-@@ -730,6 +773,7 @@ gst_libcamera_src_set_property(GObject *object, guint prop_id,
+@@ -730,6 +1003,7 @@ gst_libcamera_src_set_property(GObject *object, guint prop_id,
  {
  	GLibLocker lock(GST_OBJECT(object));
  	GstLibcameraSrc *self = GST_LIBCAMERA_SRC(object);
@@ -695,7 +952,7 @@ index 6a95b6af..765fdb74 100644
  
  	switch (prop_id) {
  	case PROP_CAMERA_NAME:
-@@ -739,6 +783,24 @@ gst_libcamera_src_set_property(GObject *object, guint prop_id,
+@@ -739,6 +1013,252 @@ gst_libcamera_src_set_property(GObject *object, guint prop_id,
  	case PROP_AUTO_FOCUS_MODE:
  		self->auto_focus_mode = static_cast<controls::AfModeEnum>(g_value_get_enum(value));
  		break;
@@ -717,13 +974,256 @@ index 6a95b6af..765fdb74 100644
 +					    { blR, blG, blB });
 +		break;
 +	}
++	case PROP_STATISTIC_AREA:
++	{
++		libcamera::Rectangle statarea;
++		statarea.x = g_value_get_int(gst_value_array_get_value(value, 0));
++		statarea.y = g_value_get_int(gst_value_array_get_value(value, 1));
++		statarea.width = g_value_get_int(gst_value_array_get_value(value, 2));
++		statarea.height = g_value_get_int(gst_value_array_get_value(value, 3));
++		GLibLocker locker(&state->controlsLock_);
++		state->pendingControls_.set(controls::draft::StatisticArea, statarea);
++		break;
++	}
++	case PROP_CONTRAST_ENABLE:
++	{
++		bool enable = g_value_get_boolean(value);
++		GLibLocker locker(&state->controlsLock_);
++		state->pendingControls_.set(controls::draft::ContrastLuminanceEnable,
++					    enable);
++		break;
++	}
++	case PROP_CONTRAST_VALUES:
++	{
++		int LUM[9];
++		for (unsigned int i = 0; i < 9; i++) {
++			LUM[i] = g_value_get_int(gst_value_array_get_value(value, i));
++		}
++		GLibLocker locker(&state->controlsLock_);
++		state->pendingControls_.set(controls::draft::ContrastLuminance,
++					    { LUM[0], LUM[1], LUM[2], LUM[3], LUM[4], LUM[5], LUM[6], LUM[7], LUM[8] });
++		break;
++	}
++	case PROP_AEC_ALGO_ENABLE:
++	{
++		bool enable = g_value_get_boolean(value);
++		GLibLocker locker(&state->controlsLock_);
++		state->pendingControls_.set(controls::AeEnable,
++					    enable);
++		break;
++	}
++	case PROP_AEC_ALGO_EXPOSURE_COMPENSATION:
++	{
++		float aec_algo_exposure_compensation;
++		aec_algo_exposure_compensation = g_value_get_float(value);
++		GLibLocker locker(&state->controlsLock_);
++		state->pendingControls_.set(controls::ExposureValue, aec_algo_exposure_compensation);
++		break;
++	}
++	case PROP_AEC_ALGO_ANTIFLICKER_FREQUENCY:
++	{
++		int aec_algo_antiflicker_frequency = g_value_get_int(value);
++		GLibLocker locker(&state->controlsLock_);
++		state->pendingControls_.set(controls::draft::AntiFlickerFreq, aec_algo_antiflicker_frequency);
++		break;
++	}
++	case PROP_SENSOR_GAIN:
++	{
++		float gain_dB;
++		gain_dB = g_value_get_float(value);
++		GLibLocker locker(&state->controlsLock_);
++		state->pendingControls_.set(controls::draft::AnalogueGain_dB, gain_dB);
++		break;
++	}
++	case PROP_SENSOR_EXPOSURE:
++	{
++		int exposure_time;
++		exposure_time = g_value_get_int(value);
++		GLibLocker locker(&state->controlsLock_);
++		state->pendingControls_.set(controls::ExposureTime, exposure_time);
++		break;
++	}
++	case PROP_SENSOR_DELAY:
++	{
++		int sensor_delay;
++		sensor_delay = g_value_get_int(value);
++		GLibLocker locker(&state->controlsLock_);
++		state->pendingControls_.set(controls::draft::SensorDelay, sensor_delay);
++		break;
++	}
++	case PROP_DO_SENSOR_DELAY_MEASURE:
++	{
++		bool do_sensor_delay_measure;
++		do_sensor_delay_measure = g_value_get_boolean(value);
++		GLibLocker locker(&state->controlsLock_);
++		state->pendingControls_.set(controls::draft::DoSensorDelayMeasure, do_sensor_delay_measure);
++		break;
++	}
++	case PROP_BADPIX_ENABLE:
++	{
++		bool enable = g_value_get_boolean(value);
++		GLibLocker locker(&state->controlsLock_);
++		state->pendingControls_.set(controls::draft::BadPixelRemovalEnable, enable);
++		break;
++	}
++	case PROP_BADPIX_STRENGTH:
++	{
++		int strength;
++		strength = g_value_get_int(value);
++		GLibLocker locker(&state->controlsLock_);
++		state->pendingControls_.set(controls::draft::BadPixelRemovalStrength, strength);
++		break;
++	}
++	case PROP_BADPIX_ALGO_THRESHOLD:
++	{
++		int threshold;
++		threshold = g_value_get_int(value);
++		GLibLocker locker(&state->controlsLock_);
++		state->pendingControls_.set(controls::draft::BadPixelRemovalThreshold, threshold);
++		break;
++	}
++	case PROP_ISP_GAIN_ENABLE:
++	{
++		bool enable = g_value_get_boolean(value);
++		GLibLocker locker(&state->controlsLock_);
++		state->pendingControls_.set(controls::draft::ColourGains3Enable, enable);
++		break;
++	}
++	case PROP_ISP_GAIN_VALUES:
++	{
++		int ISPGain[3];
++		for (unsigned int i = 0; i < 3; i++) {
++			ISPGain[i] = g_value_get_int(gst_value_array_get_value(value, i));
++		}
++		GLibLocker locker(&state->controlsLock_);
++		state->pendingControls_.set(controls::draft::ColourGains3,
++					    { ISPGain[0], ISPGain[1], ISPGain[2] });
++		break;
++	}
++	case PROP_CCM_ENABLE:
++	{
++		bool enable = g_value_get_boolean(value);
++		GLibLocker locker(&state->controlsLock_);
++		state->pendingControls_.set(controls::draft::ColourCorrectionEnable, enable);
++		break;
++	}
++	case PROP_CCM_VALUES:
++	{
++		int CCMCoeff[9];
++		for (unsigned int i = 0; i < 9; i++) {
++				CCMCoeff[i] = g_value_get_int(gst_value_array_get_value(value, i));
++		}
++		GLibLocker locker(&state->controlsLock_);
++		state->pendingControls_.set(controls::draft::ColourCorrection,
++					    { CCMCoeff[0], CCMCoeff[1], CCMCoeff[2],
++						  CCMCoeff[3], CCMCoeff[4], CCMCoeff[5],
++						  CCMCoeff[6], CCMCoeff[7], CCMCoeff[8] });
++		break;
++	}
++	case PROP_AWB_ALGO_ENABLE:
++	{
++		bool enable = g_value_get_boolean(value);
++		GLibLocker locker(&state->controlsLock_);
++		state->pendingControls_.set(controls::AwbEnable, enable);
++		break;
++	}
++	case PROP_AWB_ALGO_PROFILE_NAMES:
++	{
++		/* The Controls class does not support array of string. So, concatenate the strings in a single one */
++		std::string concatProfileNames = "";
++		for (unsigned int i = 0; i < 5; i++) {
++			if (!concatProfileNames.empty())
++				concatProfileNames += '$';
++			concatProfileNames += g_value_get_string(gst_value_array_get_value(value, i));
++		}
++		GLibLocker locker(&state->controlsLock_);
++		state->pendingControls_.set(controls::draft::AwbProfileName, concatProfileNames);
++		break;
++	}
++	case PROP_AWB_ALGO_PROFILE_COLOR_TEMPS:
++	{
++		std::array<int, 5>  ColorTemps;
++		for (unsigned int i = 0; i < ColorTemps.size(); i++) {
++				ColorTemps[i] = g_value_get_int(gst_value_array_get_value(value, i));
++		}
++		GLibLocker locker(&state->controlsLock_);
++		state->pendingControls_.set(controls::draft::AwbReferenceColorTemperature, ColorTemps);
++		break;
++	}
++	case PROP_AWB_ALGO_PROFILE_ISP_GAINS:
++	{
++		std::array<int, 5 * 3>  IspGains;
++		for (unsigned int i = 0; i < IspGains.size(); i++) {
++				IspGains[i] = g_value_get_int(gst_value_array_get_value(value, i));
++		}
++		GLibLocker locker(&state->controlsLock_);
++		state->pendingControls_.set(controls::draft::AwbColourGains3, IspGains);
++		break;
++	}
++	case PROP_AWB_ALGO_PROFILE_CCMS:
++	{
++		std::array<int, 5 * 3 * 3>  Ccms;
++		for (unsigned int i = 0; i < Ccms.size(); i++) {
++				Ccms[i] = g_value_get_int(gst_value_array_get_value(value, i));
++		}
++		GLibLocker locker(&state->controlsLock_);
++		state->pendingControls_.set(controls::draft::AwbColourCorrection, Ccms);
++		break;
++	}
++	case PROP_DEMOSAICING_ENABLE:
++	{
++		bool enable = g_value_get_boolean(value);
++		GLibLocker locker(&state->controlsLock_);
++		state->pendingControls_.set(controls::draft::DemosaicingEnable, enable);
++		break;
++	}
++	case PROP_DEMOSAICING_FILTERS:
++	{
++		std::array<int, 4>  Filters;
++		for (unsigned int i = 0; i < Filters.size(); i++) {
++				Filters[i] = g_value_get_int(gst_value_array_get_value(value, i));
++		}
++		GLibLocker locker(&state->controlsLock_);
++		state->pendingControls_.set(controls::draft::DemosaicingFilter, Filters);
++		break;
++	}
++	case PROP_STATISTIC_PROFILE:
++	{
++		int StatProfile;
++		StatProfile = g_value_get_int(value);
++		GLibLocker locker(&state->controlsLock_);
++		state->pendingControls_.set(controls::draft::StatisticProfile, StatProfile);
++		break;
++	}
++	case PROP_GAMMA_ENABLE:
++	{
++		bool enable = g_value_get_boolean(value);
++		GLibLocker locker(&state->controlsLock_);
++		state->pendingControls_.set(controls::draft::GammaCorrectionEnable, enable);
++		break;
++	}
  	default:
  		G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
  		break;
-@@ -759,6 +821,21 @@ gst_libcamera_src_get_property(GObject *object, guint prop_id, GValue *value,
+@@ -759,6 +1279,262 @@ gst_libcamera_src_get_property(GObject *object, guint prop_id, GValue *value,
  	case PROP_AUTO_FOCUS_MODE:
  		g_value_set_enum(value, static_cast<gint>(self->auto_focus_mode));
  		break;
++	case PROP_HW_REVISION:
++	{
++		GValue val = G_VALUE_INIT;
++		g_value_reset (value);
++		g_value_init (&val, G_TYPE_INT);
++		for (guint i = 0; i < 2; ++i) {
++			g_value_set_int(&val, self->ctrl.hwrevision[i]);
++			gst_value_array_append_value(value, &val);
++		}
++		g_value_unset (&val);
++		break;
++	}
++	case PROP_DECIMATION:
++		g_value_set_int(value, self->ctrl.decimation);
++		break;
 +	case PROP_BLACK_LEVEL_ENABLE:
 +		g_value_set_boolean(value, self->ctrl.black_level_enable);
 +		break;
@@ -739,10 +1239,236 @@ index 6a95b6af..765fdb74 100644
 +		g_value_unset (&val);
 +		break;
 +	}
++	case PROP_STATISTIC_AREA:
++	{
++		GValue val = G_VALUE_INIT;
++		g_value_reset (value);
++		g_value_init (&val, G_TYPE_INT);
++		g_value_set_int(&val, self->ctrl.statistic_area.x);
++		gst_value_array_append_value(value, &val);
++		g_value_set_int(&val, self->ctrl.statistic_area.y);
++		gst_value_array_append_value(value, &val);
++		g_value_set_int(&val, self->ctrl.statistic_area.width);
++		gst_value_array_append_value(value, &val);
++		g_value_set_int(&val, self->ctrl.statistic_area.height);
++		gst_value_array_append_value(value, &val);
++		g_value_unset (&val);
++		break;
++	}
++	case PROP_CONTRAST_ENABLE:
++		g_value_set_boolean(value, self->ctrl.contrast_enable);
++		break;
++	case PROP_CONTRAST_VALUES:
++	{
++		GValue val = G_VALUE_INIT;
++		g_value_reset (value);
++		g_value_init (&val, G_TYPE_INT);
++		for (guint i = 0; i < 9; ++i) {
++			g_value_set_int(&val, self->ctrl.contrast_values[i]);
++			gst_value_array_append_value(value, &val);
++		}
++		g_value_unset (&val);
++		break;
++	}
++	case PROP_AEC_ALGO_ENABLE:
++		g_value_set_boolean(value, self->ctrl.aec_algo_enable);
++		break;
++	case PROP_AEC_ALGO_EXPOSURE_COMPENSATION:
++		g_value_set_float(value, self->ctrl.aec_algo_exposure_compensation);
++		break;
++	case PROP_AEC_ALGO_EXPOSURE_TARGET:
++		g_value_set_int(value, self->ctrl.aec_algo_exposure_target);
++		break;
++	case PROP_AEC_ALGO_ANTIFLICKER_FREQUENCY:
++		g_value_set_int(value, self->ctrl.aec_algo_antiflicker_frequency);
++		break;
++	case PROP_SENSOR_GAIN:
++		g_value_set_float(value, self->ctrl.sensor_gain_dB);
++		break;
++	case PROP_SENSOR_EXPOSURE:
++		g_value_set_int(value, self->ctrl.sensor_exposure);
++		break;
++	case PROP_SENSOR_DELAY:
++		g_value_set_int(value, self->ctrl.sensor_delay);
++		break;
++	case PROP_SENSOR_DELAY_MEASURE:
++		g_value_set_int(value, self->ctrl.sensor_delay_measure);
++		break;
++	case PROP_BADPIX_ENABLE:
++		g_value_set_boolean(value, self->ctrl.badpix_enable);
++		break;
++	case PROP_BADPIX_STRENGTH:
++		g_value_set_int(value, self->ctrl.badpix_strength);
++		break;
++	case PROP_BADPIX_COUNT:
++		g_value_set_int(value, self->ctrl.badpix_count);
++		break;
++	case PROP_BADPIX_ALGO_THRESHOLD:
++		g_value_set_int(value, self->ctrl.badpix_algo_threshold);
++		break;
++	case PROP_ISP_GAIN_ENABLE:
++		g_value_set_boolean(value, self->ctrl.ispgain_enable);
++		break;
++	case PROP_ISP_GAIN_VALUES:
++	{
++		GValue val = G_VALUE_INIT;
++		g_value_reset (value);
++		g_value_init (&val, G_TYPE_INT);
++		for (guint i = 0; i < 3; ++i) {
++			g_value_set_int(&val, self->ctrl.ispgain_values[i]);
++			gst_value_array_append_value(value, &val);
++		}
++		g_value_unset (&val);
++		break;
++	}
++	case PROP_CCM_ENABLE:
++		g_value_set_boolean(value, self->ctrl.ccm_enable);
++		break;
++	case PROP_CCM_VALUES:
++	{
++		GValue val = G_VALUE_INIT;
++		g_value_reset (value);
++		g_value_init (&val, G_TYPE_INT);
++		for (guint i = 0; i < 9; ++i) {
++			g_value_set_int(&val, self->ctrl.ccm_values[i]);
++			gst_value_array_append_value(value, &val);
++		}
++		g_value_unset (&val);
++		break;
++	}
++	case PROP_AWB_ALGO_ENABLE:
++		g_value_set_boolean(value, self->ctrl.awb_algo_enable);
++		break;
++	case PROP_AWB_ALGO_PROFILE_NAMES:
++	{
++		GValue val = G_VALUE_INIT;
++		g_value_reset (value);
++		g_value_init (&val, G_TYPE_STRING);
++		for (guint i = 0; i < self->ctrl.awb_algo_profile_names.size(); ++i) {
++			if (self->ctrl.awb_algo_profile_names[i].empty())
++				g_value_set_string(&val, "");
++			else
++				g_value_set_string(&val, self->ctrl.awb_algo_profile_names[i].c_str());
++			gst_value_array_append_value(value, &val);
++		}
++		g_value_unset (&val);
++		break;
++	}
++	case PROP_AWB_ALGO_PROFILE_COLOR_TEMPS:
++	{
++		GValue val = G_VALUE_INIT;
++		g_value_reset (value);
++		g_value_init (&val, G_TYPE_INT);
++		for (guint i = 0; i < self->ctrl.awb_algo_profile_color_temps.size(); ++i) {
++			g_value_set_int(&val, self->ctrl.awb_algo_profile_color_temps[i]);
++			gst_value_array_append_value(value, &val);
++		}
++		g_value_unset (&val);
++		break;
++	}
++	case PROP_AWB_ALGO_PROFILE_ISP_GAINS:
++	{
++		GValue val = G_VALUE_INIT;
++		g_value_reset (value);
++		g_value_init (&val, G_TYPE_INT);
++		for (guint i = 0; i < self->ctrl.awb_algo_profile_isp_gains.size(); ++i) {
++			g_value_set_int(&val, self->ctrl.awb_algo_profile_isp_gains[i]);
++			gst_value_array_append_value(value, &val);
++		}
++		g_value_unset (&val);
++		break;
++	}
++	case PROP_AWB_ALGO_PROFILE_CCMS:
++	{
++		GValue val = G_VALUE_INIT;
++		g_value_reset (value);
++		g_value_init (&val, G_TYPE_INT);
++		for (guint i = 0; i < self->ctrl.awb_algo_profile_ccms.size(); ++i) {
++			g_value_set_int(&val, self->ctrl.awb_algo_profile_ccms[i]);
++			gst_value_array_append_value(value, &val);
++		}
++		g_value_unset (&val);
++		break;
++	}
++	case PROP_AWB_CURRENT_PROFILE_NAME:
++		g_value_set_string(value, self->ctrl.awb_current_profile_name.c_str());
++		break;
++	case PROP_AWB_CURRENT_PROFILE_COLOR_TEMP:
++		g_value_set_int(value, self->ctrl.awb_current_profile_color_temp);
++		break;
++	case PROP_DEMOSAICING_ENABLE:
++		g_value_set_boolean(value, self->ctrl.demosaicing_enable);
++		break;
++	case PROP_DEMOSAICING_FILTERS:
++	{
++		GValue val = G_VALUE_INIT;
++		g_value_reset (value);
++		g_value_init (&val, G_TYPE_INT);
++		for (guint i = 0; i < self->ctrl.demosaicing_filters.size(); ++i) {
++			g_value_set_int(&val, self->ctrl.demosaicing_filters[i]);
++			gst_value_array_append_value(value, &val);
++		}
++		g_value_unset (&val);
++		break;
++	}
++	case PROP_STATISTIC_PROFILE:
++		g_value_set_int(value, self->ctrl.statistic_profile);
++		break;
++	case PROP_STATISTIC_GET_AVERAGE_UP:
++	{
++		GValue val = G_VALUE_INIT;
++		g_value_reset (value);
++		g_value_init (&val, G_TYPE_INT);
++		for (guint i = 0; i < self->ctrl.statistic_avg_up.size(); ++i) {
++			g_value_set_int(&val, self->ctrl.statistic_avg_up[i]);
++			gst_value_array_append_value(value, &val);
++		}
++		g_value_unset (&val);
++		break;
++	}
++	case PROP_STATISTIC_GET_AVERAGE_DOWN:
++	{
++		GValue val = G_VALUE_INIT;
++		g_value_reset (value);
++		g_value_init (&val, G_TYPE_INT);
++		for (guint i = 0; i < self->ctrl.statistic_avg_down.size(); ++i) {
++			g_value_set_int(&val, self->ctrl.statistic_avg_down[i]);
++			gst_value_array_append_value(value, &val);
++		}
++		g_value_unset (&val);
++		break;
++	}
++	case PROP_STATISTIC_GET_HISTOGRAM_UP:
++	{
++		GValue val = G_VALUE_INIT;
++		g_value_reset (value);
++		g_value_init (&val, G_TYPE_INT);
++		for (guint i = 0; i < self->ctrl.statistic_hist_up.size(); ++i) {
++			g_value_set_int(&val, self->ctrl.statistic_hist_up[i]);
++			gst_value_array_append_value(value, &val);
++		}
++		g_value_unset (&val);
++		break;
++	}
++	case PROP_STATISTIC_GET_HISTOGRAM_DOWN:
++	{
++		GValue val = G_VALUE_INIT;
++		g_value_reset (value);
++		g_value_init (&val, G_TYPE_INT);
++		for (guint i = 0; i < self->ctrl.statistic_hist_down.size(); ++i) {
++			g_value_set_int(&val, self->ctrl.statistic_hist_down[i]);
++			gst_value_array_append_value(value, &val);
++		}
++		g_value_unset (&val);
++		break;
++	}
++	case PROP_GAMMA_ENABLE:
++		g_value_set_boolean(value, self->ctrl.gamma_enable);
++		break;
  	default:
  		G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
  		break;
-@@ -844,6 +921,7 @@ gst_libcamera_src_finalize(GObject *object)
+@@ -844,6 +1620,7 @@ gst_libcamera_src_finalize(GObject *object)
  	g_rec_mutex_clear(&self->stream_lock);
  	g_clear_object(&self->task);
  	g_mutex_clear(&self->state->lock_);
@@ -750,7 +1476,7 @@ index 6a95b6af..765fdb74 100644
  	g_free(self->camera_name);
  	delete self->state;
  
-@@ -863,9 +941,12 @@ gst_libcamera_src_init(GstLibcameraSrc *self)
+@@ -863,9 +1640,12 @@ gst_libcamera_src_init(GstLibcameraSrc *self)
  	gst_task_set_lock(self->task, &self->stream_lock);
  
  	g_mutex_init(&state->lock_);
@@ -765,7 +1491,7 @@ index 6a95b6af..765fdb74 100644
  
  	GST_OBJECT_FLAG_SET(self, GST_ELEMENT_FLAG_SOURCE);
  
-@@ -896,6 +977,8 @@ gst_libcamera_src_request_new_pad(GstElement *element, GstPadTemplate *templ,
+@@ -896,6 +1676,8 @@ gst_libcamera_src_request_new_pad(GstElement *element, GstPadTemplate *templ,
  		return NULL;
  	}
  
@@ -774,7 +1500,7 @@ index 6a95b6af..765fdb74 100644
  	return reinterpret_cast<GstPad *>(g_steal_pointer(&pad));
  }
  
-@@ -904,6 +987,8 @@ gst_libcamera_src_release_pad(GstElement *element, GstPad *pad)
+@@ -904,6 +1686,8 @@ gst_libcamera_src_release_pad(GstElement *element, GstPad *pad)
  {
  	GstLibcameraSrc *self = GST_LIBCAMERA_SRC(element);
  
@@ -783,12 +1509,28 @@ index 6a95b6af..765fdb74 100644
  	GST_DEBUG_OBJECT(self, "Pad %" GST_PTR_FORMAT " being released", pad);
  
  	{
-@@ -963,4 +1048,52 @@ gst_libcamera_src_class_init(GstLibcameraSrcClass *klass)
+@@ -963,4 +1747,338 @@ gst_libcamera_src_class_init(GstLibcameraSrcClass *klass)
  				 static_cast<gint>(controls::AfModeManual),
  				 G_PARAM_WRITABLE);
  	g_object_class_install_property(object_class, PROP_AUTO_FOCUS_MODE, spec);
 +
 +	/* Add ISP properties */
++	/* HW Revision values read property */
++	spec = gst_param_spec_array("hw-revision",
++					"Hardware revsion ID",
++				    "ISP Hardware revsion ID ('Major, Minor')",
++				    g_param_spec_int ("hw-revision-value", "ISP Hardware revsion ID",
++						      "One of  Major, Minor value.", 0, 255, 0,
++						      G_PARAM_READABLE),
++					G_PARAM_READABLE);
++	g_object_class_install_property(object_class, PROP_HW_REVISION, spec);
++	/* Decimation values read property */
++	spec = g_param_spec_int("decimation-factor",
++					"Decimation factor",
++				    "ISP Decimation factor ('1, 2, 4 or 8')",
++					1, 8, 1,
++					G_PARAM_READABLE);
++	g_object_class_install_property(object_class, PROP_DECIMATION, spec);
 +	/* Black level enable property */
 +	spec = g_param_spec_boolean("black-level-enable",
 +				    "Black level enable",
@@ -805,6 +1547,276 @@ index 6a95b6af..765fdb74 100644
 +						      G_PARAM_READWRITE),
 +				    G_PARAM_READWRITE);
 +	g_object_class_install_property(object_class, PROP_BLACK_LEVEL_VALUES, spec);
++	/* Satistic area property */
++	spec = gst_param_spec_array("statistic-area",
++				    "Statistic Area",
++				    "ISP Statistic Area ('<X0, Y0, XSize, YSize>')",
++				    g_param_spec_int ("statarea-value", "Satistic Area value",
++						      "One of X0, Y0, XSize, YSize", 0, 4096, 0,
++						      G_PARAM_READWRITE),
++				    G_PARAM_READWRITE);
++	g_object_class_install_property(object_class, PROP_STATISTIC_AREA, spec);
++	/* Contrast enable property */
++	spec = g_param_spec_boolean("contrast-enable",
++				    "Contrast enable",
++				    "ISP Contrast bloc activation",
++				    false,
++				    G_PARAM_READWRITE);
++	g_object_class_install_property(object_class, PROP_CONTRAST_ENABLE, spec);
++	/* Contrast values property */
++	spec = gst_param_spec_array("contrast-values",
++				    "Contrast multiplication factor values",
++				    "ISP Contrast multiplication factor values ('<LUM_0, LUM_32, LUM_64, LUM_96, LUM_128, LUM_160, LUM_192, LUM_224, LUM_256>')",
++				    g_param_spec_int ("contrast-value", "Contrast value",
++						      "One of LUM_0, LUM_32, LUM_64, LUM_96, LUM_128, LUM_160, LUM_192, LUM_224, LUM_256 value.", 0, 394, 0,
++						      G_PARAM_READWRITE),
++				    G_PARAM_READWRITE);
++	g_object_class_install_property(object_class, PROP_CONTRAST_VALUES, spec);
++	/* AEC algo enable property */
++	spec = g_param_spec_boolean("aec-algo-enable",
++				    "AEC algo enable",
++				    "Activation of the AEC algorithm",
++				    false,
++				    G_PARAM_READWRITE);
++	g_object_class_install_property(object_class, PROP_AEC_ALGO_ENABLE, spec);
++	/* AEC algo exposure compensation */
++	spec = g_param_spec_float("aec-algo-exposure-compensation",
++				  "AEC exposure compensation",
++				  "AEC exposure compensation when algo is enabled ('-2EV, -1.5EV, -1EV, -0.5EV, 0EV, +0.5EV, +1EV, +1.5EV, +2EV')",
++				  -2, 2, 0,
++				  G_PARAM_READWRITE);
++	g_object_class_install_property(object_class, PROP_AEC_ALGO_EXPOSURE_COMPENSATION, spec);
++	/* AEC algo exposure target */
++	spec = g_param_spec_int("aec-algo-exposure-target",
++					"AEC exposure target",
++				    "AEC exposure target that depends on exposure compensation set",
++					0, 255, 56,
++					G_PARAM_READABLE);
++	g_object_class_install_property(object_class, PROP_AEC_ALGO_EXPOSURE_TARGET, spec);
++	/* AEC anti-flicker frequency */
++	spec = g_param_spec_int("aec-algo-antiflicker-frequency",
++					"AEC anti-flicker frequency",
++				    "AEC anti-flicker frequency (0 for disabling the feature, 50Hz or 60Hz)",
++					0, 60, 0,
++					G_PARAM_READWRITE);
++	g_object_class_install_property(object_class, PROP_AEC_ALGO_ANTIFLICKER_FREQUENCY, spec);
++	/* Sensor gain property */
++	spec = g_param_spec_float("sensor-gain",
++				    "Sensor analog gain",
++				    "Gain of the sensor in dB",
++				    0, 100, 0,
++				    G_PARAM_READWRITE);
++	g_object_class_install_property(object_class, PROP_SENSOR_GAIN, spec);
++	/* Sensor exposure time property */
++	spec = g_param_spec_int("sensor-exposure",
++				    "Sensor exposure time",
++				    "Sensor exposure time in us",
++				    0, 100000, 0,
++				    G_PARAM_READWRITE);
++	g_object_class_install_property(object_class, PROP_SENSOR_EXPOSURE, spec);
++	/* Sensor delay property */
++	spec = g_param_spec_int("sensor-delay",
++				"Sensor delay",
++				"Sensor delay in number of VSync",
++				1, 255, 1,
++				G_PARAM_READWRITE);
++	g_object_class_install_property(object_class, PROP_SENSOR_DELAY, spec);
++	/* Sensor delay measure property */
++	spec = g_param_spec_int("sensor-delay-measure",
++				"Sensor delay measure",
++				"Sensor delay in number of VSync",
++				-1, 255, -1,
++				G_PARAM_READABLE);
++	g_object_class_install_property(object_class, PROP_SENSOR_DELAY_MEASURE, spec);
++	/* Do sensor delay measure property */
++	spec = g_param_spec_boolean("do-sensor-delay-measure",
++				    "Do sensor delay measure",
++				    "Do sensor delay measure",
++				    false,
++				    G_PARAM_WRITABLE);
++	g_object_class_install_property(object_class, PROP_DO_SENSOR_DELAY_MEASURE, spec);
++	/* Bad pixel removal enable property */
++	spec = g_param_spec_boolean("badpixel-enable",
++				    "Bad pixel removal enable",
++				    "Activation of the bad pixel removel block",
++				    false,
++				    G_PARAM_READWRITE);
++	g_object_class_install_property(object_class, PROP_BADPIX_ENABLE, spec);
++	/* Bad pixel removal strength property */
++	spec = g_param_spec_int("badpixel-strength",
++				    "Bad pixel removal strength",
++				    "Bad pixel removal filter strength",
++				    0, 7, 0,
++				    G_PARAM_READWRITE);
++	g_object_class_install_property(object_class, PROP_BADPIX_STRENGTH, spec);
++	/* Bad pixel removal count property */
++	spec = g_param_spec_int("badpixel-count",
++				    "Bad pixel removal count",
++				    "Count of the number of bad pixel detected",
++				    0, 4095, 0,
++				    G_PARAM_READABLE);
++	g_object_class_install_property(object_class, PROP_BADPIX_COUNT, spec);
++	/* Bad pixel removal algo threshold */
++	spec = g_param_spec_int("badpixel-algo-threshold",
++				    "Bad pixel removal algorithm threshold",
++				    "Threshold defining the maximum number of bad pixel expected to be detected",
++				    0, 4095, 0,
++				    G_PARAM_READWRITE);
++	g_object_class_install_property(object_class, PROP_BADPIX_ALGO_THRESHOLD, spec);
++	/* ISP gain enable property */
++	spec = g_param_spec_boolean("isp-gain-enable",
++				    "ISP gain enable",
++				    "ISP gain bloc activation",
++				    false,
++				    G_PARAM_READWRITE);
++	g_object_class_install_property(object_class, PROP_ISP_GAIN_ENABLE, spec);
++	/* ISP gain values property */
++	spec = gst_param_spec_array("isp-gain-values",
++				    "ISP gain values",
++				    "ISP gain multiplication factor values ('<ISPGainR, ISPGainG, ISPGainB>')",
++				    g_param_spec_int ("isp-gain-value", "ISP gain value",
++						      "One of ISPGainR, ISPGainG, ISPGainB value.", 0, 1600000000, 100000000,
++						      G_PARAM_READWRITE),
++				    G_PARAM_READWRITE);
++	g_object_class_install_property(object_class, PROP_ISP_GAIN_VALUES, spec);
++	/* CCM enable property */
++	spec = g_param_spec_boolean("ccm-enable",
++				    "Color correction matrix enable",
++				    "ISP color correction matrix bloc activation",
++				    false,
++				    G_PARAM_READWRITE);
++	g_object_class_install_property(object_class, PROP_CCM_ENABLE, spec);
++	/* CCM values property */
++	spec = gst_param_spec_array("ccm-values",
++				    "Color correction matrix values",
++				    "ISP color correction matrix values ('<CCMCoeff11, CCMCoeff12, CCMCoeff13, CCMCoeff21, CCMCoeff22, CCMCoeff23, CCMCoeff31, CCMCoeff32, CCMCoeff33>')",
++				    g_param_spec_int ("ccm-value", "CCM value",
++						      "One of CCMCoeff11, CCMCoeff12, CCMCoeff13, CCMCoeff21, CCMCoeff22, CCMCoeff23, CCMCoeff31, CCMCoeff32, CCMCoeff33 value.", -399000000, 399000000, 0,
++						      G_PARAM_READWRITE),
++				    G_PARAM_READWRITE);
++	g_object_class_install_property(object_class, PROP_CCM_VALUES, spec);
++	/* AWB algo enable property */
++	spec = g_param_spec_boolean("awb-algo-enable",
++				    "AWB algo enable",
++				    "Activation of the AWB algorithm",
++				    false,
++				    G_PARAM_READWRITE);
++	g_object_class_install_property(object_class, PROP_AWB_ALGO_ENABLE, spec);
++	/* AWB algo profileID values property */
++	spec = gst_param_spec_array("awb-algo-profile-names",
++				    "AWB algo profile names",
++				    "Array of AWB profile name (one entry per profile) used by the AWB algorithm ('<Name0, Name1, Name2, Name3, Name4>')",
++				    g_param_spec_string ("awb-algo-profile-name", "AWB profile name strings of 32bytes maximum",
++						      "One of Name0, Name1, Name2, Name3, Name4", NULL,
++						      G_PARAM_READWRITE),
++				    G_PARAM_READWRITE);
++	g_object_class_install_property(object_class, PROP_AWB_ALGO_PROFILE_NAMES, spec);
++	/* AWB algo color temperature values property */
++	spec = gst_param_spec_array("awb-algo-profile-color-temps",
++				    "AWB algo color temperatures",
++				    "Array of reference color tempeartures (one entry per profile) used by the AWB algorithm ('<ColorTemp0, ColorTemp1, ColorTemp2, ColorTemp3, ColorTemp4>')",
++				    g_param_spec_int ("awb-algo-profile-color-temp", "AWB profile color temperature value",
++						      "One of ColorTemp0, ColorTemp1, ColorTemp2, ColorTemp3, ColorTemp4 value.", 0, 12000, 0,
++						      G_PARAM_READWRITE),
++				    G_PARAM_READWRITE);
++	g_object_class_install_property(object_class, PROP_AWB_ALGO_PROFILE_COLOR_TEMPS, spec);
++	/* AWB algo ISP gain values property */
++	spec = gst_param_spec_array("awb-algo-profile-isp-gains",
++				    "AWB algo ISP gains",
++				    "Array of ISP gains (one entry per profile) used by the AWB algorithm ('<ISPGain0R, ISPGain0G, ISPGain0B, ..., ISPGain4R, ISPGain4G, ISPGain4B>')",
++				    g_param_spec_int ("awb-algo-profile-isp-gain", "AWB profile ISP Gain value",
++						      "One of ISPGain0R, ISPGain0G, ISPGain0B, ..., ISPGain4R, ISPGain4G, ISPGain4B value.", 0, 1600000000, 100000000,
++						      G_PARAM_READWRITE),
++				    G_PARAM_READWRITE);
++	g_object_class_install_property(object_class, PROP_AWB_ALGO_PROFILE_ISP_GAINS, spec);
++	/* AWB algo color correction matrix values property */
++	spec = gst_param_spec_array("awb-algo-profile-ccms",
++				    "AWB algo color correction matrix values",
++				    "Array of color convertion matrices (one entry per profile) used by the AWB algorithm  ('<CCM0Coeff11, CCM0Coeff12, ... , CCM0Coeff32, CCM0Coeff33, ... , CCM4Coeff11, CCM4Coeff12, ... , CCM4Coeff32, CCM4Coeff33>')",
++				    g_param_spec_int ("awb-algo-profile-ccm", "AWB profile CCM value",
++						      "One of CCM0Coeff11, CCM0Coeff12, ... , CCM0Coeff32, CCM0Coeff33, ... , CCM4Coeff11, CCM4Coeff12, ... , CCM4Coeff32, CCM4Coeff33 value.", -399000000, 399000000, 0,
++						      G_PARAM_READWRITE),
++				    G_PARAM_READWRITE);
++	g_object_class_install_property(object_class, PROP_AWB_ALGO_PROFILE_CCMS, spec);
++	/* AWB current profile name */
++	spec = g_param_spec_string("awb-current-profile-name",
++					"AWB current profile name",
++					"Name of the current profile applied by the AWB (string of 32bytes maximum)", NULL,
++				    G_PARAM_READABLE);
++	g_object_class_install_property(object_class, PROP_AWB_CURRENT_PROFILE_NAME, spec);
++	/* AWB current profile name */
++	spec = g_param_spec_int ("awb-current-profile-color-temp",
++					"AWB current color temperature",
++					"Color temperature of the current profile applied by the AWB",
++					0, 12000, 0,
++					G_PARAM_READABLE),
++	g_object_class_install_property(object_class, PROP_AWB_CURRENT_PROFILE_COLOR_TEMP, spec);
++	/* Demosaicing enable property */
++	spec = g_param_spec_boolean("demosaicing-enable",
++				    "Demosaicing enable",
++				    "ISP demosaicing bloc activation",
++				    false,
++				    G_PARAM_READWRITE);
++	g_object_class_install_property(object_class, PROP_DEMOSAICING_ENABLE, spec);
++	/* Demosaicing filter values property */
++	spec = gst_param_spec_array("demosaicing-filters",
++				    "Demosaicing filter values",
++				    "ISP demosaicing filter values ('<Peak, LineV, LineH, Edge>')",
++				    g_param_spec_int ("demosaicing-filter", "Demosaicing filter value",
++						      "One of Peak, LineV, LineH, Edge value.", 0, 7, 0,
++						      G_PARAM_READWRITE),
++				    G_PARAM_READWRITE);
++	g_object_class_install_property(object_class, PROP_DEMOSAICING_FILTERS, spec);
++	/* Statistic profile property */
++	spec = g_param_spec_int("statistic-profile",
++				    "Statistic profile",
++				    "ISP statistic extraction profile ('<0 = Full stats (histogram and average, up and down), 1 = average up stats, 2 = average down stats>')",
++				    0, 2, 0,
++				    G_PARAM_READWRITE);
++	g_object_class_install_property(object_class, PROP_STATISTIC_PROFILE, spec);
++	/* Statistic up average property */
++	spec = gst_param_spec_array("statistic-get-average-up",
++				    "Get statistic average at up level",
++				    "Up ISP average statistic results values ('<R, G, B, L>')",
++				    g_param_spec_int ("statistic-average-up", "Average statistic results value",
++						      "One of R, G, B, L average statistic value", 0, 255, 0,
++						      G_PARAM_READABLE),
++				    G_PARAM_READABLE);
++	g_object_class_install_property(object_class, PROP_STATISTIC_GET_AVERAGE_UP, spec);
++	/* Statistic down average property */
++	spec = gst_param_spec_array("statistic-get-average-down",
++				    "Get statistic average at down level",
++				    "Down ISP average statistic results values ('<R, G, B, L>')",
++				    g_param_spec_int ("statistic-average-down", "Average statistic results value",
++						      "One of R, G, B, L average statistic value", 0, 255, 0,
++						      G_PARAM_READABLE),
++				    G_PARAM_READABLE);
++	g_object_class_install_property(object_class, PROP_STATISTIC_GET_AVERAGE_DOWN, spec);
++	/* Statistic up histogram property */
++	spec = gst_param_spec_array("statistic-get-histogram-up",
++				    "Get statistic histogram at up level",
++				    "Up ISP histogram statistic results values ('<bin0, ... , bin11>')",
++				    g_param_spec_int ("statistic-histogram-up", "Histogram statistic results value",
++						      "One of bin0, ... , bin11 statistic value", 0, 16777215, 0,
++						      G_PARAM_READABLE),
++				    G_PARAM_READABLE);
++	g_object_class_install_property(object_class, PROP_STATISTIC_GET_HISTOGRAM_UP, spec);
++	/* Statistic down histogram property */
++	spec = gst_param_spec_array("statistic-get-histogram-down",
++				    "Get statistic histogram at down level",
++				    "Down ISP histogram statistic results values ('<bin0, ... , bin11>')",
++				    g_param_spec_int ("statistic-histogram-down", "Histogram statistic results value",
++						      "One of bin0, ... , bin11 statistic value", 0, 16777215, 0,
++						      G_PARAM_READABLE),
++				    G_PARAM_READABLE);
++	g_object_class_install_property(object_class, PROP_STATISTIC_GET_HISTOGRAM_DOWN, spec);
++	/* Gamma enable property */
++	spec = g_param_spec_boolean("gamma-enable",
++				    "Gamma correction enable",
++				    "Gamma correction bloc activation",
++				    false,
++				    G_PARAM_READWRITE);
++	g_object_class_install_property(object_class, PROP_GAMMA_ENABLE, spec);
 +}
 +
 +/* GstChildProxy implementation */
@@ -838,21 +1850,32 @@ index 6a95b6af..765fdb74 100644
  }
 diff --git a/src/ipa/dcmipp/algorithms/aec.cpp b/src/ipa/dcmipp/algorithms/aec.cpp
 new file mode 100644
-index 00000000..110bb6fd
+index 00000000..546cd672
 --- /dev/null
 +++ b/src/ipa/dcmipp/algorithms/aec.cpp
-@@ -0,0 +1,221 @@
+@@ -0,0 +1,704 @@
 +/* SPDX-License-Identifier: LGPL-2.1-or-later */
 +/*
 + * Copyright (C) 2024 ST Microelectronics
++ * Copyright (C) 2024 LACROIX - Impulse
 + *
 + * aec.cpp - STM32 DCMIPP AE control
 + */
 +
 +#include "aec.h"
 +
++#include <math.h>
++
 +#include <libcamera/base/log.h>
++
 +#include <libcamera/control_ids.h>
++
++#ifdef EVISION_ALGO_ENABLED
++#include <dlfcn.h>
++#include <iostream>
++
++#include "evision-api-st-ae.h"
++#endif /* EVISION_ALGO_ENABLED */
 +
 +namespace libcamera {
 +
@@ -860,15 +1883,292 @@ index 00000000..110bb6fd
 +
 +LOG_DEFINE_CATEGORY(DcmippAec)
 +
++static constexpr uint8_t kAlgoIdealExposureTarget = 56;
++static constexpr float kEVMin = -2.0f;
++static constexpr float kEVMax = 2.0f;
++static constexpr float kEVDef = 0.0f;
++static constexpr uint32_t kAntiflickerFreqMin = 0;
++static constexpr uint32_t kAntiflickerFreqMax = 60;
++static constexpr uint32_t kAntiflickerFreqDef = 0;
++static constexpr int32_t kSensorDelayMin = 1;
++static constexpr int32_t kSensorDelayMax = 255;
++static constexpr int32_t kSensorDelayDef = 1;
++
++#ifdef EVISION_ALGO_ENABLED
++static constexpr uint32_t kmdB = 1000;
++
++static void *plib_handle = nullptr;
++static evision_st_ae_process_t *pIspAEprocess = nullptr;
++
++typedef evision_st_ae_process_t *(*evision_api_st_ae_new_t)(evision_api_log_callback log_cb);
++typedef evision_return_t (*evision_api_st_ae_delete_t)(evision_st_ae_process_t *self);
++typedef evision_return_t (*evision_api_st_ae_init_t)(evision_st_ae_process_t *const self);
++typedef evision_return_t (*evision_api_st_ae_process_t)(evision_st_ae_process_t *const self, uint32_t current_gain, uint32_t current_exposure, uint8_t average_lum);
++
++static evision_api_st_ae_new_t evision_api_st_ae_new = nullptr;
++static evision_api_st_ae_init_t evision_api_st_ae_init = nullptr;
++static evision_api_st_ae_delete_t evision_api_st_ae_delete = nullptr;
++static evision_api_st_ae_process_t evision_api_st_ae_process = nullptr;
++#endif /* EVISION_ALGO_ENABLED */
++
++static bool process_simple_algo = true;
++
++static bool isExposureValueValid(float exposureValue)
++{
++	return exposureValue >= kEVMin && exposureValue <= kEVMax;
++}
++
++static bool isAntiflickerFreqValid(uint32_t antiflickerFreq)
++{
++	return antiflickerFreq >= kAntiflickerFreqMin && antiflickerFreq <= kAntiflickerFreqMax;
++}
++
++static bool isExposureTimeValid(int32_t exposureTime, IPAContext &context)
++{
++	return exposureTime >= context.info.sensorExposureMin && exposureTime <= context.info.sensorExposureMax;
++}
++
++static bool isGainValid(double gain, IPAContext &context)
++{
++	return gain >= context.info.sensorGainMin && gain <= context.info.sensorGainMax;
++}
++
++static bool isSensorDelayValid(int32_t delay)
++{
++	return delay >= kSensorDelayMin && delay <= kSensorDelayMax;
++}
++
++#ifdef EVISION_ALGO_ENABLED
++static bool initializeLibrary()
++{
++	const char *lib_dir = "/usr/lib/";
++	const char *lib_name = "libevision-st-ae.so.1";
++	std::string lib_path = std::string(lib_dir) + lib_name;
++
++	plib_handle = dlopen(lib_path.c_str(), RTLD_LAZY);
++	if (!plib_handle) {
++		LOG(DcmippAec, Warning) << "Cannot open library: " << dlerror();
++		LOG(DcmippAec, Warning) << "Fall back to simple AEC algorithm processing";
++		return true;
++	}
++
++	dlerror(); // Clear any existing error
++
++	process_simple_algo = false;
++	evision_api_st_ae_new = (evision_api_st_ae_new_t)dlsym(plib_handle, "evision_api_st_ae_new");
++	const char *dlsym_error = dlerror();
++	if (dlsym_error) {
++		LOG(DcmippAec, Error) << "Cannot load symbol 'evision_api_st_ae_new': " << dlsym_error;
++		dlclose(plib_handle);
++		return false;
++	}
++
++	evision_api_st_ae_init = (evision_api_st_ae_init_t)dlsym(plib_handle, "evision_api_st_ae_init");
++	dlsym_error = dlerror();
++	if (dlsym_error) {
++		LOG(DcmippAec, Error) << "Cannot load symbol 'evision_api_st_ae_init': " << dlsym_error;
++		dlclose(plib_handle);
++		return false;
++	}
++
++	evision_api_st_ae_delete = (evision_api_st_ae_delete_t)dlsym(plib_handle, "evision_api_st_ae_delete");
++	dlsym_error = dlerror();
++	if (dlsym_error) {
++		LOG(DcmippAec, Error) << "Cannot load symbol 'evision_api_st_ae_delete': " << dlsym_error;
++		dlclose(plib_handle);
++		return false;
++	}
++
++	evision_api_st_ae_process = (evision_api_st_ae_process_t)dlsym(plib_handle, "evision_api_st_ae_process");
++	dlsym_error = dlerror();
++	if (dlsym_error) {
++		LOG(DcmippAec, Error) << "Cannot load symbol 'evision_api_st_ae_process': " << dlsym_error;
++		dlclose(plib_handle);
++		return false;
++	}
++
++	return true;
++}
++
++static void log_cb(const char *const msg)
++{
++	LOG(DcmippAec, Debug) << msg;
++}
++
++static bool initializeAeInstance()
++{
++	if (!plib_handle) {
++		LOG(DcmippAec, Error) << "Library not loaded";
++		return false;
++	}
++
++	pIspAEprocess = evision_api_st_ae_new(log_cb);
++	if (pIspAEprocess == nullptr) {
++		LOG(DcmippAec, Error) << "Failed to create pIspAEprocess";
++		return false;
++	}
++
++	evision_return_t init_result = evision_api_st_ae_init(pIspAEprocess);
++	if (init_result != EVISION_RET_SUCCESS) {
++		LOG(DcmippAec, Error) << "Failed to initialize pIspAEprocess";
++		evision_api_st_ae_delete(pIspAEprocess);
++		pIspAEprocess = nullptr;
++		return false;
++	}
++
++	return true;
++}
++
++static void deinitializeAeInstance()
++{
++	if (pIspAEprocess) {
++		evision_api_st_ae_delete(pIspAEprocess);
++		pIspAEprocess = nullptr;
++	}
++}
++
++static void deinitializeLibrary()
++{
++	if (plib_handle) {
++		dlclose(plib_handle);
++		plib_handle = nullptr;
++	}
++}
++
++evision_return_t processAeInstance(double *gain, int32_t *exposure, uint32_t average_lum)
++{
++	if (!pIspAEprocess) {
++		LOG(DcmippAec, Error) << "AE instance not initialized";
++		return EVISION_RET_PARAM_ERR;
++	}
++
++	if (!gain || !exposure) {
++		LOG(DcmippAec, Error) << "Null pointer passed for gain or exposure";
++		return EVISION_RET_PARAM_ERR;
++	}
++
++	evision_return_t e_ret = evision_api_st_ae_process(pIspAEprocess, static_cast<uint32_t>(*gain * kmdB), static_cast<uint32_t>(*exposure), static_cast<uint8_t>(average_lum));
++	if (e_ret != EVISION_RET_SUCCESS) {
++		LOG(DcmippAec, Error) << "AE process failed";
++		return EVISION_RET_FAILURE;
++	}
++
++	*gain = static_cast<double>(pIspAEprocess->new_gain) / kmdB;
++	*exposure = static_cast<int32_t>(pIspAEprocess->new_exposure);
++
++	return EVISION_RET_SUCCESS;
++}
++#endif /* EVISION_ALGO_ENABLED */
++
++const int32_t kAecTolerance = 15;
++const float kAecCoeffLumGain = 0.1f;
++const float kAecGainUpdateMax = 5.0f;
++const float kAecExposureUpdateRatio = 1.2f;
++const int32_t kAecExposureMin = 400;
++const int32_t kAecSensorDelayMax = 10;
++const int32_t kAecSensorDelayLMargin = 2;
++const int32_t kAecSensorStartupFrames = 30;
++
 +int Aec::init([[maybe_unused]] IPAContext &context, const YamlObject &tuningData)
 +{
 +	/* Check for AEC algo config  */
 +	params_.algoEnable = tuningData["AeEnable"].get<bool>(0);
-+	params_.algoTarget = tuningData["AeTarget"].get<uint32_t>(0);
++	params_.algoExposureValue = tuningData["ExposureValue"].get<double>(kEVDef);
++	if (!isExposureValueValid(params_.algoExposureValue)) {
++		LOG(DcmippAec, Error) << "Invalid Exposure value: " << params_.algoExposureValue;
++		return -EINVAL;
++	}
++
++	params_.algoTarget = kAlgoIdealExposureTarget * pow(2, params_.algoExposureValue);
 +
 +	/* Check for sensor static config (exposure time in microseconds, gain in dB) */
 +	params_.sensorStatic.exposure = tuningData["ExposureTime"].get<int32_t>(10000);
++	if (!isExposureTimeValid(params_.sensorStatic.exposure, context)) {
++		LOG(DcmippAec, Error) << "Invalid Exposure time: " << params_.sensorStatic.exposure;
++		return -EINVAL;
++	}
 +	params_.sensorStatic.gain = tuningData["AnalogueGain_dB"].get<double>(1);
++	if (!isGainValid(params_.sensorStatic.gain, context)) {
++		LOG(DcmippAec, Error) << "Invalid Gain: " << params_.sensorStatic.gain;
++		return -EINVAL;
++	}
++
++	/* Check for sensor delay */
++	params_.sensorDelay = tuningData["SensorDelay"].get<int32_t>(kSensorDelayDef);
++	if (!isSensorDelayValid(params_.sensorDelay)) {
++		LOG(DcmippAec, Error) << "Invalid Sensor delay: " << params_.sensorDelay;
++		return -EINVAL;
++	}
++
++	/* Prepare sensor delay test config */
++	/* Config  0: Exposure =   0%  -  Gain =  0%
++	 *    .................. +20% ...........
++	 * Config  5: Exposure = 100%  -  Gain =  0%
++	 *    ................................. +10%
++	 * Config 11: Exposure = 100%  -  Gain = 60%
++	 */
++	for (int i = 0; i < kAecNbTestConfig / 2; i++) {
++		internal_.measure.testConfig[i].exposure = i ? (context.info.sensorExposureMax * 20 * i) / 100 : context.info.sensorExposureMin;
++		internal_.measure.testConfig[i].gain = context.info.sensorGainMin;
++		internal_.measure.testConfig[i + kAecNbTestConfig / 2].exposure = context.info.sensorExposureMax;
++		internal_.measure.testConfig[i + kAecNbTestConfig / 2].gain = (context.info.sensorGainMax * 10 * (i + 1)) / 100;
++	}
++	internal_.measure.sensorDelayMeasure = -1;
++
++	/* Check for anti-flicker frequency */
++	params_.antiFlickerFreq = tuningData["AntiFlickerFreq"].get<uint32_t>(0);
++	if (!isAntiflickerFreqValid(params_.antiFlickerFreq)) {
++		LOG(DcmippAec, Error) << "Invalid Anti-flicker frequency: " << params_.antiFlickerFreq;
++		return -EINVAL;
++	}
++
++#ifdef EVISION_ALGO_ENABLED
++	/* Iniitialize the ST AE algorithm library */
++	if (params_.algoEnable) {
++		if (!initializeLibrary()) {
++			return 1;
++		}
++
++		if (!process_simple_algo) {
++			if (!initializeAeInstance()) {
++				deinitializeLibrary();
++				return 1;
++			}
++
++			/* Configure algo (AEC target) */
++			pIspAEprocess->hyper_params.target = (int32_t)params_.algoTarget;
++
++			/* Configure algo (sensor config) */
++			pIspAEprocess->hyper_params.exposure_min = context.info.sensorExposureMin;
++			pIspAEprocess->hyper_params.exposure_max = context.info.sensorExposureMax;
++			pIspAEprocess->hyper_params.gain_min = (uint32_t)(context.info.sensorGainMin * kmdB);
++			pIspAEprocess->hyper_params.gain_max = (uint32_t)(context.info.sensorGainMax * kmdB);
++			pIspAEprocess->hyper_params.compat_freq = (uint32_t)params_.antiFlickerFreq;
++		}
++	} else {
++		if (!process_simple_algo) {
++			deinitializeAeInstance();
++			deinitializeLibrary();
++		}
++	}
++#endif /* EVISION_ALGO_ENABLED */
++
++	/* Configure exposed controls */
++	context.dcmippControls[&controls::AeEnable] = ControlInfo(false, true);
++	context.dcmippControls[&controls::ExposureValue] = ControlInfo(kEVMin, kEVMax, kEVDef);
++	context.dcmippControls[&controls::ExposureTime] = ControlInfo(context.info.sensorExposureMin,
++								      context.info.sensorExposureMax,
++								      context.info.sensorExposureDef);
++	context.dcmippControls[&controls::draft::AnalogueGain_dB] = ControlInfo((float)context.info.sensorGainMin,
++										(float)context.info.sensorGainMax,
++										(float)context.info.sensorGainDef);
++	context.dcmippControls[&controls::draft::SensorDelay] = ControlInfo(kSensorDelayMin,
++									    kSensorDelayMax,
++									    kSensorDelayDef);
++	context.dcmippControls[&controls::draft::DoSensorDelayMeasure] = ControlInfo(false, true);
++	context.dcmippControls[&controls::draft::AntiFlickerFreq] = ControlInfo((int32_t)kAntiflickerFreqMin,
++										(int32_t)kAntiflickerFreqMax,
++										(int32_t)kAntiflickerFreqDef);
 +
 +	return 0;
 +}
@@ -878,16 +2178,33 @@ index 00000000..110bb6fd
 +{
 +	/* Set the initial ISP/sensor values in the pending config */
 +	if (params_.algoEnable) {
-+		/* Start with gain=min and exposure = max */
++		/* Start with gain and exposure = min */
 +		config_.sensor.gain = context.info.sensorGainMin;
-+		config_.sensor.exposure = context.info.sensorExposureMax;
++		if (process_simple_algo) {
++			config_.sensor.exposure = context.info.sensorExposureMax;
++		} else {
++			config_.sensor.exposure = context.info.sensorExposureMin;
++		}
 +	} else {
 +		/* Static config */
 +		config_.sensor = params_.sensorStatic;
 +	}
 +
++	/* Update context immediately, so IPA can apply the sensor settings at start up */
++	context.sensor = config_.sensor;
 +	config_.pending = true;
 +
++	/* Update sensor exposed controls */
++	context.dcmippControls.emplace(std::piecewise_construct,
++				       std::forward_as_tuple(&controls::ExposureTime),
++				       std::forward_as_tuple(context.info.sensorExposureMin,
++							     context.info.sensorExposureMax,
++							     context.info.sensorExposureDef));
++	context.dcmippControls.emplace(std::piecewise_construct,
++				       std::forward_as_tuple(&controls::draft::AnalogueGain_dB),
++				       std::forward_as_tuple((float)context.info.sensorGainMin,
++							     (float)context.info.sensorGainMax,
++							     (float)context.info.sensorGainDef));
 +	return 0;
 +}
 +
@@ -898,16 +2215,62 @@ index 00000000..110bb6fd
 +{
 +	/* Algo ctrl: only update params_ which will be considered upon the next process() call */
 +	const auto &algoEnable = controls.get(controls::AeEnable);
-+	const auto &algoTarget = controls.get(controls::draft::AeExposureTarget);
++	const auto &algoExposureValue = controls.get(controls::ExposureValue);
++	const auto &algoAntiFlickerFreq = controls.get(controls::draft::AntiFlickerFreq);
++	const auto &sensorDelay = controls.get(controls::draft::SensorDelay);
++	const auto &doSensorDelayMeasure = controls.get(controls::draft::DoSensorDelayMeasure);
 +
 +	if (algoEnable) {
 +		params_.algoEnable = *algoEnable;
 +		LOG(DcmippAec, Debug) << "Updating AeEnable to " << *algoEnable;
 +	}
 +
-+	if (algoTarget) {
-+		params_.algoTarget = *algoTarget;
-+		LOG(DcmippAec, Debug) << "Updating AeTarget to " << *algoTarget;
++	if (algoExposureValue) {
++		if (!isExposureValueValid(*algoExposureValue)) {
++			LOG(DcmippAec, Error) << "Invalid Exposure value: " << *algoExposureValue;
++			return;
++		}
++		params_.algoExposureValue = *algoExposureValue;
++		LOG(DcmippAec, Debug) << "Updating ExposureValue to " << params_.algoExposureValue;
++
++		params_.algoTarget = kAlgoIdealExposureTarget * pow(2, *algoExposureValue);
++		LOG(DcmippAec, Debug) << "Updating AeTarget to " << params_.algoTarget;
++	}
++
++	if (algoAntiFlickerFreq) {
++		if (!isAntiflickerFreqValid(*algoAntiFlickerFreq)) {
++			LOG(DcmippAec, Error) << "Invalid Anti-flicker frequency: " << *algoAntiFlickerFreq;
++			return;
++		}
++		params_.antiFlickerFreq = *algoAntiFlickerFreq;
++		LOG(DcmippAec, Debug) << "Updating Anti-flicker frequency to " << params_.antiFlickerFreq;
++	}
++
++	if (sensorDelay) {
++		if (!isSensorDelayValid(*sensorDelay)) {
++			LOG(DcmippAec, Error) << "Invalid Sensor delay: " << *sensorDelay;
++			return;
++		}
++		params_.sensorDelay = *sensorDelay;
++		LOG(DcmippAec, Debug) << "Updating Sensor Delay to " << params_.sensorDelay;
++	}
++
++	if (doSensorDelayMeasure && *doSensorDelayMeasure) {
++		/* Start Measure  */
++		internal_.measure.doSensorDelayMeasure = true;
++		internal_.measure.sensorDelayMeasure = -1;
++		internal_.measure.testConfigId = 0;
++		internal_.measure.delay = 0;
++		internal_.measure.refL = 0;
++		internal_.measure.delays.fill(0);
++
++		/* Apply the first test config */
++		internal_.measure.initialConfig = config_.sensor;
++		config_.sensor.gain = internal_.measure.testConfig[internal_.measure.testConfigId].gain;
++		config_.sensor.exposure = internal_.measure.testConfig[internal_.measure.testConfigId].exposure;
++		config_.pending = true;
++
++		LOG(DcmippAec, Debug) << "Starting sensor delay measure";
 +	}
 +
 +	/* Static config: update params_ and if applicable force config_ update now */
@@ -915,6 +2278,10 @@ index 00000000..110bb6fd
 +	const auto &exposure = controls.get(controls::ExposureTime);
 +
 +	if (gain) {
++		if (!isGainValid(*gain, context)) {
++			LOG(DcmippAec, Error) << "Invalid Gain: " << *gain;
++			return;
++		}
 +		params_.sensorStatic.gain = *gain;
 +		if (!params_.algoEnable) {
 +			config_.sensor.gain = params_.sensorStatic.gain;
@@ -924,6 +2291,10 @@ index 00000000..110bb6fd
 +	}
 +
 +	if (exposure) {
++		if (!isExposureTimeValid(*exposure, context)) {
++			LOG(DcmippAec, Error) << "Invalid Exposure time: " << *exposure;
++			return;
++		}
 +		params_.sensorStatic.exposure = *exposure;
 +		if (!params_.algoEnable) {
 +			config_.sensor.exposure = *exposure;
@@ -950,18 +2321,98 @@ index 00000000..110bb6fd
 +		context.sensor = config_.sensor;
 +
 +		/* Start the invalid stats counter from this update. Consider both ISP and sensor */
-+		internal_.invalidStats = context.info.ispStatLatency + context.info.sensorStatLatency;
++		if (!internal_.measure.doSensorDelayMeasure) {
++			/* Nominal processing (not measuring delay) */
++			internal_.invalidStats = context.info.ispStatLatency + params_.sensorDelay;
++			/* Our definition of 'sensorDelay' is the delay between a sensor control is updated
++			 * and the time the stats are available. So this delay includes 1 VSYNC for the stat
++			 * update, which is also considered in the definition of ispStatLatency.
++			 * So at the end we shall decrease by one the summed value */
++			internal_.invalidStats--;
++
++			/* Increase this delay during the startup phase because the sensor response
++			 * time may be greater here */
++			if (frame <= kAecSensorStartupFrames)
++				internal_.invalidStats++;
++		} else {
++			/* During measure */
++			if (internal_.measure.testConfigId != 0)
++				/* We'll check measure at next frame */
++				internal_.invalidStats = 1;
++			else
++				/* First measure: wait for several frames to set up the initial point */
++				internal_.invalidStats = kAecSensorDelayMax;
++		}
 +
 +		/* Clear the pending request */
 +		config_.pending = false;
 +	}
 +}
 +
-+const int32_t kAecTolerance = 15;
-+const float kAecCoeffLumGain = 0.1f;
-+const float kAecGainUpdateMax = 5.0f;
-+const float kAecExposureUpdateRatio = 1.2f;
-+const int32_t kAecExposureMin = 400;
++void Aec::processSensorDelayMeasure(const stm32_dcmipp_stat_buf *stats)
++{
++	int32_t avgL;
++
++	/* Check if stats can be considered as valid */
++	if (internal_.invalidStats)
++		internal_.invalidStats--;
++
++	if (internal_.invalidStats)
++		return;
++
++	avgL = (3 * stats->post.average_RGB[0] + 6 * stats->post.average_RGB[1] + 1 * stats->post.average_RGB[2]) / 10;
++
++	if (internal_.measure.testConfigId > 0) {
++		/* New stat available, check if Luminance has changed */
++		internal_.measure.delay++;
++		if (abs(avgL - internal_.measure.refL) <= kAecSensorDelayLMargin && internal_.measure.delay != kAecSensorDelayMax) {
++			/* No change, wait for next frame */
++			internal_.invalidStats = 1;
++			return;
++		}
++
++		/* Luminance was updated since we applied a new sensor configuration : store the result for this test.
++		 * Reaching kAecSensorDelayMax happens when we have a totally black or white frame, the measure shall be
++		 * considered as invalid.
++		 */
++		internal_.measure.delays[internal_.measure.testConfigId - 1] = internal_.measure.delay;
++	}
++
++	/* New delay measure available */
++	if (++internal_.measure.testConfigId != kAecNbTestConfig) {
++		/* Apply new sensor test configuration */
++		config_.sensor.gain = internal_.measure.testConfig[internal_.measure.testConfigId].gain;
++		config_.sensor.exposure = internal_.measure.testConfig[internal_.measure.testConfigId].exposure;
++		config_.pending = true;
++
++		/* Wait for stats at next frame */
++		internal_.measure.delay = 0;
++		internal_.measure.refL = avgL;
++		internal_.invalidStats = 1;
++	} else {
++		/* All the configurations have been tested, finalize the test procedure */
++		int32_t sum = 0;
++		int n_valid = 0;
++		/* Find the average delay among the valid (!= kAecSensorDelayMax) values */
++		for (int i = 0; i < kAecNbTestConfig - 1; i++)
++			if (internal_.measure.delays[i] != kAecSensorDelayMax) {
++				sum += internal_.measure.delays[i];
++				n_valid++;
++			}
++		if (n_valid) {
++			internal_.measure.sensorDelayMeasure = round((float)sum / n_valid);
++			/* Apply the measure internally */
++			params_.sensorDelay = internal_.measure.sensorDelayMeasure;
++		} else {
++			internal_.measure.sensorDelayMeasure = 0;
++		}
++
++		/* Restore initial sensor config and stop measure */
++		config_.sensor = internal_.measure.initialConfig;
++		config_.pending = true;
++		internal_.measure.doSensorDelayMeasure = false;
++	}
++}
 +
 +void Aec::process(IPAContext &context,
 +		  [[maybe_unused]] const uint32_t frame,
@@ -970,7 +2421,10 @@ index 00000000..110bb6fd
 +		  ControlList &metadata)
 +{
 +	/* Compute a new pending config from stats */
-+	if (params_.algoEnable) {
++	if (internal_.measure.doSensorDelayMeasure) {
++		/* Special case: prosess sensor delay measure */
++		processSensorDelayMeasure(stats);
++	} else if (params_.algoEnable) {
 +		/* Check if stats can be considered as valid */
 +		if (internal_.invalidStats)
 +			internal_.invalidStats--;
@@ -978,84 +2432,125 @@ index 00000000..110bb6fd
 +		if (internal_.invalidStats) {
 +			LOG(DcmippAec, Debug) << "Can't update now";
 +		} else {
-+			bool do_exposure_update;
-+			float gain_update;
-+			double gain = context.sensor.gain;
-+			int32_t exposure = context.sensor.exposure;
-+			int32_t target = (int32_t)params_.algoTarget;
-+			int32_t avgL = (3 * stats->post.average_RGB[0] +
-+					6 * stats->post.average_RGB[1] +
-+					1 * stats->post.average_RGB[2]) /
-+				       10;
++			if (process_simple_algo) {
++				bool do_exposure_update;
++				float gain_update;
++				double gain = context.sensor.gain;
++				int32_t exposure = context.sensor.exposure;
++				int32_t target = (int32_t)params_.algoTarget;
++				int32_t avgL = (3 * stats->post.average_RGB[0] +
++						6 * stats->post.average_RGB[1] +
++						1 * stats->post.average_RGB[2]) /
++					       10;
 +
-+			LOG(DcmippAec, Debug) << "Status: L = " << avgL << " - "
-+					      << "Gain = " << gain << " db - "
-+					      << "Exposure = " << exposure << " us";
++				LOG(DcmippAec, Debug) << "Status: L = " << avgL << " - "
++						      << "Gain = " << gain << " db - "
++						      << "Exposure = " << exposure << " us";
 +
-+			/* Compare the average luminance with the target */
-+			gain_update = 0.0f;
-+			if (avgL > target + kAecTolerance) {
-+				/* Too bright, decrease gain */
-+				gain_update = (float)(target - avgL) * kAecCoeffLumGain;
-+				if (gain_update < -kAecGainUpdateMax)
-+					gain_update = -kAecGainUpdateMax;
-+			} else if (avgL < target - kAecTolerance) {
-+				/* Too dark vador, call a Jedi and increase gain */
-+				gain_update = (float)(target - avgL) * kAecCoeffLumGain;
-+				if (gain_update > kAecGainUpdateMax)
-+					gain_update = kAecGainUpdateMax;
-+			}
++				/* Compare the average luminance with the target */
++				gain_update = 0.0f;
++				if (avgL > target + kAecTolerance) {
++					/* Too bright, decrease gain */
++					gain_update = (float)(target - avgL) * kAecCoeffLumGain;
++					if (gain_update < -kAecGainUpdateMax)
++						gain_update = -kAecGainUpdateMax;
++				} else if (avgL < target - kAecTolerance) {
++					/* Too dark vador, call a Jedi and increase gain */
++					gain_update = (float)(target - avgL) * kAecCoeffLumGain;
++					if (gain_update > kAecGainUpdateMax)
++						gain_update = kAecGainUpdateMax;
++				}
 +
-+			if (gain_update == 0.0f) {
-+				LOG(DcmippAec, Debug) << "No change required";
-+			} else {
-+				/* Need to change something (gain or exposure) */
-+				/* Check current exposure to decide whether we shall update gain or exposure */
-+				if ((gain == context.info.sensorGainMin) &&
-+				    ((exposure != context.info.sensorExposureMax) || (gain_update < 0)))
-+					do_exposure_update = true;
-+				else
-+					do_exposure_update = false;
-+
-+				if (!do_exposure_update) {
-+					/* Update gain as it has not reached its min value */
-+					gain += gain_update;
-+					if (gain < context.info.sensorGainMin)
-+						gain = context.info.sensorGainMin;
-+					else if (gain > context.info.sensorGainMax)
-+						gain = context.info.sensorGainMax;
-+
-+					LOG(DcmippAec, Debug) << "New gain: " << gain << " db";
-+					config_.sensor.gain = gain;
-+					config_.pending = true;
++				if (gain_update == 0.0f) {
++					LOG(DcmippAec, Debug) << "No change required";
 +				} else {
-+					/* Update exposure since gain has reached its min value */
-+					if (gain_update < 0) {
-+						/* Decrease exposure */
-+						exposure /= kAecExposureUpdateRatio;
-+						/* Note: sensorExposureMin for IMX335 is wrong: use alternate value */
-+						if (exposure < kAecExposureMin)
-+							exposure = kAecExposureMin;
-+					} else {
-+						/* Increase exposure */
-+						exposure *= kAecExposureUpdateRatio;
-+						if (exposure > context.info.sensorExposureMax)
-+							exposure = context.info.sensorExposureMax;
-+					}
++					/* Need to change something (gain or exposure) */
++					/* Check current exposure to decide whether we shall update gain or exposure */
++					if ((gain == context.info.sensorGainMin) &&
++					    ((exposure != context.info.sensorExposureMax) || (gain_update < 0)))
++						do_exposure_update = true;
++					else
++						do_exposure_update = false;
 +
++					if (!do_exposure_update) {
++						/* Update gain as it has not reached its min value */
++						gain += gain_update;
++						if (gain < context.info.sensorGainMin)
++							gain = context.info.sensorGainMin;
++						else if (gain > context.info.sensorGainMax)
++							gain = context.info.sensorGainMax;
++
++						LOG(DcmippAec, Debug) << "New gain: " << gain << " db";
++						config_.sensor.gain = gain;
++						config_.pending = true;
++					} else {
++						/* Update exposure since gain has reached its min value */
++						if (gain_update < 0) {
++							/* Decrease exposure */
++							exposure /= kAecExposureUpdateRatio;
++							/* Note: sensorExposureMin for IMX335 is wrong: use alternate value */
++							if (exposure < kAecExposureMin)
++								exposure = kAecExposureMin;
++						} else {
++							/* Increase exposure */
++							exposure *= kAecExposureUpdateRatio;
++							if (exposure > context.info.sensorExposureMax)
++								exposure = context.info.sensorExposureMax;
++						}
++
++						LOG(DcmippAec, Debug) << "New exposure: " << exposure << " us";
++						config_.sensor.exposure = exposure;
++						config_.pending = true;
++					}
++				}
++			}
++#ifdef EVISION_ALGO_ENABLED
++			else {
++				double gain = context.sensor.gain;
++				int32_t exposure = context.sensor.exposure;
++				int32_t avgL = (3 * stats->post.average_RGB[0] +
++						6 * stats->post.average_RGB[1] +
++						1 * stats->post.average_RGB[2]) /
++					       10;
++
++				LOG(DcmippAec, Debug) << "Status: L = " << avgL << " - "
++						      << "Gain = " << gain << " db - "
++						      << "Exposure = " << exposure << " us";
++
++				/* Align on the target update (may have been updated with ISP_SetExposureTarget()) */
++				pIspAEprocess->hyper_params.target = (uint8_t)params_.algoTarget;
++				pIspAEprocess->hyper_params.compat_freq = (uint32_t)params_.antiFlickerFreq;
++
++				evision_return_t process_result = processAeInstance(&gain, &exposure, avgL);
++				if (process_result != EVISION_RET_SUCCESS) {
++					LOG(DcmippAec, Error) << "Failed to process pIspAEprocess";
++				}
++
++				if (config_.sensor.exposure != exposure) {
 +					LOG(DcmippAec, Debug) << "New exposure: " << exposure << " us";
 +					config_.sensor.exposure = exposure;
 +					config_.pending = true;
 +				}
++
++				if (config_.sensor.gain != gain) {
++					LOG(DcmippAec, Debug) << "New gain: " << gain << " db";
++					config_.sensor.gain = gain;
++					config_.pending = true;
++				}
 +			}
++#endif /* EVISION_ALGO_ENABLED */
 +		}
 +	}
 +
 +	/* Set metadata */
 +	metadata.set(controls::AeEnable, params_.algoEnable);
 +	metadata.set(controls::draft::AeExposureTarget, params_.algoTarget);
++	metadata.set(controls::ExposureValue, params_.algoExposureValue);
++	metadata.set(controls::draft::AntiFlickerFreq, params_.antiFlickerFreq);
 +	metadata.set(controls::draft::AnalogueGain_dB, (float)config_.sensor.gain);
 +	metadata.set(controls::ExposureTime, config_.sensor.exposure);
++	metadata.set(controls::draft::SensorDelay, params_.sensorDelay);
++	metadata.set(controls::draft::SensorDelayMeasure, internal_.measure.sensorDelayMeasure);
 +}
 +
 +REGISTER_IPA_ALGORITHM(Aec, "Aec")
@@ -1065,13 +2560,14 @@ index 00000000..110bb6fd
 +} /* namespace libcamera */
 diff --git a/src/ipa/dcmipp/algorithms/aec.h b/src/ipa/dcmipp/algorithms/aec.h
 new file mode 100644
-index 00000000..1e1d86ef
+index 00000000..27cc5735
 --- /dev/null
 +++ b/src/ipa/dcmipp/algorithms/aec.h
-@@ -0,0 +1,50 @@
+@@ -0,0 +1,68 @@
 +/* SPDX-License-Identifier: LGPL-2.1-or-later */
 +/*
 + * Copyright (C) 2024 ST Microelectronics
++ * Copyright (C) 2024 LACROIX - Impulse
 + *
 + * aec.h - STM32 DCMIPP AE control
 + */
@@ -1100,20 +2596,37 @@ index 00000000..1e1d86ef
 +		     const stm32_dcmipp_stat_buf *stats, ControlList &metadata) override;
 +
 +private:
++	static constexpr int32_t kAecNbTestConfig = 12;
++
 +	struct algoParams {
 +		bool algoEnable;
 +		uint32_t algoTarget;
++		float algoExposureValue;
++		uint32_t antiFlickerFreq;
 +		struct IPASensor sensorStatic;
++		int32_t sensorDelay;
 +	} params_;
 +
 +	struct algoInternal {
 +		int32_t invalidStats;
++		struct measure {
++			bool doSensorDelayMeasure;
++			int32_t sensorDelayMeasure;
++			struct IPASensor initialConfig;
++			std::array<struct IPASensor, kAecNbTestConfig> testConfig;
++			int32_t testConfigId;
++			std::array<int32_t, kAecNbTestConfig - 1> delays;
++			int32_t delay;
++			int32_t refL;
++		} measure;
 +	} internal_;
 +
 +	struct algoConfig {
 +		bool pending;
 +		struct IPASensor sensor;
 +	} config_;
++
++	void processSensorDelayMeasure(const stm32_dcmipp_stat_buf *stats);
 +};
 +
 +} /* namespace ipa::dcmipp::algorithms */
@@ -1162,13 +2675,14 @@ index 00000000..8c59ceb0
 +} /* namespace libcamera */
 diff --git a/src/ipa/dcmipp/algorithms/awb.cpp b/src/ipa/dcmipp/algorithms/awb.cpp
 new file mode 100644
-index 00000000..c8fbb4c1
+index 00000000..006ad4b8
 --- /dev/null
 +++ b/src/ipa/dcmipp/algorithms/awb.cpp
-@@ -0,0 +1,492 @@
+@@ -0,0 +1,948 @@
 +/* SPDX-License-Identifier: LGPL-2.1-or-later */
 +/*
 + * Copyright (C) 2024 ST Microelectronics
++ * Copyright (C) 2024 LACROIX - Impulse
 + *
 + * awb.cpp - STM32 DCMIPP AWB control
 + */
@@ -1179,7 +2693,15 @@ index 00000000..c8fbb4c1
 +#include <limits.h>
 +
 +#include <libcamera/base/log.h>
++
 +#include <libcamera/control_ids.h>
++
++#ifdef EVISION_ALGO_ENABLED
++#include <dlfcn.h>
++#include <iostream>
++
++#include "evision-api-awb.h"
++#endif /* EVISION_ALGO_ENABLED */
 +
 +namespace libcamera {
 +
@@ -1190,6 +2712,109 @@ index 00000000..c8fbb4c1
 +static constexpr uint32_t kPrecisionFactor = 100000000;
 +static constexpr uint32_t kIdle = 128;
 +static constexpr char kDelimiter = '$';
++static constexpr int kColGainMin = 0;
++static constexpr int kColGainMax = 1600000000;
++static constexpr int kColGainDef = 100000000;
++static constexpr int kColCorrectionMin = -400000000;
++static constexpr int kColCorrectionMax = 400000000;
++static constexpr int kColCorrectionDef = 0;
++static constexpr int kProfileNameLen = 32;
++static constexpr int kColTemperatureMin = 0;
++static constexpr int kColTemperatureMax = 10000;
++static constexpr int kColTemperatureDef = 0;
++static constexpr int kIspApplyConfigLatency = 4;
++static constexpr int kColorTempAlgoDefaultMin = 4500;
++
++#ifdef EVISION_ALGO_ENABLED
++static void *plib_handle = nullptr;
++static evision_awb_estimator_t *pIspAWBestimator = nullptr;
++static evision_awb_profile_t awbProfiles[EVISION_AWB_MAX_PROFILE_COUNT];
++static float colorTempThresholds[EVISION_AWB_MAX_PROFILE_COUNT - 1];
++
++typedef evision_awb_estimator_t *(*evision_api_awb_new_t)(evision_api_log_callback log_cb);
++typedef evision_return_t (*evision_api_awb_delete_t)(evision_awb_estimator_t *self);
++typedef void (*evision_api_awb_set_profile_t)(evision_awb_profile_t *awb_profile,
++					      float color_temperature, const float cfa_gains[EVISION_AWB_NB_DG_CFA_GAINS],
++					      const float ccm_coefficients[EVISION_AWB_CCM_SIZE][EVISION_AWB_CCM_SIZE],
++					      const float ccm_offsets[EVISION_AWB_CCM_SIZE]);
++typedef evision_return_t (*evision_api_awb_init_profiles_t)(evision_awb_estimator_t *const self,
++							    double min_temp, double max_temp,
++							    uint16_t nb_profiles, float decision_thresholds[EVISION_AWB_MAX_PROFILE_COUNT - 1],
++							    evision_awb_profile_t awb_profiles[EVISION_AWB_MAX_PROFILE_COUNT]);
++typedef evision_return_t (*evision_api_awb_run_average_t)(evision_awb_estimator_t *const self, const evision_image_t *const image,
++							  uint8_t use_ext_meas, double ext_meas[EVISION_AWB_EXT_MEAS_SIZE]);
++
++static evision_api_awb_new_t evision_api_awb_new = nullptr;
++static evision_api_awb_delete_t evision_api_awb_delete = nullptr;
++static evision_api_awb_set_profile_t evision_api_awb_set_profile = nullptr;
++static evision_api_awb_init_profiles_t evision_api_awb_init_profiles = nullptr;
++static evision_api_awb_run_average_t evision_api_awb_run_average = nullptr;
++
++static constexpr uint8_t kIspStatCheckSkipAfterInit = 10;
++static constexpr uint8_t kIspStatCheckSkipAfterCTEstimation = 4;
++static constexpr int32_t kIspStatDeltaMax = 2;
++
++static int32_t stats_history[3][3] = { 0 };
++static int32_t color_temperature_history[2] = { 0 };
++static uint8_t skip_stat_check_count = kIspStatCheckSkipAfterInit;
++#endif
++
++static bool process_simple_algo = true;
++
++static bool isColourGainValid(int32_t gain)
++{
++	return gain >= kColGainMin && gain <= kColGainMax;
++}
++
++static bool isColourGainValid(Span<const int32_t> gain)
++{
++	for (auto const &g : gain)
++		if (!isColourGainValid(g))
++			return false;
++	return true;
++}
++
++static bool isColourCorrectionValid(int32_t correction)
++{
++	return correction >= kColCorrectionMin && correction <= kColCorrectionMax;
++}
++
++static bool isColourCorrectionValid(std::vector<int32_t> matrix)
++{
++	for (auto const &c : matrix)
++		if (!isColourCorrectionValid(c))
++			return false;
++	return true;
++}
++
++static bool isColourCorrectionValid(Span<const int32_t> matrix)
++{
++	for (auto const &c : matrix)
++		if (!isColourCorrectionValid(c))
++			return false;
++	return true;
++}
++
++static bool isColourTemperatureValid(int32_t temperature)
++{
++	return temperature >= kColTemperatureMin && temperature <= kColTemperatureMax;
++}
++
++static bool isColourTemperatureValid(std::vector<int32_t> temperature)
++{
++	for (auto const &t : temperature)
++		if (!isColourTemperatureValid(t))
++			return false;
++	return true;
++}
++
++static bool isColourTemperatureValid(Span<const int32_t> temperature)
++{
++	for (auto const &t : temperature)
++		if (!isColourTemperatureValid(t))
++			return false;
++	return true;
++}
 +
 +static void toShiftMultiplier(uint32_t gain, uint8_t *shift, uint8_t *multiplier)
 +{
@@ -1221,84 +2846,242 @@ index 00000000..c8fbb4c1
 +	return reg;
 +}
 +
-+static void getStatNoGain(struct IPAIspGain ispGain, const __u32 average_RGB[3],
-+			  int32_t avgBeforeGain[3])
++#ifdef EVISION_ALGO_ENABLED
++static void getStatUp(IPAContext &context, const __u32 average_RGB[3],
++		      int32_t avgUpRGB[3])
 +{
 +	uint64_t R, G, B;
 +
 +	/* Read the current ISP gain */
-+	if (ispGain.enable == 1) {
-+		R = ((uint64_t)average_RGB[0] * kPrecisionFactor) / ispGain.gainR;
-+		avgBeforeGain[0] = (int32_t)R;
++	if (context.isp.gain.enable == 1) {
++		R = ((uint64_t)average_RGB[0] * kPrecisionFactor) / context.isp.gain.gainR;
++		avgUpRGB[0] = (int32_t)R;
 +
-+		G = ((uint64_t)average_RGB[1] * kPrecisionFactor) / ispGain.gainG;
-+		avgBeforeGain[1] = (int32_t)G;
++		G = ((uint64_t)average_RGB[1] * kPrecisionFactor) / context.isp.gain.gainG;
++		avgUpRGB[1] = (int32_t)G;
 +
-+		B = ((uint64_t)average_RGB[2] * kPrecisionFactor) / ispGain.gainB;
-+		avgBeforeGain[2] = (int32_t)B;
++		B = ((uint64_t)average_RGB[2] * kPrecisionFactor) / context.isp.gain.gainB;
++		avgUpRGB[2] = (int32_t)B;
++
++		if (context.isp.blackLevel.enable == 1) {
++			avgUpRGB[0] += context.isp.blackLevel.blcR;
++			avgUpRGB[1] += context.isp.blackLevel.blcG;
++			avgUpRGB[2] += context.isp.blackLevel.blcB;
++		}
 +	} else {
-+		avgBeforeGain[0] = (int32_t)average_RGB[0];
-+		avgBeforeGain[1] = (int32_t)average_RGB[1];
-+		avgBeforeGain[2] = (int32_t)average_RGB[2];
++		avgUpRGB[0] = (int32_t)average_RGB[0];
++		avgUpRGB[1] = (int32_t)average_RGB[1];
++		avgUpRGB[2] = (int32_t)average_RGB[2];
 +	}
 +}
 +
-+static double linearSrgb(double c)
++double applyGammaInverse(uint32_t comp)
 +{
-+	double linh;
-+	if (c <= 0.04045)
-+		linh = c / 12.92;
-+	else
-+		linh = pow((c + 0.055) / 1.055, 2.4);
-+	return linh;
++	return 255 * std::pow(static_cast<float>(comp) / 255, 1.0 / 2.2);
 +}
 +
-+static double computeCCT(int32_t gain[3])
++void applyCConv(IPAContext &context, const uint32_t inRGB[3], uint32_t outRGB[3])
 +{
-+	/* Correlation matrix used in order to convert RBG values to XYZ space */
-+	/* Illuminant = D65      RGB (R709) [sRGB or HDTV] to XYZ */
-+	const double Cx[] = { 0.4124, 0.3576, 0.1805 };
-+	const double Cy[] = { 0.2126, 0.7152, 0.0722 };
-+	const double Cz[] = { 0.0193, 0.1192, 0.9505 };
-+	int i;
-+	double data[3], xyNormFactor, m_xNormCoeff, m_yNormCoeff, nCoeff, cct;
-+	double X_tmp = 0, Y_tmp = 0, Z_tmp = 0;
++	if (context.isp.cconv.enable) {
++		const int32_t(*coeff)[3] = context.isp.cconv.coeff;
++		int64_t ccR, ccG, ccB;
 +
-+	/* Normalize and prepare RGB channels values for cct computation */
-+	data[0] = linearSrgb(gain[0] / 255.0);
-+	data[1] = linearSrgb(gain[1] / 255.0);
-+	data[2] = linearSrgb(gain[2] / 255.0);
++		// Apply ColorConversion matrix to the input components
++		ccR = static_cast<int64_t>(inRGB[0]) * coeff[0][0] + static_cast<int64_t>(inRGB[1]) * coeff[0][1] + static_cast<int64_t>(inRGB[2]) * coeff[0][2];
++		ccG = static_cast<int64_t>(inRGB[0]) * coeff[1][0] + static_cast<int64_t>(inRGB[1]) * coeff[1][1] + static_cast<int64_t>(inRGB[2]) * coeff[1][2];
++		ccB = static_cast<int64_t>(inRGB[0]) * coeff[2][0] + static_cast<int64_t>(inRGB[1]) * coeff[2][1] + static_cast<int64_t>(inRGB[2]) * coeff[2][2];
 +
-+	/* Apply correlation matrix to RGB channels to obtain (X,Y,Z) */
-+	for (i = 0; i < 3; i++) {
-+		X_tmp += Cx[i] * data[i];
-+		Y_tmp += Cy[i] * data[i];
-+		Z_tmp += Cz[i] * data[i];
++		ccR /= kPrecisionFactor;
++		ccG /= kPrecisionFactor;
++		ccB /= kPrecisionFactor;
++
++		// Clamp values to 0-255
++		ccR = std::clamp(ccR, static_cast<int64_t>(0), static_cast<int64_t>(255));
++		ccG = std::clamp(ccG, static_cast<int64_t>(0), static_cast<int64_t>(255));
++		ccB = std::clamp(ccB, static_cast<int64_t>(0), static_cast<int64_t>(255));
++
++		outRGB[0] = static_cast<uint32_t>(ccR);
++		outRGB[1] = static_cast<uint32_t>(ccG);
++		outRGB[2] = static_cast<uint32_t>(ccB);
++	} else {
++		outRGB[0] = inRGB[0];
++		outRGB[1] = inRGB[1];
++		outRGB[2] = inRGB[2];
++	}
++}
++
++static bool initializeLibrary()
++{
++	const char *lib_dir = "/usr/lib/";
++	const char *lib_name = "libevision-awb.so.1";
++	std::string lib_path = std::string(lib_dir) + lib_name;
++
++	plib_handle = dlopen(lib_path.c_str(), RTLD_LAZY);
++	if (!plib_handle) {
++		LOG(DcmippAwb, Warning) << "Cannot open library: " << dlerror();
++		LOG(DcmippAwb, Warning) << "Fall back to simple AWB algorithm processing";
++		return true;
 +	}
 +
-+	/* Transform (X,Y,Z) to (x,y) */
-+	xyNormFactor = X_tmp + Y_tmp + Z_tmp;
-+	m_xNormCoeff = X_tmp / xyNormFactor;
-+	m_yNormCoeff = Y_tmp / xyNormFactor;
++	dlerror(); // Clear any existing error
 +
-+	/* Apply McCamy's formula to obtain CCT value */
-+	nCoeff = (m_xNormCoeff - 0.3320) / (0.1858 - m_yNormCoeff);
-+	cct = (449 * pow(nCoeff, 3) + 3525 * pow(nCoeff, 2) + 6823.3 * nCoeff + 5520.33);
++	process_simple_algo = false;
++	evision_api_awb_new = (evision_api_awb_new_t)dlsym(plib_handle, "evision_api_awb_new");
++	const char *dlsym_error = dlerror();
++	if (dlsym_error) {
++		LOG(DcmippAwb, Error) << "Cannot load symbol 'evision_api_awb_new': " << dlsym_error;
++		dlclose(plib_handle);
++		return false;
++	}
 +
-+	return cct;
++	evision_api_awb_delete = (evision_api_awb_delete_t)dlsym(plib_handle, "evision_api_awb_delete");
++	dlsym_error = dlerror();
++	if (dlsym_error) {
++		LOG(DcmippAwb, Error) << "Cannot load symbol 'evision_api_awb_delete': " << dlsym_error;
++		dlclose(plib_handle);
++		return false;
++	}
++
++	evision_api_awb_set_profile = (evision_api_awb_set_profile_t)dlsym(plib_handle, "evision_api_awb_set_profile");
++	dlsym_error = dlerror();
++	if (dlsym_error) {
++		LOG(DcmippAwb, Error) << "Cannot load symbol 'evision_api_awb_set_profile': " << dlsym_error;
++		dlclose(plib_handle);
++		return false;
++	}
++
++	evision_api_awb_init_profiles = (evision_api_awb_init_profiles_t)dlsym(plib_handle, "evision_api_awb_init_profiles");
++	dlsym_error = dlerror();
++	if (dlsym_error) {
++		LOG(DcmippAwb, Error) << "Cannot load symbol 'evision_api_awb_init_profiles': " << dlsym_error;
++		dlclose(plib_handle);
++		return false;
++	}
++
++	evision_api_awb_run_average = (evision_api_awb_run_average_t)dlsym(plib_handle, "evision_api_awb_run_average");
++	dlsym_error = dlerror();
++	if (dlsym_error) {
++		LOG(DcmippAwb, Error) << "Cannot load symbol 'evision_api_awb_run_average': " << dlsym_error;
++		dlclose(plib_handle);
++		return false;
++	}
++
++	return true;
 +}
 +
-+static double fixCCT(double cct)
++static void log_cb(const char *const msg)
 +{
-+	/* Correction = 0.0005517 CCT² – 4.597 CCT + 12208 */
-+	return 0.0005517 * cct * cct - 4.597 * cct + 12208;
++	LOG(DcmippAwb, Debug) << msg;
 +}
++
++bool initializeAwbInstance()
++{
++	if (!plib_handle) {
++		LOG(DcmippAwb, Error) << "Library not loaded";
++		return false;
++	}
++
++	pIspAWBestimator = evision_api_awb_new(log_cb);
++	if (pIspAWBestimator == nullptr) {
++		LOG(DcmippAwb, Error) << "Failed to create pIspAWBestimator";
++		return false;
++	}
++
++	return true;
++}
++
++bool Awb::configureAwbAlgo()
++{
++	if (process_simple_algo) {
++		LOG(DcmippAwb, Debug) << "No algorithm reconfiguration needed";
++		return true;
++	}
++
++	evision_return_t e_ret;
++	uint32_t colorTemp, profId, profNb = 0;
++	float cfaGains[4], ccmCoeffs[3][3], ccmOffsets[3] = { 0 };
++
++	if (pIspAWBestimator == nullptr) {
++		LOG(DcmippAwb, Error) << "pIspAWBestimator not found";
++		return false;
++	}
++
++	/* Set profiles (color temperature, gains, color conv matrix) */
++	for (profId = 0; profId < EVISION_AWB_MAX_PROFILE_COUNT; profId++) {
++		colorTemp = static_cast<float>(params_.referenceColorTemp[profId]);
++		if (colorTemp == 0)
++			break;
++
++		if (profNb > 0) {
++			/* Profile decision threshold = lowest ref. temperature + 1/4 of the distance between two reference temperatures */
++			colorTempThresholds[profNb - 1] = static_cast<float>((colorTemp + 3 * params_.referenceColorTemp[profId - 1]) / 4);
++		}
++
++		/* Set cfa gains (RGGB) */
++		cfaGains[0] = static_cast<float>(params_.gainRGB[profId + 0 * kAwbNbRef]) / kPrecisionFactor;
++		cfaGains[1] = static_cast<float>(params_.gainRGB[profId + 1 * kAwbNbRef]) / kPrecisionFactor;
++		cfaGains[2] = cfaGains[1];
++		cfaGains[3] = static_cast<float>(params_.gainRGB[profId + 2 * kAwbNbRef]) / kPrecisionFactor;
++
++		/* Set CCM Coeff */
++		for (uint32_t i = 0; i < 3; i++) {
++			for (uint32_t j = 0; j < 3; j++) {
++				ccmCoeffs[i][j] = static_cast<float>(params_.cconv[profId * 9 + i * 3 + j]) / kPrecisionFactor;
++			}
++		}
++
++		/* Set profile */
++		evision_api_awb_set_profile(&awbProfiles[profId], static_cast<float>(colorTemp), cfaGains, ccmCoeffs, ccmOffsets);
++		profNb++;
++	}
++
++	if (profNb == 0) {
++		LOG(DcmippAwb, Error) << "No valid AWB profiles found";
++		return false;
++	}
++
++	/* Register profiles */
++	e_ret = evision_api_awb_init_profiles(pIspAWBestimator, static_cast<double>(params_.referenceColorTemp[0]),
++					      static_cast<double>(params_.referenceColorTemp[profNb - 1]), profNb,
++					      colorTempThresholds, awbProfiles);
++	if (e_ret != EVISION_RET_SUCCESS) {
++		LOG(DcmippAwb, Error) << "Failed to initialize AWB profiles";
++		return false;
++	}
++
++	/* Configure algo */
++	/* TODO: check if this shall be an IQ tuning parameter (like the LUT tables of AE algo) */
++	pIspAWBestimator->hyper_params.speed_p_min = 1.35;
++	pIspAWBestimator->hyper_params.speed_p_max = (profNb < 4) ? 1.8 : 2.0;
++	pIspAWBestimator->hyper_params.gm_tolerance = 1;
++	pIspAWBestimator->hyper_params.conv_criterion = 3;
++
++	return true;
++}
++
++static void deinitializeAwbInstance()
++{
++	if (pIspAWBestimator) {
++		evision_api_awb_delete(pIspAWBestimator);
++		pIspAWBestimator = nullptr;
++	}
++}
++
++static void deinitializeLibrary()
++{
++	if (plib_handle) {
++		dlclose(plib_handle);
++		plib_handle = nullptr;
++	}
++}
++#endif /* EVISION_ALGO_ENABLED */
 +
 +void Awb::applyProfile(int profId)
 +{
 +	LOG(DcmippAwb, Debug) << "Changing AWB profile to " << params_.profileName[profId]
 +			      << " (" << params_.referenceColorTemp[profId] << ")";
 +	internal_.colorTemp = params_.referenceColorTemp[profId];
++	internal_.profileName = params_.profileName[profId];
 +
 +	config_.gain.enable = 1;
 +	config_.gain.gainR = params_.gainRGB[profId + 0 * kAwbNbRef];
@@ -1310,6 +3093,7 @@ index 00000000..c8fbb4c1
 +	std::copy(params_.cconv.begin() + offset, params_.cconv.begin() + offset + 3 * 3,
 +		  &config_.cconv.coeff[0][0]);
 +
++	internal_.profileDirty = false;
 +	config_.pending = true;
 +}
 +
@@ -1328,6 +3112,10 @@ index 00000000..c8fbb4c1
 +
 +	std::vector<int32_t> data = tuningData["RefColorTemp"].getList<int32_t>().value_or(std::vector<int32_t>{});
 +	if (data.size() == kAwbNbRef) {
++		if (!isColourTemperatureValid(data)) {
++			LOG(DcmippAwb, Error) << "Invalid RefColorTemp values";
++			return -EINVAL;
++		}
 +		std::copy(data.begin(), data.end(), params_.referenceColorTemp.begin());
 +	} else if (data.size() != 0) {
 +		LOG(DcmippAwb, Error) << "Invalid RefColorTemp";
@@ -1341,6 +3129,10 @@ index 00000000..c8fbb4c1
 +		std::copy(dataR.begin(), dataR.end(), params_.gainRGB.begin() + 0 * dataR.size());
 +		std::copy(dataG.begin(), dataG.end(), params_.gainRGB.begin() + 1 * dataR.size());
 +		std::copy(dataB.begin(), dataB.end(), params_.gainRGB.begin() + 2 * dataR.size());
++		if (!isColourGainValid(Span<int32_t>{ params_.gainRGB })) {
++			LOG(DcmippAwb, Error) << "Invalid GainR/G/B";
++			return -EINVAL;
++		}
 +	} else if ((dataR.size() != 0) || (dataG.size() != 0) || (dataB.size() != 0)) {
 +		LOG(DcmippAwb, Error) << "Invalid GainR/G/B";
 +		return -EINVAL;
@@ -1348,6 +3140,10 @@ index 00000000..c8fbb4c1
 +
 +	std::vector<int32_t> matrix = tuningData["Cconv"].getList<int32_t>().value_or(std::vector<int32_t>{});
 +	if (matrix.size() == kAwbNbRef * 3 * 3) {
++		if (!isColourCorrectionValid(matrix)) {
++			LOG(DcmippAwb, Error) << "Invalid Cconv values";
++			return -EINVAL;
++		}
 +		std::copy(matrix.begin(), matrix.end(), params_.cconv.begin());
 +	} else if (matrix.size() != 0) {
 +		LOG(DcmippAwb, Error) << "Invalid Cconv";
@@ -1358,6 +3154,10 @@ index 00000000..c8fbb4c1
 +	params_.gainStatic.gainR = tuningData["FixedGainR"].get<int32_t>(0);
 +	params_.gainStatic.gainG = tuningData["FixedGainG"].get<int32_t>(0);
 +	params_.gainStatic.gainB = tuningData["FixedGainB"].get<int32_t>(0);
++	if (!isColourGainValid(params_.gainStatic.gainR) || !isColourGainValid(params_.gainStatic.gainG) || !isColourGainValid(params_.gainStatic.gainB)) {
++		LOG(DcmippAwb, Error) << "Invalid FixedGainR/G/B";
++		return -EINVAL;
++	}
 +	if (!params_.gainStatic.gainR && !params_.gainStatic.gainG && !params_.gainStatic.gainB) {
 +		params_.gainStatic.enable = false;
 +	} else {
@@ -1369,6 +3169,10 @@ index 00000000..c8fbb4c1
 +		memset(params_.cconvStatic.coeff, 0, sizeof(params_.cconvStatic.coeff));
 +		params_.cconvStatic.enable = false;
 +	} else if (matrix.size() == 3 * 3) {
++		if (!isColourCorrectionValid(matrix)) {
++			LOG(DcmippAwb, Error) << "Invalid FixedCconv values";
++			return -EINVAL;
++		}
 +		for (unsigned int i = 0; i < 3; i++)
 +			for (unsigned int j = 0; j < 3; j++)
 +				params_.cconvStatic.coeff[i][j] = matrix[i * 3 + j];
@@ -1377,6 +3181,43 @@ index 00000000..c8fbb4c1
 +		LOG(DcmippAwb, Error) << "Invalid FixedCconv";
 +		return -EINVAL;
 +	}
++
++#ifdef EVISION_ALGO_ENABLED
++	if (params_.algoEnable) {
++		if (!initializeLibrary()) {
++			LOG(DcmippAwb, Error) << "Initialize library failed";
++			return -EINVAL;
++		}
++
++		if (!process_simple_algo) {
++			if (!initializeAwbInstance()) {
++				LOG(DcmippAwb, Error) << "Cannot initialize awb instance";
++				deinitializeLibrary();
++				return -EINVAL;
++			}
++
++			if (!configureAwbAlgo()) {
++				LOG(DcmippAwb, Error) << "Cannot configure awb algorithm";
++				deinitializeAwbInstance();
++				deinitializeLibrary();
++				return -EINVAL;
++			}
++		}
++	}
++#endif /* EVISION_ALGO_ENABLED */
++
++	/* Configure exposed controls */
++	context.dcmippControls[&controls::draft::ColourGains3Enable] = ControlInfo(false, true);
++	context.dcmippControls[&controls::draft::ColourGains3] = ControlInfo(kColGainMin, kColGainMax, kColGainDef);
++	context.dcmippControls[&controls::draft::ColourCorrectionEnable] = ControlInfo(false, true);
++	context.dcmippControls[&controls::draft::ColourCorrection] = ControlInfo(kColCorrectionMin, kColCorrectionMax, kColCorrectionDef);
++	context.dcmippControls[&controls::AwbEnable] = ControlInfo(false, true);
++	context.dcmippControls[&controls::AwbMode] = ControlInfo(controls::AwbModeValues);
++	context.dcmippControls[&controls::draft::AwbProfileName] = ControlInfo(0, kProfileNameLen, kProfileNameLen);
++	context.dcmippControls[&controls::draft::AwbReferenceColorTemperature] = ControlInfo(kColTemperatureMin, kColTemperatureMax, kColTemperatureDef);
++	context.dcmippControls[&controls::draft::AwbColourGains3] = ControlInfo(kColGainMin, kColGainMax, kColGainDef);
++	context.dcmippControls[&controls::draft::AwbColourCorrection] = ControlInfo(kColCorrectionMin, kColCorrectionMax, kColCorrectionDef);
++	context.dcmippControls[&controls::draft::AwbCustomColorTemperature] = ControlInfo(kColTemperatureMin, kColTemperatureMax, kColTemperatureDef);
 +
 +	return 0;
 +}
@@ -1389,6 +3230,17 @@ index 00000000..c8fbb4c1
 +		/* Apply static ISP Gain / ColorConv config */
 +		config_.gain = params_.gainStatic;
 +		config_.cconv = params_.cconvStatic;
++	} else {
++		int i, profId;
++		/* Apply the first profile with color temp above minimum value before first processing of the algorithm */
++		profId = 0;
++		for (i = 0; i < kAwbNbRef; i++) {
++			if (params_.referenceColorTemp[i] >= kColorTempAlgoDefaultMin) {
++				profId = i;
++				break;
++			}
++		}
++		applyProfile(profId);
 +	}
 +
 +	config_.pending = true;
@@ -1419,6 +3271,8 @@ index 00000000..c8fbb4c1
 +	if (awbMode) {
 +		if (*awbMode == controls::AwbAuto) {
 +			params_.algoEnable = true;
++			/* mark the current profile as dirty so it will be applied at next algo run */
++			internal_.profileDirty = true;
 +			LOG(DcmippAwb, Debug) << "Updating AwbMode / AwbEnable to "
 +					      << params_.algoEnable;
 +		} else if (*awbMode == controls::AwbCustom) {
@@ -1436,25 +3290,52 @@ index 00000000..c8fbb4c1
 +		/* The Controls class does not support array of string. So, split the concatenated string */
 +		std::string token;
 +		std::stringstream ss(*profileName);
-+		int i = 0;
-+		while (getline(ss, token, kDelimiter) && i < kAwbNbRef)
-+			params_.profileName[i++] = token;
++		for (int i = 0; i < kAwbNbRef; i++) {
++			if (!getline(ss, token, kDelimiter))
++				token = "";
++			params_.profileName[i] = token;
++		}
++		/* mark the current profile as dirty so it will be applied at next algo run */
++		internal_.profileDirty = true;
 +		LOG(DcmippAwb, Debug) << "Updating AwbProfileName to " << *profileName;
 +	}
 +
 +	if (referenceColorTemp) {
++		if (!isColourTemperatureValid(*referenceColorTemp)) {
++			LOG(DcmippAwb, Error) << "Invalid RefColorTemp values";
++			return;
++		}
 +		std::copy(std::begin(*referenceColorTemp), std::end(*referenceColorTemp), params_.referenceColorTemp.begin());
++		/* mark the current profile as dirty so it will be applied at next algo run */
++		internal_.profileDirty = true;
 +		LOG(DcmippAwb, Debug) << "Updating AwbRefColorTemp to " << (*referenceColorTemp)[0] << "...";
 +	}
 +
 +	if (gainRGB) {
++		if (!isColourGainValid(*gainRGB)) {
++			LOG(DcmippAwb, Error) << "Invalid AwbColourGain values";
++			return;
++		}
 +		std::copy(std::begin(*gainRGB), std::end(*gainRGB), params_.gainRGB.begin());
++		/* mark the current profile as dirty so it will be applied at next algo run */
++		internal_.profileDirty = true;
 +		LOG(DcmippAwb, Debug) << "Updating AwbColourGains3 to " << (*gainRGB)[0] << "...";
 +	}
 +
 +	if (cconv) {
++		if (!isColourCorrectionValid(*cconv)) {
++			LOG(DcmippAwb, Error) << "Invalid CConv value";
++			return;
++		}
 +		std::copy(std::begin(*cconv), std::end(*cconv), params_.cconv.begin());
++		/* mark the current profile as dirty so it will be applied at next algo run */
++		internal_.profileDirty = true;
 +		LOG(DcmippAwb, Debug) << "Updating AwbColourConv to " << (*cconv)[0] << "...";
++	}
++
++	if (internal_.profileDirty && !configureAwbAlgo()) {
++		LOG(DcmippAwb, Error) << "Cannot reconfigure awb algorithm";
++		return;
 +	}
 +
 +	/* Static config: update params_ and if applicable force config_ update now */
@@ -1493,6 +3374,10 @@ index 00000000..c8fbb4c1
 +	}
 +
 +	if (staticGain) {
++		if (!isColourGainValid(*staticGain)) {
++			LOG(DcmippAwb, Error) << "Invalid FixedGainR/G/B";
++			return;
++		}
 +		params_.gainStatic.gainR = (*staticGain)[0];
 +		params_.gainStatic.gainG = (*staticGain)[1];
 +		params_.gainStatic.gainB = (*staticGain)[2];
@@ -1518,6 +3403,10 @@ index 00000000..c8fbb4c1
 +	}
 +
 +	if (staticCconv) {
++		if (!isColourCorrectionValid(*staticCconv)) {
++			LOG(DcmippAwb, Error) << "Invalid staticCconv value";
++			return;
++		}
 +		for (unsigned int i = 0; i < 3; i++)
 +			for (unsigned int j = 0; j < 3; j++)
 +				params_.cconvStatic.coeff[i][j] = (*staticCconv)[i * 3 + j];
@@ -1567,56 +3456,134 @@ index 00000000..c8fbb4c1
 +		context.isp.cconv = config_.cconv;
 +
 +		/* Start the invalid stats counter from this update. Consider only ISP, not sensor */
-+		internal_.invalidStats = context.info.ispStatLatency;
++		internal_.invalidStats = context.info.ispStatLatency + kIspApplyConfigLatency;
 +
 +		/* Clear the pending request */
 +		config_.pending = false;
 +	}
 +}
 +
-+void Awb::process(IPAContext &context,
++void Awb::process([[maybe_unused]] IPAContext &context,
 +		  [[maybe_unused]] const uint32_t frame,
 +		  [[maybe_unused]] IPAFrameContext &frameContext,
-+		  const stm32_dcmipp_stat_buf *stats,
++		  [[maybe_unused]] const stm32_dcmipp_stat_buf *stats,
 +		  ControlList &metadata)
 +{
 +	/* Compute a new pending config from stats */
 +	if (params_.algoEnable) {
-+		int32_t avgBeforeGain[3], fixedCCT, distance, colorTemp;
-+		int i, profId;
-+		double cct;
++		if (process_simple_algo) {
++			/* Fall back to simple AWB algorithm if evision library is not found or used.
++			   In this case, we apply the first profile with color temp above the minimum value */
++			int i, profId;
 +
-+		/* Check if stats can be considered as valid */
-+		if (internal_.invalidStats)
-+			internal_.invalidStats--;
-+
-+		if (!internal_.invalidStats) {
-+			/* Get RGB before ISP gain */
-+			getStatNoGain(context.isp.gain, stats->post.average_RGB, avgBeforeGain);
-+
-+			/* Get CCT from McCamy’s approximation */
-+			cct = computeCCT(avgBeforeGain);
-+
-+			/* Fix the computed CCT to match IMX335 experimentations */
-+			fixedCCT = (int32_t)fixCCT(cct);
-+
-+			/* Find the index of the closest profile matching this color temperature */
-+			distance = INT_MAX;
 +			profId = 0;
 +			for (i = 0; i < kAwbNbRef; i++) {
-+				if (params_.referenceColorTemp[i] == 0)
-+					continue;
-+
-+				if (abs(params_.referenceColorTemp[i] - fixedCCT) < distance) {
-+					distance = abs(params_.referenceColorTemp[i] - fixedCCT);
++				if (params_.referenceColorTemp[i] >= kColorTempAlgoDefaultMin) {
 +					profId = i;
++					break;
 +				}
 +			}
 +
-+			colorTemp = params_.referenceColorTemp[profId];
-+			if (colorTemp != internal_.colorTemp)
-+				applyProfile(profId);
++			/* Apply the first profile with color temperature higher than 4500.
++			   If no such profile has been found, apply the first profile by default (id = 0) */
++			applyProfile(profId);
 +		}
++#ifdef EVISION_ALGO_ENABLED
++		else {
++			int32_t colorTemp = 0;
++			uint32_t ccAvgRGB[3];
++			double meas[3];
++			uint32_t profId = 0;
++			int32_t avgUpGain[3];
++
++			/* Check if stats can be considered as valid */
++			if (internal_.invalidStats)
++				internal_.invalidStats--;
++
++			if (!internal_.invalidStats) {
++				evision_return_t e_ret;
++
++				/* Get RGB before ISP gain and Black level */
++				getStatUp(context, stats->post.average_RGB, avgUpGain);
++
++				bool stat_has_changed = false;
++				if (internal_.profileDirty) {
++					skip_stat_check_count = kIspStatCheckSkipAfterCTEstimation;
++					color_temperature_history[0] = 0;
++					color_temperature_history[1] = 0;
++				} else {
++					for (int i = 0; i < 3; ++i)
++						for (int j = 0; j < 3; ++j)
++							if (abs(avgUpGain[j] - stats_history[i][j]) > kIspStatDeltaMax)
++								stat_has_changed = true;
++				}
++
++				if (skip_stat_check_count || stat_has_changed) {
++					stats_history[2][0] = avgUpGain[0];
++					stats_history[2][1] = avgUpGain[1];
++					stats_history[2][2] = avgUpGain[2];
++
++					/* Apply the current color conversion matrix to get stats after color conversion ISP block*/
++					applyCConv(context, stats->post.average_RGB, ccAvgRGB);
++
++					/* Invert gamma */
++					for (int i = 0; i < 3; ++i) {
++						meas[i] = applyGammaInverse(ccAvgRGB[i]);
++					}
++
++					/* Run algo to estimate gain and color conversion to apply */
++					e_ret = evision_api_awb_run_average(pIspAWBestimator, NULL, 1, meas);
++					if (e_ret == EVISION_RET_SUCCESS) {
++						if (pIspAWBestimator->out_temp != internal_.colorTemp) {
++							if (pIspAWBestimator->out_temp == color_temperature_history[1]) {
++								skip_stat_check_count = 0; //oscillation detected
++								LOG(DcmippAwb, Debug) << "Oscillation detected";
++							} else {
++								if (skip_stat_check_count <= kIspStatCheckSkipAfterCTEstimation)
++									skip_stat_check_count = kIspStatCheckSkipAfterCTEstimation;
++								/* Find the index profile for this referenceColorTemp */
++								for (profId = 0; profId < EVISION_AWB_MAX_PROFILE_COUNT; profId++) {
++									if (pIspAWBestimator->out_temp == params_.referenceColorTemp[profId])
++										break;
++								}
++
++								if (profId == EVISION_AWB_MAX_PROFILE_COUNT) {
++									LOG(DcmippAwb, Error) << "Unknown AWB profile";
++									return;
++								} else {
++									/* Apply new ISP Color Conversion */
++									colorTemp = params_.referenceColorTemp[profId];
++								}
++							}
++						}
++
++						if (colorTemp || internal_.profileDirty) {
++							applyProfile((int)profId);
++						}
++
++					} else {
++						LOG(DcmippAwb, Error) << "Unable to run evivion library";
++						return;
++					}
++				}
++
++				/* Decrease counter to limit the number of estmations before reaching convergence */
++				if (skip_stat_check_count > 0) {
++					skip_stat_check_count--;
++				}
++
++				/* Store history to be able to detect variation */
++				stats_history[1][0] = stats_history[0][0];
++				stats_history[1][1] = stats_history[0][1];
++				stats_history[1][2] = stats_history[0][2];
++				stats_history[0][0] = avgUpGain[0];
++				stats_history[0][1] = avgUpGain[1];
++				stats_history[0][2] = avgUpGain[2];
++				color_temperature_history[1] = color_temperature_history[0];
++				color_temperature_history[0] = colorTemp ? colorTemp : internal_.colorTemp;
++			}
++		}
++#endif /* EVISION_ALGO_ENABLED */
 +	}
 +
 +	/* Set metadata */
@@ -1649,6 +3616,8 @@ index 00000000..c8fbb4c1
 +
 +	if (internal_.colorTemp)
 +		metadata.set(controls::ColourTemperature, internal_.colorTemp);
++	if (!internal_.profileName.empty())
++		metadata.set(controls::draft::AwbCurrentProfileName, internal_.profileName);
 +	if (internal_.customColorTemp && !params_.algoEnable)
 +		metadata.set(controls::draft::AwbCustomColorTemperature, internal_.customColorTemp);
 +}
@@ -1660,13 +3629,14 @@ index 00000000..c8fbb4c1
 +} /* namespace libcamera */
 diff --git a/src/ipa/dcmipp/algorithms/awb.h b/src/ipa/dcmipp/algorithms/awb.h
 new file mode 100644
-index 00000000..5ccf40da
+index 00000000..239868c9
 --- /dev/null
 +++ b/src/ipa/dcmipp/algorithms/awb.h
-@@ -0,0 +1,61 @@
+@@ -0,0 +1,65 @@
 +/* SPDX-License-Identifier: LGPL-2.1-or-later */
 +/*
 + * Copyright (C) 2024 ST Microelectronics
++ * Copyright (C) 2024 LACROIX - Impulse
 + *
 + * awb.h - STM32 DCMIPP AWB control
 + */
@@ -1710,7 +3680,9 @@ index 00000000..5ccf40da
 +	struct algoInternal {
 +		int32_t invalidStats;
 +		int32_t colorTemp;
++		std::string profileName;
 +		int32_t customColorTemp;
++		bool profileDirty;
 +	} internal_;
 +
 +	struct algoConfig {
@@ -1719,6 +3691,7 @@ index 00000000..5ccf40da
 +		struct IPAIspColorConv cconv;
 +	} config_;
 +
++	bool configureAwbAlgo();
 +	void applyProfile(int profId);
 +};
 +
@@ -1727,10 +3700,10 @@ index 00000000..5ccf40da
 +} /* namespace libcamera */
 diff --git a/src/ipa/dcmipp/algorithms/badpixel.cpp b/src/ipa/dcmipp/algorithms/badpixel.cpp
 new file mode 100644
-index 00000000..5d0e90b3
+index 00000000..eb681c13
 --- /dev/null
 +++ b/src/ipa/dcmipp/algorithms/badpixel.cpp
-@@ -0,0 +1,148 @@
+@@ -0,0 +1,185 @@
 +/* SPDX-License-Identifier: LGPL-2.1-or-later */
 +/*
 + * Copyright (C) 2024 ST Microelectronics
@@ -1749,12 +3722,37 @@ index 00000000..5d0e90b3
 +
 +LOG_DEFINE_CATEGORY(DcmippBadPixel)
 +
++static constexpr int kStrengthMin = 0;
++static constexpr int kStrengthMax = 7;
++static constexpr int kStrengthDef = 0;
++static constexpr int kThresholdMin = 0;
++static constexpr int kThresholdMax = 4094 * 4094;
++static constexpr int kThresholdDef = 0;
++
++static bool isStrengthValid(int8_t strength)
++{
++	return (strength >= kStrengthMin && strength <= kStrengthMax) || strength == -1;
++}
++
++static bool isThresholdValid(int32_t threshold)
++{
++	return threshold >= kThresholdMin && threshold <= kThresholdMax;
++}
++
 +int BadPixel::init([[maybe_unused]] IPAContext &context, const YamlObject &tuningData)
 +{
 +	/* Parse Tuning Data to get algo parameters */
 +	int8_t strength = tuningData["Strength"].get<int8_t>(-1);
-+	int32_t threshold = tuningData["Threshold"].get<int32_t>(0);
-+	if (strength < 0 && !threshold) {
++	int32_t threshold = tuningData["Threshold"].get<int32_t>(kThresholdDef);
++	if (!isStrengthValid(strength)) {
++		LOG(DcmippBadPixel, Error) << "Invalid Strength: " << strength;
++		return -EINVAL;
++	}
++	if (!isThresholdValid(threshold)) {
++		LOG(DcmippBadPixel, Error) << "Invalid Threshold: " << threshold;
++		return -EINVAL;
++	}
++	if (strength == -1 && !threshold) {
 +		internal_.threshold = 0;
 +		params_.badpixel.strength = 0;
 +		params_.badpixel.enable = false;
@@ -1765,6 +3763,11 @@ index 00000000..5d0e90b3
 +		params_.badpixel.strength = strength < 0 ? 0 : strength;
 +		params_.badpixel.enable = tuningData["Enable"].get<bool>(true);
 +	}
++
++	/* Configure exposed controls */
++	context.dcmippControls[&controls::draft::BadPixelRemovalEnable] = ControlInfo(false, true);
++	context.dcmippControls[&controls::draft::BadPixelRemovalStrength] = ControlInfo(kStrengthMin, kStrengthMax, kStrengthDef);
++	context.dcmippControls[&controls::draft::BadPixelRemovalThreshold] = ControlInfo(kThresholdMin, kThresholdMax, kThresholdDef);
 +
 +	return 0;
 +}
@@ -1787,6 +3790,10 @@ index 00000000..5d0e90b3
 +	/* Algo ctrl: only update internal_ which will be considered upon the next process() call */
 +	const auto &threshold = controls.get(controls::draft::BadPixelRemovalThreshold);
 +	if (threshold) {
++		if (!isThresholdValid(*threshold)) {
++			LOG(DcmippBadPixel, Error) << "Invalid Threshold: " << *threshold;
++			return;
++		}
 +		internal_.threshold = *threshold;
 +		internal_.measureNb = 0;
 +		internal_.countAccu = 0;
@@ -1805,6 +3812,10 @@ index 00000000..5d0e90b3
 +	}
 +
 +	if (strength) {
++		if (!isStrengthValid(*strength)) {
++			LOG(DcmippBadPixel, Error) << "Invalid Strength: " << *strength;
++			return;
++		}
 +		params_.badpixel.strength = *strength;
 +		if (!internal_.threshold) {
 +			config_.badpixel.strength = params_.badpixel.strength;
@@ -1837,7 +3848,6 @@ index 00000000..5d0e90b3
 +}
 +
 +const int32_t kBadPixelMeasures = 30;
-+const uint8_t kStrengthMax = 7;
 +
 +void BadPixel::process(IPAContext &context,
 +		       [[maybe_unused]] const uint32_t frame,
@@ -1937,10 +3947,10 @@ index 00000000..0db7645a
 +} /* namespace libcamera */
 diff --git a/src/ipa/dcmipp/algorithms/blc.cpp b/src/ipa/dcmipp/algorithms/blc.cpp
 new file mode 100644
-index 00000000..68a33891
+index 00000000..9b40dd5f
 --- /dev/null
 +++ b/src/ipa/dcmipp/algorithms/blc.cpp
-@@ -0,0 +1,121 @@
+@@ -0,0 +1,145 @@
 +/* SPDX-License-Identifier: LGPL-2.1-or-later */
 +/*
 + * Copyright (C) 2024 ST Microelectronics
@@ -1959,25 +3969,44 @@ index 00000000..68a33891
 +
 +LOG_DEFINE_CATEGORY(DcmippBlc)
 +
++static constexpr int kBLMin = 0;
++static constexpr int kBLMax = 255;
++static constexpr int kBLDef = 0;
++
++static bool isValid(int32_t level)
++{
++	return level >= kBLMin && level <= kBLMax;
++}
++
 +int BlackLevelCorrection::init([[maybe_unused]] IPAContext &context, const YamlObject &tuningData)
 +{
 +	/* Parse Tuning Data to get algo parameters */
 +	std::vector<int32_t> level = tuningData["Level"].getList<int32_t>().value_or(std::vector<int32_t>{});
 +	if (!level.size()) {
-+		params_.blackLevel.blcR = 0;
-+		params_.blackLevel.blcG = 0;
-+		params_.blackLevel.blcB = 0;
++		params_.blackLevel.blcR = kBLDef;
++		params_.blackLevel.blcG = kBLDef;
++		params_.blackLevel.blcB = kBLDef;
 +		params_.blackLevel.enable = false;
 +	} else if (level.size() == 3) {
++		for (auto const &l : level)
++			if (!isValid(l)) {
++				LOG(DcmippBlc, Error) << "Invalid black level value: " << l;
++				return -EINVAL;
++			}
 +		params_.blackLevel.blcR = level[0];
 +		params_.blackLevel.blcG = level[1];
 +		params_.blackLevel.blcB = level[2];
 +		params_.blackLevel.enable = false;
 +		params_.blackLevel.enable = tuningData["Enable"].get<bool>(true);
 +	} else {
-+		LOG(DcmippBlc, Error) << "Invalid Levels";
++		LOG(DcmippBlc, Error) << "Invalid nubmer of black levels";
 +		return -EINVAL;
 +	}
++
++	/* Configure exposed controls */
++	context.dcmippControls[&controls::draft::BlackLevelCorrectionEnable] = ControlInfo(false, true);
++	context.dcmippControls[&controls::draft::BlackLevelCorrectionLevels] = ControlInfo(kBLMin, kBLMax, kBLDef);
++
 +	return 0;
 +}
 +
@@ -2008,6 +4037,11 @@ index 00000000..68a33891
 +	}
 +
 +	if (level) {
++		for (auto const &l : *level)
++			if (!isValid(l)) {
++				LOG(DcmippBlc, Error) << "Invalid black level value: " << l;
++				return;
++			}
 +		params_.blackLevel.blcR = (*level)[0];
 +		params_.blackLevel.blcG = (*level)[1];
 +		params_.blackLevel.blcB = (*level)[2];
@@ -2114,10 +4148,10 @@ index 00000000..968d5ce3
 +} /* namespace libcamera */
 diff --git a/src/ipa/dcmipp/algorithms/contrast.cpp b/src/ipa/dcmipp/algorithms/contrast.cpp
 new file mode 100644
-index 00000000..8152a432
+index 00000000..412d9888
 --- /dev/null
 +++ b/src/ipa/dcmipp/algorithms/contrast.cpp
-@@ -0,0 +1,119 @@
+@@ -0,0 +1,141 @@
 +/* SPDX-License-Identifier: LGPL-2.1-or-later */
 +/*
 + * Copyright (C) 2024 ST Microelectronics
@@ -2139,6 +4173,14 @@ index 00000000..8152a432
 +static constexpr uint32_t kPrecisionFactor = 100;
 +static constexpr uint32_t kIdle = 16;
 +static constexpr int kContrastSize = 9;
++static constexpr int kFactorMin = 0;
++static constexpr int kFactorMax = 394;
++static constexpr int kFactorDef = 0;
++
++static bool isFactorValid(int32_t factor)
++{
++	return factor >= kFactorMin && factor <= kFactorMax;
++}
 +
 +int Contrast::init([[maybe_unused]] IPAContext &context, const YamlObject &tuningData)
 +{
@@ -2146,9 +4188,14 @@ index 00000000..8152a432
 +	/* ISP Contrast */
 +	std::vector<int32_t> lum = tuningData["LuminanceFactor"].getList<int32_t>().value_or(std::vector<int32_t>{});
 +	if (!lum.size()) {
-+		memset(params_.contrast.coeff, 0, kNbContrastFactor * sizeof(params_.contrast.coeff[0]));
++		memset(params_.contrast.coeff, kFactorDef, kNbContrastFactor * sizeof(params_.contrast.coeff[0]));
 +		params_.contrast.enable = false;
 +	} else if (lum.size() == kNbContrastFactor) {
++		for (auto const &l : lum)
++			if (!isFactorValid(l)) {
++				LOG(DcmippContrast, Error) << "Invalid luminance factor: " << l;
++				return -EINVAL;
++			}
 +		for (unsigned int i = 0; i < kNbContrastFactor; i++)
 +			params_.contrast.coeff[i] = lum[i];
 +		params_.contrast.enable = tuningData["Enable"].get<bool>(true);
@@ -2156,6 +4203,10 @@ index 00000000..8152a432
 +		LOG(DcmippContrast, Error) << "Invalid LuminanceFactor";
 +		return -EINVAL;
 +	}
++
++	/* Configure exposed controls */
++	context.dcmippControls[&controls::draft::ContrastLuminanceEnable] = ControlInfo(false, true);
++	context.dcmippControls[&controls::draft::ContrastLuminance] = ControlInfo(0, 394, 0);
 +
 +	return 0;
 +}
@@ -2187,6 +4238,11 @@ index 00000000..8152a432
 +	}
 +
 +	if (luminance) {
++		for (auto const &l : *luminance)
++			if (!isFactorValid(l)) {
++				LOG(DcmippContrast, Error) << "Invalid luminance factor: " << l;
++				return;
++			}
 +		std::copy(std::begin(*luminance), std::end(*luminance), params_.contrast.coeff);
 +		memcpy(config_.contrast.coeff, params_.contrast.coeff, sizeof(config_.contrast.coeff));
 +		config_.pending = true;
@@ -2289,10 +4345,10 @@ index 00000000..51dc85e7
 +} /* namespace libcamera */
 diff --git a/src/ipa/dcmipp/algorithms/demosaicing.cpp b/src/ipa/dcmipp/algorithms/demosaicing.cpp
 new file mode 100644
-index 00000000..c1db9304
+index 00000000..b0c7915a
 --- /dev/null
 +++ b/src/ipa/dcmipp/algorithms/demosaicing.cpp
-@@ -0,0 +1,110 @@
+@@ -0,0 +1,146 @@
 +/* SPDX-License-Identifier: LGPL-2.1-or-later */
 +/*
 + * Copyright (C) 2024 ST Microelectronics
@@ -2312,21 +4368,39 @@ index 00000000..c1db9304
 +LOG_DEFINE_CATEGORY(DcmippDemosaicing)
 +
 +static constexpr unsigned int kNbFilters = 4;
++static constexpr int kFilterMin = 0;
++static constexpr int kFilterMax = 7;
++static constexpr int kFilterDef = 0;
++
++static bool isValid(int32_t filter)
++{
++	return filter >= kFilterMin && filter <= kFilterMax;
++}
 +
 +int Demosaicing::init([[maybe_unused]] IPAContext &context, const YamlObject &tuningData)
 +{
 +	/* Parse Tuning Data to get algo parameters */
++	params_.demosaicing.enable = tuningData["Enable"].get<bool>(true);
 +	/* ISP Demosaicing Filter */
-+	std::vector<int32_t> filter = tuningData["Filter"].getList<int32_t>().value_or(std::vector<int32_t>{ 0, 0, 0, 0 });
++	std::vector<int32_t> filter = tuningData["Filter"].getList<int32_t>().value_or(std::vector<int32_t>(kNbFilters, kFilterDef));
 +	if (filter.size() != kNbFilters) {
-+		LOG(DcmippDemosaicing, Error) << "Invalid Filter";
++		LOG(DcmippDemosaicing, Error) << "Invalid number of filters";
 +		return -EINVAL;
 +	}
++	for (auto const &f : filter)
++		if (!isValid(f)) {
++			LOG(DcmippDemosaicing, Error) << "Invalid filter value: " << f;
++			return -EINVAL;
++		}
 +
-+	params_.demosaicingFilter.peak = filter[0];
-+	params_.demosaicingFilter.linev = filter[1];
-+	params_.demosaicingFilter.lineh = filter[2];
-+	params_.demosaicingFilter.edge = filter[3];
++	params_.demosaicing.peak = filter[0];
++	params_.demosaicing.linev = filter[1];
++	params_.demosaicing.lineh = filter[2];
++	params_.demosaicing.edge = filter[3];
++
++	/* Configure exposed controls */
++	context.dcmippControls[&controls::draft::DemosaicingEnable] = ControlInfo(false, true);
++	context.dcmippControls[&controls::draft::DemosaicingFilter] = ControlInfo(kFilterMin, kFilterMax, kFilterDef);
 +
 +	return 0;
 +}
@@ -2335,7 +4409,7 @@ index 00000000..c1db9304
 +			   [[maybe_unused]] const IPACameraSensorInfo &configInfo)
 +{
 +	/* Set the initial ISP values in the pending config */
-+	config_.demosaicingFilter = params_.demosaicingFilter;
++	config_.demosaicing = params_.demosaicing;
 +	config_.pending = true;
 +
 +	return 0;
@@ -2347,14 +4421,30 @@ index 00000000..c1db9304
 +			       const ControlList &controls)
 +{
 +	/* Update params_ and force config_ update now */
++	const auto &enable = controls.get(controls::draft::DemosaicingEnable);
 +	const auto &filter = controls.get(controls::draft::DemosaicingFilter);
 +
++	if (enable) {
++		params_.demosaicing.enable = *enable;
++		config_.demosaicing.enable = params_.demosaicing.enable;
++		config_.pending = true;
++		LOG(DcmippDemosaicing, Debug) << "Updating demosaicing status to " << *enable;
++	}
++
 +	if (filter) {
-+		params_.demosaicingFilter.peak = (*filter)[0];
-+		params_.demosaicingFilter.linev = (*filter)[1];
-+		params_.demosaicingFilter.lineh = (*filter)[2];
-+		params_.demosaicingFilter.edge = (*filter)[3];
-+		config_.demosaicingFilter = params_.demosaicingFilter;
++		for (auto const &f : *filter)
++			if (!isValid(f)) {
++				LOG(DcmippDemosaicing, Error) << "Invalid filter value: " << f;
++				return;
++			}
++		params_.demosaicing.peak = (*filter)[0];
++		params_.demosaicing.linev = (*filter)[1];
++		params_.demosaicing.lineh = (*filter)[2];
++		params_.demosaicing.edge = (*filter)[3];
++		config_.demosaicing.peak = params_.demosaicing.peak;
++		config_.demosaicing.linev = params_.demosaicing.linev;
++		config_.demosaicing.lineh = params_.demosaicing.lineh;
++		config_.demosaicing.edge = params_.demosaicing.edge;
 +		config_.pending = true;
 +		LOG(DcmippDemosaicing, Debug) << "Updating demosaicing filter to " << (*filter)[0] << "...";
 +	}
@@ -2371,13 +4461,14 @@ index 00000000..c1db9304
 +	if (config_.pending) {
 +		/* Configure Demosaicing filter params */
 +		params->module_cfg_update |= STM32_DCMIPP_ISP_DM;
-+		params->ctrls.dm_cfg.edge = config_.demosaicingFilter.edge;
-+		params->ctrls.dm_cfg.lineh = config_.demosaicingFilter.lineh;
-+		params->ctrls.dm_cfg.linev = config_.demosaicingFilter.linev;
-+		params->ctrls.dm_cfg.peak = config_.demosaicingFilter.peak;
++		params->ctrls.dm_cfg.en = config_.demosaicing.enable;
++		params->ctrls.dm_cfg.edge = config_.demosaicing.edge;
++		params->ctrls.dm_cfg.lineh = config_.demosaicing.lineh;
++		params->ctrls.dm_cfg.linev = config_.demosaicing.linev;
++		params->ctrls.dm_cfg.peak = config_.demosaicing.peak;
 +
 +		/* Update context */
-+		context.isp.demosaicingFilter = config_.demosaicingFilter;
++		context.isp.demosaicing = config_.demosaicing;
 +
 +		/* Clear the pending request */
 +		config_.pending = false;
@@ -2390,12 +4481,13 @@ index 00000000..c1db9304
 +			  [[maybe_unused]] const stm32_dcmipp_stat_buf *stats,
 +			  ControlList &metadata)
 +{
-+	/* Set demosaicing filter metadata */
++	/* Set demosaicing metadata */
++	metadata.set(controls::draft::DemosaicingEnable, config_.demosaicing.enable);
 +	metadata.set(controls::draft::DemosaicingFilter,
-+		     { static_cast<int32_t>(config_.demosaicingFilter.peak),
-+		       static_cast<int32_t>(config_.demosaicingFilter.linev),
-+		       static_cast<int32_t>(config_.demosaicingFilter.lineh),
-+		       static_cast<int32_t>(config_.demosaicingFilter.edge) });
++		     { static_cast<int32_t>(config_.demosaicing.peak),
++		       static_cast<int32_t>(config_.demosaicing.linev),
++		       static_cast<int32_t>(config_.demosaicing.lineh),
++		       static_cast<int32_t>(config_.demosaicing.edge) });
 +}
 +
 +REGISTER_IPA_ALGORITHM(Demosaicing, "Demosaicing")
@@ -2405,7 +4497,7 @@ index 00000000..c1db9304
 +} /* namespace libcamera */
 diff --git a/src/ipa/dcmipp/algorithms/demosaicing.h b/src/ipa/dcmipp/algorithms/demosaicing.h
 new file mode 100644
-index 00000000..685af037
+index 00000000..9b407485
 --- /dev/null
 +++ b/src/ipa/dcmipp/algorithms/demosaicing.h
 @@ -0,0 +1,44 @@
@@ -2441,12 +4533,159 @@ index 00000000..685af037
 +
 +private:
 +	struct algoParams {
-+		struct IPAIspDemosaicingFilter demosaicingFilter;
++		struct IPAIspDemosaicing demosaicing;
 +	} params_;
 +
 +	struct algoConfig {
 +		bool pending;
-+		struct IPAIspDemosaicingFilter demosaicingFilter;
++		struct IPAIspDemosaicing demosaicing;
++	} config_;
++};
++
++} /* namespace ipa::dcmipp::algorithms */
++
++} /* namespace libcamera */
+diff --git a/src/ipa/dcmipp/algorithms/gamma.cpp b/src/ipa/dcmipp/algorithms/gamma.cpp
+new file mode 100644
+index 00000000..fd595479
+--- /dev/null
++++ b/src/ipa/dcmipp/algorithms/gamma.cpp
+@@ -0,0 +1,91 @@
++/* SPDX-License-Identifier: LGPL-2.1-or-later */
++/*
++ * Copyright (C) 2025 ST Microelectronics
++ *
++ * gamma.cpp - STM32 DCMIPP Gamma Correction configuration
++ */
++
++#include "gamma.h"
++
++#include <libcamera/base/log.h>
++#include <libcamera/control_ids.h>
++
++namespace libcamera {
++
++namespace ipa::dcmipp::algorithms {
++
++LOG_DEFINE_CATEGORY(DcmippGamma)
++
++int GammaCorrection::init([[maybe_unused]] IPAContext &context, const YamlObject &tuningData)
++{
++	/* Parse Tuning Data to get algo parameters */
++	/* ISP Gamma Correction config */
++	params_.gamma.enable = tuningData["Enable"].get<bool>(true);
++
++	/* Configure exposed controls */
++	context.dcmippControls[&controls::draft::GammaCorrectionEnable] = ControlInfo(false, true);
++
++	return 0;
++}
++
++int GammaCorrection::configure([[maybe_unused]] IPAContext &context,
++			       [[maybe_unused]] const IPACameraSensorInfo &configInfo)
++{
++	/* Set the initial ISP values in the pending config */
++	config_.gamma = params_.gamma;
++	config_.pending = true;
++
++	return 0;
++}
++
++void GammaCorrection::queueRequest([[maybe_unused]] IPAContext &context,
++				   [[maybe_unused]] const uint32_t frame,
++				   [[maybe_unused]] IPAFrameContext &frameContext,
++				   const ControlList &controls)
++{
++	/* Update params_ and force config_ update now */
++	const auto &enable = controls.get(controls::draft::GammaCorrectionEnable);
++
++	if (enable) {
++		params_.gamma.enable = *enable;
++		config_.gamma = params_.gamma;
++		config_.pending = true;
++		LOG(DcmippGamma, Debug) << "Updating gamma correction to " << *enable;
++	}
++}
++
++void GammaCorrection::prepare(IPAContext &context,
++			      [[maybe_unused]] const uint32_t frame,
++			      [[maybe_unused]] IPAFrameContext &frameContext,
++			      [[maybe_unused]] stm32_dcmipp_params_cfg *params,
++			      [[maybe_unused]] ControlList &sensorControls,
++			      ControlList &ispControls)
++{
++	/* Copy the pending config to the isp controls (not isp_params). Update the IPAContext */
++	if (config_.pending) {
++		/* Configure Gamma  */
++		ispControls.set(controls::draft::GammaCorrectionEnable, config_.gamma.enable);
++
++		/* Update context */
++		context.isp.gamma = config_.gamma;
++
++		/* Clear the pending request */
++		config_.pending = false;
++	}
++}
++
++void GammaCorrection::process([[maybe_unused]] IPAContext &context,
++			      [[maybe_unused]] const uint32_t frame,
++			      [[maybe_unused]] IPAFrameContext &frameContext,
++			      [[maybe_unused]] const stm32_dcmipp_stat_buf *stats,
++			      ControlList &metadata)
++{
++	/* Set gamma metadata */
++	metadata.set(controls::draft::GammaCorrectionEnable, config_.gamma.enable);
++}
++
++REGISTER_IPA_ALGORITHM(GammaCorrection, "GammaCorrection")
++
++} /* namespace ipa::dcmipp::algorithms */
++
++} /* namespace libcamera */
+diff --git a/src/ipa/dcmipp/algorithms/gamma.h b/src/ipa/dcmipp/algorithms/gamma.h
+new file mode 100644
+index 00000000..04449bd0
+--- /dev/null
++++ b/src/ipa/dcmipp/algorithms/gamma.h
+@@ -0,0 +1,44 @@
++/* SPDX-License-Identifier: LGPL-2.1-or-later */
++/*
++ * Copyright (C) 2025 ST Microelectronics
++ *
++ * gamma.h - STM32 DCMIPP Gamma Correction configuration
++ */
++
++#pragma once
++
++#include "algorithm.h"
++
++namespace libcamera {
++
++namespace ipa::dcmipp::algorithms {
++
++class GammaCorrection : public Algorithm
++{
++public:
++	GammaCorrection() = default;
++
++	int init(IPAContext &context, const YamlObject &tuningData) override;
++	int configure(IPAContext &context, const IPACameraSensorInfo &configInfo) override;
++	void queueRequest(IPAContext &context, const uint32_t frame, IPAFrameContext &frameContext,
++			  const ControlList &controls) override;
++	void prepare(IPAContext &context, const uint32_t frame, IPAFrameContext &frameContext,
++		     stm32_dcmipp_params_cfg *params, ControlList &sensorControls,
++		     ControlList &ispControls) override;
++	void process(IPAContext &context, const uint32_t frame, IPAFrameContext &frameContext,
++		     const stm32_dcmipp_stat_buf *stats, ControlList &metadata) override;
++
++private:
++	struct algoParams {
++		struct IPAIspGammaCorrection gamma;
++	} params_;
++
++	struct algoConfig {
++		bool pending;
++		struct IPAIspGammaCorrection gamma;
 +	} config_;
 +};
 +
@@ -2455,10 +4694,10 @@ index 00000000..685af037
 +} /* namespace libcamera */
 diff --git a/src/ipa/dcmipp/algorithms/meson.build b/src/ipa/dcmipp/algorithms/meson.build
 new file mode 100644
-index 00000000..5f4d10a1
+index 00000000..55c62894
 --- /dev/null
 +++ b/src/ipa/dcmipp/algorithms/meson.build
-@@ -0,0 +1,11 @@
+@@ -0,0 +1,12 @@
 +# SPDX-License-Identifier: CC0-1.0
 +
 +dcmipp_ipa_algorithms = files([
@@ -2469,13 +4708,14 @@ index 00000000..5f4d10a1
 +    'contrast.cpp',
 +    'aec.cpp',
 +    'awb.cpp',
++    'gamma.cpp',
 +])
 diff --git a/src/ipa/dcmipp/algorithms/statistic.cpp b/src/ipa/dcmipp/algorithms/statistic.cpp
 new file mode 100644
-index 00000000..568e7b27
+index 00000000..9cba1960
 --- /dev/null
 +++ b/src/ipa/dcmipp/algorithms/statistic.cpp
-@@ -0,0 +1,177 @@
+@@ -0,0 +1,215 @@
 +/* SPDX-License-Identifier: LGPL-2.1-or-later */
 +/*
 + * Copyright (C) 2024 ST Microelectronics
@@ -2501,6 +4741,22 @@ index 00000000..568e7b27
 +};
 +
 +static constexpr int kBinsSize = 12;
++static constexpr int kSizeMin = 0;
++static constexpr int kSizeMax = 4094;
++static constexpr int kSizeDef = 0;
++static constexpr int kProfileMin = ProfileFull;
++static constexpr int kProfileMax = ProfileAvgDown;
++static constexpr int kProfileDef = ProfileFull;
++
++static bool isSizeValid(int32_t size)
++{
++	return size >= kSizeMin && size <= kSizeMax;
++}
++
++static bool isProfileValid(int32_t profile)
++{
++	return profile >= kProfileMin && profile <= kProfileMax;
++}
 +
 +static int32_t getCycleDuration(uint32_t profile)
 +{
@@ -2529,19 +4785,33 @@ index 00000000..568e7b27
 +{
 +	/* Parse Tuning Data to get algo parameters */
 +	/* ISP Statistic config */
-+	params_.statistic.profile = tuningData["Profile"].get<uint32_t>(0);
++	params_.statistic.profile = tuningData["Profile"].get<uint32_t>(kProfileDef);
++	if (!isProfileValid(params_.statistic.profile)) {
++		LOG(DcmippStatistic, Error) << "Invalid Profile: " << params_.statistic.profile;
++		return -EINVAL;
++	}
 +
-+	std::vector<int32_t> rect = tuningData["Area"].getList<int32_t>().value_or(std::vector<int32_t>{ 0, 0, 0, 0 });
++	/* Update ispStatLatency now, so it can be used by other algos from startup */
++	context.info.ispStatLatency = getCycleDuration(params_.statistic.profile);
 +
++	std::vector<int32_t> rect = tuningData["Area"].getList<int32_t>().value_or(std::vector<int32_t>(4, kSizeDef));
 +	if (rect.size() != 4) {
 +		LOG(DcmippStatistic, Error) << "Invalid Area";
 +		return -EINVAL;
 +	}
-+
++	for (auto const &s : rect)
++		if (!isSizeValid(s)) {
++			LOG(DcmippStatistic, Error) << "Invalid stat area";
++			return -EINVAL;
++		}
 +	params_.statistic.area.x0 = rect[0];
 +	params_.statistic.area.y0 = rect[1];
 +	params_.statistic.area.xSize = rect[2];
 +	params_.statistic.area.ySize = rect[3];
++
++	/* Configure exposed controls */
++	context.dcmippControls[&controls::draft::StatisticArea] = ControlInfo(Rectangle{}, Rectangle(kSizeMax, kSizeMax, kSizeMax, kSizeMax), Rectangle{});
++	context.dcmippControls[&controls::draft::StatisticProfile] = ControlInfo(0, 2, 0);
 +
 +	return 0;
 +}
@@ -2566,6 +4836,10 @@ index 00000000..568e7b27
 +	const auto &area = controls.get(controls::draft::StatisticArea);
 +
 +	if (profile) {
++		if (!isProfileValid(*profile)) {
++			LOG(DcmippStatistic, Error) << "Invalid Profile: " << *profile;
++			return;
++		}
 +		params_.statistic.profile = *profile;
 +		config_.statistic.profile = params_.statistic.profile;
 +		config_.pending = true;
@@ -2573,6 +4847,10 @@ index 00000000..568e7b27
 +	}
 +
 +	if (area) {
++		if (!isSizeValid((*area).x) || !isSizeValid((*area).y) || !isSizeValid((*area).width) || !isSizeValid((*area).height)) {
++			LOG(DcmippStatistic, Error) << "Invalid stat area";
++			return;
++		}
 +		params_.statistic.area.x0 = (*area).x;
 +		params_.statistic.area.y0 = (*area).y;
 +		params_.statistic.area.xSize = (*area).width;
@@ -2601,8 +4879,8 @@ index 00000000..568e7b27
 +		/* Update context */
 +		context.isp.statistic = config_.statistic;
 +
-+		/* Stat Latency = 1 VSYNC (shadow register) + stat gathering cycle length */
-+		context.info.ispStatLatency = getCycleDuration(config_.statistic.profile) + 1;
++		/* Stat Latency = stat gathering cycle length */
++		context.info.ispStatLatency = getCycleDuration(config_.statistic.profile);
 +
 +		/* Clear the pending request */
 +		config_.pending = false;
@@ -2705,64 +4983,187 @@ index 00000000..1185b1a6
 +} /* namespace libcamera */
 diff --git a/src/ipa/dcmipp/data/imx335.yaml b/src/ipa/dcmipp/data/imx335.yaml
 new file mode 100644
-index 00000000..6a59290a
+index 00000000..3de5a11b
 --- /dev/null
 +++ b/src/ipa/dcmipp/data/imx335.yaml
-@@ -0,0 +1,54 @@
-+# SPDX-License-Identifier: CC0-1.0
+@@ -0,0 +1,57 @@
++# Copyright (c) 2024 STMicroelectronics.
++# All rights reserved.
 +#
-+# IMX335 configuration file for the dcmipp IPA.
++# This software is licensed under SLA0044 terms that can be found here:
++# https://www.st.com/resource/en/license_agreement/SLA0044.txt
++#
++# imx335 configuration file for the STM32 dcmipp IPA.
++#
++# THIS FILE WAS GENERATED BY THE STM32 ISP IQTune ON 2024-10-09 12:13:15
++#
++
 +%YAML 1.1
 +---
 +version: 1
 +algorithms:
-+  - Statistic:
-+      # Half screen window, centered
-+      Area: [648, 486, 1296, 972]
-+      # Profile defines the reported stats:
-+      # - 0: "Full Profile": Bins and Average on both Up and Down location
-+      # - 1: "Average Up"  : Only Average on Up location (fast report)
-+      # - 2: "Average Down": Only Average on Down location (fast report)
-+      Profile: 2
-+  - BadPixel:
-+      Strength: 3
-+  - BlackLevelCorrection:
-+      Level: [12, 12, 12]
-+  - Demosaicing:
-+      # Set Peak / LineV / LineH / Edge
-+      Filter: [2, 4, 4, 6]
-+  - Contrast:
-+      LuminanceFactor: [100, 100, 100, 100, 100, 100, 100, 100, 100]
 +  - Aec:
++      AnalogueGain_dB: 0.0
++      ExposureTime: 6318
 +      AeEnable: true
-+      AeTarget: 56
-+      # Static sensor exposure time in microsec (unused when algo enable)
-+      ExposureTime: 26000
-+      # Static sensor gain in dB  (unused when algo enable)
-+      AnalogueGain_dB: 6.0
++      AntiFlickerFreq: 0
++      ExposureValue: 0.0
++      SensorDelay: 3
 +  - Awb:
-+      AwbEnable: false
-+      ProfileName: ["IMX335-A", "IMX335-TL84", "IMX335-D50", "IMX335-D65", ""]
-+      # Reference color temperatures used by the algo
-+      RefColorTemp: [2856, 4000, 5000, 6500, 0]
-+      # List of GainR/G/B (one entry per color temperature). Unit: 100000000 for "x1.0"
-+      GainR: [140000000, 177000000, 220000000, 245000000, 0]
-+      GainG: [100000000, 100000000, 100000000, 100000000, 0]
-+      GainB: [275000000, 235000000, 180000000, 155000000, 0]
-+      # List of Cconv coeff (one Coeff config entry per color temperature). Unit: 100000000 for "x1.0"
-+      Cconv: [151460000, -102340000, 50892000, -85991000, 210980000, -24984000, 25000000, -261000000, 341000000,
-+              155134500, -69370000, 13106000, -38671000, 167689800, -33936000, 5546200, -66770000, 159944200,
-+              180080000, -64840000, -15230000, -35550000, 169920000, -34380000, 9770000, -95700000, 185940000,
-+              180080000, -64840000, -15230000, -35550000, 169920000, -34380000, 9770000, -95700000, 185940000,
-+              0, 0, 0, 0, 0, 0, 0, 0, 0]
-+      # Static (unused when algo enable) gain unit: 100000000 for "x1.0"
-+      # Set R / G / B to 2.2 / 1.0 / 1.8
++      FixedGainEnable: true
 +      FixedGainR: 220000000
 +      FixedGainG: 100000000
 +      FixedGainB: 180000000
-+      # Static (unused when algo enable) cconv coeff unit: 100000000 for "x1.0"
-+      # Set (1.8008, -0.6484, -0.1523), (-0.3555, 1.6992, -0.3438), (0.0977, -0.957, 1.8594)
++      FixedCconvEnable: true
 +      FixedCconv: [180080000, -64840000, -15230000, -35550000, 169920000, -34380000, 9770000, -95700000, 185940000]
++      AwbEnable: true
++      ProfileName: ["IMX335-A", "IMX335-TL84", "IMX335-D50", "IMX335-D65", "Free Slot"]
++      RefColorTemp: [2856, 4000, 5000, 6500, 0]
++      GainR: [140000000, 177000000, 220000000, 245000000, 0]
++      GainG: [100000000, 100000000, 100000000, 100000000, 0]
++      GainB: [275000000, 235000000, 180000000, 155000000, 0]
++      Cconv: [151460000, -102340000, 50892000, -85991000, 210980000, -24984000, 25000000, -261000000, 341000000, 155134500, -69370000, 13106000, -38671000, 167689800, -33936000, 5546200, -66769999, 159944200, 180080000, -64840000, -15230000, -35550000, 169920000, -34380000, 9770000, -95700000, 185940000, 180080000, -64840000, -15230000, -35550000, 169920000, -34380000, 9770000, -95700000, 185940000, 0, 0, 0, 0, 0, 0, 0, 0, 0]
++  - BadPixel:
++      Enable: false
++      Strength: 0
++      Threhsold: 0
++  - BlackLevelCorrection:
++      Enable: true
++      Level: [12, 12, 12]
++  - Contrast:
++      Enable: false
++      LuminanceFactor: [100, 100, 100, 100, 100, 100, 100, 100, 100]
++  - Demosaicing:
++      Enable: true
++      Filter: [2, 4, 4, 6]
++  - Statistic:
++      Area: [648, 486, 1296, 972]
++      Profile: 2
++  - GammaCorrection:
++      Enable: true
++# NOTE : parameters of 'statRemoval' are not handled in libcamera
++# NOTE : parameters of 'decimation' are not handled in libcamera
++# NOTE : parameter 'demosaicing.type' is not handled in libcamera
+diff --git a/src/ipa/dcmipp/data/imx335_judge2_light_box.yaml b/src/ipa/dcmipp/data/imx335_judge2_light_box.yaml
+new file mode 100644
+index 00000000..6e72e38c
+--- /dev/null
++++ b/src/ipa/dcmipp/data/imx335_judge2_light_box.yaml
+@@ -0,0 +1,54 @@
++# Copyright (c) 2025 STMicroelectronics.
++# All rights reserved.
++#
++# This software is licensed under SLA0044 terms that can be found here:
++# https://www.st.com/resource/en/license_agreement/SLA0044.txt
++#
++# imx335 configuration file for the STM32 dcmipp IPA.
++# Tuned with the Mini Light Box
++#
++
++%YAML 1.1
++---
++version: 1
++algorithms:
++  - Aec:
++      AeEnable: true
++      AntiFlickerFreq: 0
++      ExposureValue: 0.0
++      SensorDelay: 3
++  - Awb:
++      FixedGainEnable: true
++      FixedGainR: 1.77
++      FixedGainG: 1.0
++      FixedGainB: 2.35
++      FixedCconvEnable: true
++      FixedCconv: [155134500, -69370000, 13106000, -38671000, 167689800, -33936000, 5546200, -66769999, 159944200]
++      AwbEnable: true
++      ProfileName: ["JudegeII-A", "JudegeII-TL84", "JudgeII-D65", "Free slot", "Free slot"]
++      RefColorTemp: [2810, 4015, 6650, 0, 0]
++      GainR: [137000000, 182000000, 244000000, 0, 0]
++      GainG: [100000000, 100000000, 100000000, 0, 0]
++      GainB: [287000000, 212000000, 143000000, 0, 0]
++      Cconv: [159760000, -9780000, -49990000, -45530000, 171540000, -26000000, -3300000, -110120000, 213430000, 164670000, -20970000, -43700000, -51330000, 178670000, -27339999, -12490000, -48170000, 160670000, 150570000, 2440000, -53010000, -37350000, 193760000, -56420000, -11100000, -35490000, 146590000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
++  - BadPixel:
++      Enable: false
++      Strength: 0
++      Threhsold: 0
++  - BlackLevelCorrection:
++      Enable: true
++      Level: [12, 12, 12]
++  - Contrast:
++      Enable: false
++      LuminanceFactor: [100, 100, 100, 100, 100, 100, 100, 100, 100]
++  - Demosaicing:
++      Enable: true
++      Filter: [2, 4, 4, 6]
++  - Statistic:
++      Area: [648, 486, 1296, 972]
++      Profile: 2
++  - GammaCorrection:
++      Enable: true
++# NOTE : parameters of 'statRemoval' are not handled in libcamera
++# NOTE : parameters of 'decimation' are not handled in libcamera
++# NOTE : parameter 'demosaicing.type' is not handled in libcamera
+diff --git a/src/ipa/dcmipp/data/imx335_mini_light_box.yaml b/src/ipa/dcmipp/data/imx335_mini_light_box.yaml
+new file mode 100644
+index 00000000..11f1949d
+--- /dev/null
++++ b/src/ipa/dcmipp/data/imx335_mini_light_box.yaml
+@@ -0,0 +1,54 @@
++# Copyright (c) 2025 STMicroelectronics.
++# All rights reserved.
++#
++# This software is licensed under SLA0044 terms that can be found here:
++# https://www.st.com/resource/en/license_agreement/SLA0044.txt
++#
++# imx335 configuration file for the STM32 dcmipp IPA.
++# Tuned with the Mini Light Box
++#
++
++%YAML 1.1
++---
++version: 1
++algorithms:
++  - Aec:
++      AeEnable: true
++      AntiFlickerFreq: 0
++      ExposureValue: 0.0
++      SensorDelay: 3
++  - Awb:
++      FixedGainEnable: true
++      FixedGainR: 1.77
++      FixedGainG: 1.0
++      FixedGainB: 2.35
++      FixedCconvEnable: true
++      FixedCconv: [155134500, -69370000, 13106000, -38671000, 167689800, -33936000, 5546200, -66769999, 159944200]
++      AwbEnable: true
++      ProfileName: ["MiniLBox A", "MiniLBox TL84", "MiniLBox D65", "Free slot", "Free slot"]
++      RefColorTemp: [2665, 3750, 6140, 0, 0]
++      GainR: [126000000, 157000000, 210000000, 0, 0]
++      GainG: [100000000, 100000000, 100000000, 0, 0]
++      GainB: [279000000, 199000000, 155000000, 0, 0]
++      Cconv: [277500000, -75420000, -46310000, -91640000, 272360000, -29450000, -1060000, -126200000, 334070000, 178510000, -54460000, -19030000, -46390000, 162010000, -21660000, 1520000, -56399999, 168130000, 176680000, -60550000, -15590000, -33130000, 138950000, -21970000, -1080000, -40140000, 135020000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
++  - BadPixel:
++      Enable: false
++      Strength: 0
++      Threhsold: 0
++  - BlackLevelCorrection:
++      Enable: true
++      Level: [12, 12, 12]
++  - Contrast:
++      Enable: false
++      LuminanceFactor: [100, 100, 100, 100, 100, 100, 100, 100, 100]
++  - Demosaicing:
++      Enable: true
++      Filter: [2, 4, 4, 6]
++  - Statistic:
++      Area: [648, 486, 1296, 972]
++      Profile: 2
++  - GammaCorrection:
++      Enable: true
++# NOTE : parameters of 'statRemoval' are not handled in libcamera
++# NOTE : parameters of 'decimation' are not handled in libcamera
++# NOTE : parameter 'demosaicing.type' is not handled in libcamera
 diff --git a/src/ipa/dcmipp/data/meson.build b/src/ipa/dcmipp/data/meson.build
 new file mode 100644
 index 00000000..2a4f455c
@@ -2780,10 +5181,10 @@ index 00000000..2a4f455c
 +             install_tag : 'runtime')
 diff --git a/src/ipa/dcmipp/dcmipp.cpp b/src/ipa/dcmipp/dcmipp.cpp
 new file mode 100644
-index 00000000..23c891d4
+index 00000000..9aa30cd1
 --- /dev/null
 +++ b/src/ipa/dcmipp/dcmipp.cpp
-@@ -0,0 +1,558 @@
+@@ -0,0 +1,567 @@
 +/* SPDX-License-Identifier: LGPL-2.1-or-later */
 +/*
 + * Copyright (C) 2024 ST Microelectronics
@@ -2812,6 +5213,15 @@ index 00000000..23c891d4
 +
 +#include "ipa_context.h"
 +#include "module.h"
++
++/*
++* DCMIPP driver doesn't export (yet) the postproc Gamma control CID macro
++* hence define it here instead
++* TODO: to be removed once the V4L2_CID is exported by the kernel
++*/
++#ifndef V4L2_CID_PIXELPROC_GAMMA_CORRECTION
++#define V4L2_CID_PIXELPROC_GAMMA_CORRECTION (V4L2_CID_USER_BASE | 0x1001)
++#endif
 +
 +namespace libcamera {
 +
@@ -2848,8 +5258,9 @@ index 00000000..23c891d4
 +	float linearTodB(float gain);
 +	float dBToLinear(float gain);
 +	void convertControls(ControlList &controls, ControlList &v4l2Controls);
-+	void updateControls(const IPACameraSensorInfo &sensorInfo, const ControlInfoMap &sensorControls,
-+			    ControlInfoMap *ipaControls);
++	void setSensorProperties(const IPACameraSensorInfo &sensorInfo,
++				 const ControlInfoMap &sensorControls);
++	void updateControls(ControlInfoMap *ipaControls);
 +	void logConfig(struct stm32_dcmipp_params_cfg *isp_params, ControlList &sensorControls,
 +		       ControlList &ispControls);
 +	float exposureFactor(struct stm32_dcmipp_isp_ex_cfg *exp, int comp);
@@ -2864,33 +5275,6 @@ index 00000000..23c891d4
 +
 +	struct IPAContext context_;
 +	struct IPAFrameContext frameContext_; /* not used, kept for compatibility with module */
-+};
-+
-+/* List of controls handled by the DCMIPP IPA */
-+const ControlInfoMap::Map dcmippControls{
-+	{ &controls::draft::ColourGains3Enable, ControlInfo(false, true) },
-+	{ &controls::draft::ColourGains3, ControlInfo(0, 1600000000, 100000000) },
-+	{ &controls::draft::ColourCorrectionEnable, ControlInfo(false, true) },
-+	{ &controls::draft::ColourCorrection, ControlInfo(-400000000, 400000000, 0) },
-+	{ &controls::AwbEnable, ControlInfo(false, true) },
-+	{ &controls::AwbMode, ControlInfo(controls::AwbModeValues) },
-+	{ &controls::draft::AwbProfileName, ControlInfo(0, 32, 32) },
-+	{ &controls::draft::AwbReferenceColorTemperature, ControlInfo(0, 10000, 0) },
-+	{ &controls::draft::AwbColourGains3, ControlInfo(0, 1600000000, 100000000) },
-+	{ &controls::draft::AwbColourCorrection, ControlInfo(-400000000, 400000000, 0) },
-+	{ &controls::draft::AwbCustomColorTemperature, ControlInfo(0, 10000, 0) },
-+	{ &controls::draft::BlackLevelCorrectionEnable, ControlInfo(false, true) },
-+	{ &controls::draft::BlackLevelCorrectionLevels, ControlInfo(0, 255, 0) },
-+	{ &controls::draft::BadPixelRemovalEnable, ControlInfo(false, true) },
-+	{ &controls::draft::BadPixelRemovalStrength, ControlInfo(-1, 7, -1) },
-+	{ &controls::draft::BadPixelRemovalThreshold, ControlInfo(0, 4094 * 4094, 0) },
-+	{ &controls::draft::DemosaicingFilter, ControlInfo(0, 7, 0) },
-+	{ &controls::draft::ContrastLuminanceEnable, ControlInfo(false, true) },
-+	{ &controls::draft::ContrastLuminance, ControlInfo(0, 394, 0) },
-+	{ &controls::draft::StatisticArea, ControlInfo(Rectangle{}, Rectangle(4094, 4094, 4094, 4094), Rectangle{}) },
-+	{ &controls::draft::StatisticProfile, ControlInfo(0, 2, 0) },
-+	{ &controls::AeEnable, ControlInfo(false, true) },
-+	{ &controls::draft::AeExposureTarget, ControlInfo(0, 255, 56) },
 +};
 +
 +IPADcmipp::IPADcmipp()
@@ -2916,10 +5300,9 @@ index 00000000..23c891d4
 +	camHelper_ = CameraSensorHelperFactoryBase::create(settings.sensorModel);
 +	if (!camHelper_)
 +		LOG(IPADcmipp, Warning) << "No camera sensor helper for " << settings.sensorModel;
-+	context_.info.sensorStatLatency = 1;
 +
-+	/* Initialize controls. */
-+	updateControls(sensorInfo, sensorControls, ipaControls);
++	/* Get sensor exposure/time properties */
++	setSensorProperties(sensorInfo, sensorControls);
 +
 +	/* Load and parse the tuning data file */
 +	if (!settings.configurationFile.empty()) {
@@ -2940,12 +5323,22 @@ index 00000000..23c891d4
 +			return ret;
 +	}
 +
++	/* Set controls supported by the algorithms */
++	updateControls(ipaControls);
++
 +	return 0;
 +}
 +
 +int IPADcmipp::start()
 +{
 +	LOG(IPADcmipp, Debug) << __func__;
++
++	/* Apply the sensors settings before capturing the first frame */
++	ControlList v4l2SensorControls(sensorControls_), sensorControls;
++	sensorControls.set(controls::draft::AnalogueGain_dB, context_.sensor.gain);
++	sensorControls.set(controls::ExposureTime, context_.sensor.exposure);
++	convertControls(sensorControls, v4l2SensorControls);
++	setSensorControls.emit(0, v4l2SensorControls);
 +
 +	return 0;
 +}
@@ -2962,8 +5355,8 @@ index 00000000..23c891d4
 +{
 +	LOG(IPADcmipp, Debug) << __func__;
 +
-+	/* Update the camera controls using the new sensor settings. */
-+	updateControls(sensorInfo, sensorControls, ipaControls);
++	/* Get sensor exposure/time properties */
++	setSensorProperties(sensorInfo, sensorControls);
 +
 +	/* Configure algorithms */
 +	for (auto const &algo : algorithms()) {
@@ -2976,6 +5369,9 @@ index 00000000..23c891d4
 +
 +	context_.isp.decimationRatio = decimation;
 +	context_.info.sensorBitsPerPixel = sensorInfo.bitsPerPixel;
++
++	/* Update the camera controls using the new sensor settings. */
++	updateControls(ipaControls);
 +
 +	return 0;
 +}
@@ -3087,12 +5483,24 @@ index 00000000..23c891d4
 +	convertControls(sensorControls, v4l2SensorControls);
 +	setSensorControls.emit(0, v4l2SensorControls);
 +
-+	/* Inform that the buffer can be applied for ISP HW update (buff params + optional v4l2 ctrl) */
++	/* Inform that the buffer can be applied for ISP HW update (optional v4l2 ctrl) */
 +	if (!ispControls.empty()) {
-+		ControlList v4l2IspControls;
-+		convertControls(ispControls, v4l2IspControls);
-+		setIspControls.emit(0, v4l2IspControls);
++		/* Convert and split into two lists: an ISP one and a Postproc (Gamma) one */
++		ControlList v4l2Controls, v4l2IspControls, v4l2PostprocControls;
++		convertControls(ispControls, v4l2Controls);
++		for (const auto &control : v4l2Controls) {
++			if (control.first != V4L2_CID_PIXELPROC_GAMMA_CORRECTION)
++				v4l2IspControls.set(control.first, control.second);
++			else
++				v4l2PostprocControls.set(control.first, control.second);
++		}
++		if (!v4l2IspControls.empty())
++			setIspControls.emit(0, v4l2IspControls);
++		if (!v4l2PostprocControls.empty())
++			setPostprocControls.emit(0, v4l2PostprocControls);
 +	}
++
++	/* Inform that the buffer can be applied for ISP HW update (buff params) */
 +	paramsBufferReady.emit(bufferId);
 +}
 +
@@ -3126,8 +5534,8 @@ index 00000000..23c891d4
 +		struct v4l2_ctrl_isp_stat_region region;
 +
 +		region.nb_regions = 1;
-+		region.top[0] = area->x / context_.isp.decimationRatio;
-+		region.left[0] = area->y / context_.isp.decimationRatio;
++		region.top[0] = area->y / context_.isp.decimationRatio;
++		region.left[0] = area->x / context_.isp.decimationRatio;
 +		region.width[0] = area->width / context_.isp.decimationRatio;
 +		region.height[0] = area->height / context_.isp.decimationRatio;
 +
@@ -3139,45 +5547,33 @@ index 00000000..23c891d4
 +	const auto &profile = controls.get(controls::draft::StatisticProfile);
 +	if (profile)
 +		v4l2Controls.set(V4L2_CID_ISP_STAT_PROFILE, *profile);
++
++	/* Converts gamma correction */
++	const auto &gamma = controls.get(controls::draft::GammaCorrectionEnable);
++	if (gamma)
++		v4l2Controls.set(V4L2_CID_PIXELPROC_GAMMA_CORRECTION, (int32_t)*gamma);
 +}
 +
-+void IPADcmipp::updateControls(const IPACameraSensorInfo &sensorInfo,
-+			       const ControlInfoMap &sensorControls, ControlInfoMap *ipaControls)
++void IPADcmipp::setSensorProperties(const IPACameraSensorInfo &sensorInfo,
++				    const ControlInfoMap &sensorControls)
 +{
-+	ControlInfoMap::Map ctrlMap = dcmippControls;
-+
-+	/* Add the exposure control (in microseconds) */
++	/* Compute sensor exposure time properties */
 +	const ControlInfo &v4l2Exposure = sensorControls.find(V4L2_CID_EXPOSURE)->second;
 +	double lineDuration_us = sensorInfo.minLineLength / (sensorInfo.pixelRate / 1000000.0f);
 +	context_.info.sensorLineDuration_us = lineDuration_us;
-+	int32_t minExposure_us = v4l2Exposure.min().get<int32_t>() * lineDuration_us;
-+	int32_t maxExposure_us = v4l2Exposure.max().get<int32_t>() * lineDuration_us;
-+	int32_t defExposure_us = v4l2Exposure.def().get<int32_t>() * lineDuration_us;
-+	context_.info.sensorExposureMin = minExposure_us;
-+	context_.info.sensorExposureMax = maxExposure_us;
++	context_.info.sensorExposureMin = v4l2Exposure.min().get<int32_t>() * lineDuration_us;
++	context_.info.sensorExposureMax = v4l2Exposure.max().get<int32_t>() * lineDuration_us;
++	context_.info.sensorExposureDef = v4l2Exposure.def().get<int32_t>() * lineDuration_us;
 +
-+	ctrlMap.emplace(std::piecewise_construct,
-+			std::forward_as_tuple(&controls::ExposureTime),
-+			std::forward_as_tuple(minExposure_us, maxExposure_us, defExposure_us));
-+
-+	/* Add the sensor analogue gain */
++	/* Compute sensor analogue gain properties */
 +	if (camHelper_) {
 +		const ControlInfo &v4l2Gain = sensorControls.find(V4L2_CID_ANALOGUE_GAIN)->second;
-+		float minGainLinear = camHelper_->gain(v4l2Gain.min().get<int32_t>());
-+		float maxGainLinear = camHelper_->gain(v4l2Gain.max().get<int32_t>());
-+		float defGainLinear = camHelper_->gain(v4l2Gain.def().get<int32_t>());
-+		float minGain = linearTodB(minGainLinear);
-+		float maxGain = linearTodB(maxGainLinear);
-+		float defGain = linearTodB(defGainLinear);
-+		context_.info.sensorGainMin = minGain;
-+		context_.info.sensorGainMax = maxGain;
-+
-+		ctrlMap.emplace(std::piecewise_construct,
-+				std::forward_as_tuple(&controls::draft::AnalogueGain_dB),
-+				std::forward_as_tuple(minGain, maxGain, defGain));
++		context_.info.sensorGainMin = linearTodB(camHelper_->gain(v4l2Gain.min().get<int32_t>()));
++		context_.info.sensorGainMax = linearTodB(camHelper_->gain(v4l2Gain.max().get<int32_t>()));
++		context_.info.sensorGainDef = linearTodB(camHelper_->gain(v4l2Gain.def().get<int32_t>()));
 +	}
 +
-+	/* Add the frame duration limits */
++	/* Compute frame duration properties */
 +	const ControlInfo &v4l2HBlank = sensorControls.find(V4L2_CID_HBLANK)->second;
 +	const ControlInfo &v4l2VBlank = sensorControls.find(V4L2_CID_VBLANK)->second;
 +
@@ -3189,13 +5585,21 @@ index 00000000..23c891d4
 +	uint64_t maxFrameSize = (uint64_t)(v4l2VBlank.max().get<int32_t>() + sizeHeight) * lineLength;
 +	uint64_t defFrameSize = (uint64_t)(v4l2VBlank.def().get<int32_t>() + sizeHeight) * lineLength;
 +
-+	int64_t minDurations_us = minFrameSize / (sensorInfo.pixelRate / 1000000U);
-+	int64_t maxDurations_us = maxFrameSize / (sensorInfo.pixelRate / 1000000U);
-+	int64_t defDurations_us = defFrameSize / (sensorInfo.pixelRate / 1000000U);
++	context_.info.frameDurationsMin = minFrameSize / (sensorInfo.pixelRate / 1000000U);
++	context_.info.frameDurationsMax = maxFrameSize / (sensorInfo.pixelRate / 1000000U);
++	context_.info.frameDurationsDef = defFrameSize / (sensorInfo.pixelRate / 1000000U);
++}
 +
++void IPADcmipp::updateControls(ControlInfoMap *ipaControls)
++{
++	ControlInfoMap::Map ctrlMap = context_.dcmippControls;
++
++	/* Add the frame duration limits */
 +	ctrlMap.emplace(std::piecewise_construct,
 +			std::forward_as_tuple(&controls::FrameDurationLimits),
-+			std::forward_as_tuple(minDurations_us, maxDurations_us, defDurations_us));
++			std::forward_as_tuple(context_.info.frameDurationsMin,
++					      context_.info.frameDurationsMax,
++					      context_.info.frameDurationsDef));
 +
 +	*ipaControls = ControlInfoMap(std::move(ctrlMap), controls::controls);
 +}
@@ -3237,6 +5641,7 @@ index 00000000..23c891d4
 +
 +	if (p->module_cfg_update & STM32_DCMIPP_ISP_DM)
 +		LOG(IPADcmipp, Debug) << "ISP update - DEMOSAICING: "
++				      << (p->ctrls.dm_cfg.en ? "enabled" : "disabled") << " ("
 +				      << (int)p->ctrls.dm_cfg.edge << " / "
 +				      << (int)p->ctrls.dm_cfg.lineh << " / "
 +				      << (int)p->ctrls.dm_cfg.linev << " / "
@@ -3267,6 +5672,11 @@ index 00000000..23c891d4
 +	const auto &profile = ispControls.get(controls::draft::StatisticProfile);
 +	if (profile)
 +		LOG(IPADcmipp, Debug) << "ISP update - STAT PROFILE: " << *profile;
++
++	const auto &gamma = ispControls.get(controls::draft::GammaCorrectionEnable);
++	if (gamma)
++		LOG(IPADcmipp, Debug) << "ISP update - GAMMA: "
++				      << (*gamma ? "enabled" : "disabled");
 +
 +	/* Sensor Updates (exposure and gain) */
 +	const auto &exposure = sensorControls.get(controls::ExposureTime);
@@ -3344,10 +5754,10 @@ index 00000000..23c891d4
 +} /* namespace libcamera */
 diff --git a/src/ipa/dcmipp/ipa_context.h b/src/ipa/dcmipp/ipa_context.h
 new file mode 100644
-index 00000000..beea7384
+index 00000000..3a826f1c
 --- /dev/null
 +++ b/src/ipa/dcmipp/ipa_context.h
-@@ -0,0 +1,120 @@
+@@ -0,0 +1,132 @@
 +/* SPDX-License-Identifier: LGPL-2.1-or-later */
 +/*
 + * Copyright (C) 2024 ST Microelectronics
@@ -3396,8 +5806,9 @@ index 00000000..beea7384
 +	uint8_t blcB; /* Level offset for the blue component */
 +};
 +
-+/* ISP Demosaicing filter */
-+struct IPAIspDemosaicingFilter {
++/* ISP Demosaicing */
++struct IPAIspDemosaicing {
++	uint8_t enable; /* Enable or disable */
 +	uint8_t edge; /* Edge detection strength */
 +	uint8_t lineh; /* Horizontal line detection strength */
 +	uint8_t linev; /* Vertical line detection strength */
@@ -3424,6 +5835,11 @@ index 00000000..beea7384
 +	int32_t coeff[3][3]; /* 3x3 RGB to RGB matrix coefficients. Unit = 100000000 for "x1.0", -150000000 for "x-1.5". Range is "x-4.0" to "x4.0" */
 +};
 +
++/* ISP / PostProc Gamma Correction */
++struct IPAIspGammaCorrection {
++	uint8_t enable; /* Enable or disable */
++};
++
 +/* IPA context */
 +struct IPAContext {
 +	/* ISP config */
@@ -3431,10 +5847,11 @@ index 00000000..beea7384
 +		struct IPAIspStatistic statistic;
 +		struct IPAIspBadpixel badpixel;
 +		struct IPAIspBlackLevel blackLevel;
-+		struct IPAIspDemosaicingFilter demosaicingFilter;
++		struct IPAIspDemosaicing demosaicing;
 +		struct IPAIspContrast contrast;
 +		struct IPAIspGain gain;
 +		struct IPAIspColorConv cconv;
++		struct IPAIspGammaCorrection gamma;
 +		uint32_t decimationRatio;
 +	} isp;
 +
@@ -3447,18 +5864,23 @@ index 00000000..beea7384
 +		uint32_t AECExposureTarget; /* AEC Exposure Target */
 +		uint8_t AWBEnable; /* AWB algo enable or disable */
 +		uint32_t CCT; /* Estimated Correlated Color Temperature */
-+		double sensorLineDuration_us; /* Sensor line duration in microseconds */
-+		double sensorGainMin; /* Sensor min analogue gain in dB */
-+		double sensorGainMax; /* Sensor max analogue gain in dB */
-+		int32_t sensorExposureMin; /* Sensor min exposure time in microseconds */
-+		int32_t sensorExposureMax; /* Sensor max exposure time in microseconds */
 +		int32_t ispStatLatency; /* Nb of Vsync to get stats after ISP update */
-+		int32_t sensorStatLatency; /* Nb of Vsync to get stats after sensor update */
 +		uint32_t sensorBitsPerPixel; /* Nb of bpp from the sensor */
 +		uint32_t hwRevision; /* DCMIPP HW version */
++		double sensorGainMin; /* Sensor min analogue gain in dB */
++		double sensorGainMax; /* Sensor max analogue gain in dB */
++		double sensorGainDef; /* Sensor default analogue gain in dB */
++		double sensorLineDuration_us; /* Sensor line duration in microseconds */
++		int32_t sensorExposureMin; /* Sensor min exposure time in microseconds */
++		int32_t sensorExposureMax; /* Sensor max exposure time in microseconds */
++		int32_t sensorExposureDef; /* Sensor default exposure time in microseconds */
++		int64_t frameDurationsMin; /* Min frame duration in microseconds */
++		int64_t frameDurationsMax; /* Max frame duration in microseconds */
++		int64_t frameDurationsDef; /* Default frame duration in microseconds */
 +	} info;
 +
-+	/* TODO: maybe add frame size info */
++	/* Supported controls */
++	ControlInfoMap::Map dcmippControls;
 +};
 +
 +/* Frame context, not used for the time being. Declaration required to use module */
@@ -3470,10 +5892,10 @@ index 00000000..beea7384
 +} /* namespace libcamera */
 diff --git a/src/ipa/dcmipp/meson.build b/src/ipa/dcmipp/meson.build
 new file mode 100644
-index 00000000..dd5aee3a
+index 00000000..911372d0
 --- /dev/null
 +++ b/src/ipa/dcmipp/meson.build
-@@ -0,0 +1,32 @@
+@@ -0,0 +1,39 @@
 +# SPDX-License-Identifier: CC0-1.0
 +
 +subdir('algorithms')
@@ -3487,11 +5909,18 @@ index 00000000..dd5aee3a
 +
 +dcmipp_ipa_sources += dcmipp_ipa_algorithms
 +
++dcmipp_cpp_arguments = []
++
++if get_option('evision_algo')
++    dcmipp_cpp_arguments += ['-DEVISION_ALGO_ENABLED']
++endif
++
 +mod = shared_module(ipa_name,
 +                    [dcmipp_ipa_sources, libcamera_generated_ipa_headers],
 +                    name_prefix : '',
 +                    include_directories : [ipa_includes, libipa_includes],
 +                    dependencies : libcamera_private,
++                    cpp_args : dcmipp_cpp_arguments,
 +                    link_with : libipa,
 +                    install : true,
 +                    install_dir : ipa_install_dir)
@@ -3565,10 +5994,10 @@ index 961209ea..67029fc3 100644
  
  /* Calculate chrominance statistics (R/G and B/G) for each region. */
 diff --git a/src/libcamera/control_ids_draft.yaml b/src/libcamera/control_ids_draft.yaml
-index 9bef5bf1..ad221c52 100644
+index 9bef5bf1..f2993fcd 100644
 --- a/src/libcamera/control_ids_draft.yaml
 +++ b/src/libcamera/control_ids_draft.yaml
-@@ -227,4 +227,211 @@ controls:
+@@ -227,4 +227,248 @@ controls:
              value. All of the custom test patterns will be static (that is the
              raw image must not vary from frame to frame).
  
@@ -3587,6 +6016,11 @@ index 9bef5bf1..ad221c52 100644
 +      type: int32_t
 +      description: |
 +        Exposure target for the AE algorithm to use.
++
++  - AntiFlickerFreq:
++      type: int32_t
++      description: |
++        Anti-flickering frequency for the AE algorithm to use.
 +
 +  - ColourGains3Enable:
 +      type: bool
@@ -3623,6 +6057,11 @@ index 9bef5bf1..ad221c52 100644
 +        Array of AWB profile name (one entry per profile) used by the AWB
 +        algorithm.
 +      size: [5]
++
++  - AwbCurrentProfileName:
++      type: string
++      description: Report the current profile name, for this frame. The
++        AwbCurrentProfileName control can only be returned in metadata.
 +
 +  - AwbReferenceColorTemperature:
 +      type: int32_t
@@ -3687,6 +6126,11 @@ index 9bef5bf1..ad221c52 100644
 +        Black levels correction of the Red, Green and Blue colour channels, in
 +        that order.
 +      size: [3]
++
++  - DemosaicingEnable:
++      type: bool
++      description: |
++        Demosaicing feature enable status.
 +
 +  - DemosaicingFilter:
 +      type: int32_t
@@ -3774,10 +6218,32 @@ index 9bef5bf1..ad221c52 100644
 +        Number of bits per pixel of the sensor.
 +        This control can only be returned in metadata.
 +
++  - SensorDelay:
++      type: int32_t
++      description: |
++        Delay (in number of VSYNC) between the time a sensor control (gain or
++        exposure) is updated, and the time the frame is actually updated.
++
++  - SensorDelayMeasure:
++      type: int32_t
++      description: |
++        Reported sensor delay measured by the IPA. -1 if the measure is not
++        available
++
++  - DoSensorDelayMeasure:
++      type: bool
++      description: |
++        When set to True, order the IPA to perform the sensor delay measure
++
 +  - PipelineHwRevision:
 +      type: int32_t
 +      description: |
 +        IPA hardware revision identifier.
++
++  - GammaCorrectionEnable:
++      type: bool
++      description: |
++        GammaCorrection feature enable status.
 +
  ...
 diff --git a/src/libcamera/ipc_unixsocket.cpp b/src/libcamera/ipc_unixsocket.cpp
@@ -3863,10 +6329,10 @@ index 04f40132..bd054552 100644
  /**
 diff --git a/src/libcamera/pipeline/dcmipp/dcmipp.cpp b/src/libcamera/pipeline/dcmipp/dcmipp.cpp
 new file mode 100644
-index 00000000..ec9abdd2
+index 00000000..a7353fe2
 --- /dev/null
 +++ b/src/libcamera/pipeline/dcmipp/dcmipp.cpp
-@@ -0,0 +1,1311 @@
+@@ -0,0 +1,1363 @@
 +/* SPDX-License-Identifier: LGPL-2.1-or-later */
 +/*
 + * Copyright (C) 2024, ST Microelectronics
@@ -3966,6 +6432,7 @@ index 00000000..ec9abdd2
 +	void metadataReady(unsigned int frame, const ControlList &metadata);
 +	void setSensorControls(unsigned int id, const ControlList &sensorControls);
 +	void setIspControls(unsigned int id, const ControlList &ispControls);
++	void setPostprocControls(unsigned int id, const ControlList &ispControls);
 +
 +	std::unique_ptr<CameraSensor> sensor_;
 +	std::unique_ptr<V4L2Subdevice> input_;
@@ -3993,11 +6460,7 @@ index 00000000..ec9abdd2
 +
 +	const V4L2SubdeviceFormat &sensorFormat() { return sensorFormat_; }
 +
-+	/*
-+	 * Indicate if gamma correction should be enabled on the corresponding
-+	 * stream
-+	 */
-+	bool gamma_correction[3];
++	unsigned int isp_decimation_ratio;
 +
 +private:
 +	bool fitsAllPaths(const StreamConfiguration &cfg);
@@ -4062,6 +6525,8 @@ index 00000000..ec9abdd2
 +	void tryCompleteRequest(DcmippFrameInfo *info);
 +
 +	Camera *activeCamera_;
++
++	unsigned int ipaBufferCount_;
 +};
 +
 +namespace {
@@ -4200,7 +6665,6 @@ index 00000000..ec9abdd2
 +{
 +	const CameraSensor *sensor = data_->sensor_.get();
 +	StreamConfiguration config;
-+	unsigned int isp_decimation_ratio = 0;
 +
 +	/*
 +	 * We only check for non-RAW configuration using Main / Aux pipes since anyway
@@ -4210,11 +6674,11 @@ index 00000000..ec9abdd2
 +		return false;
 +
 +	config = cfg;
-+	if (data_->mainPath_->validate(sensor, &config, &isp_decimation_ratio) != Valid)
++	if (data_->mainPath_->validate(sensor, &config, 1) != Valid)
 +		return false;
 +
 +	config = cfg;
-+	if (data_->auxPath_->validate(sensor, &config, &isp_decimation_ratio) != Valid)
++	if (data_->auxPath_->validate(sensor, &config, 1) != Valid)
 +		return false;
 +
 +	return true;
@@ -4225,7 +6689,6 @@ index 00000000..ec9abdd2
 +	const CameraSensor *sensor = data_->sensor_.get();
 +	PipelineHandlerDcmipp *pipe =
 +		static_cast<PipelineHandlerDcmipp *>(data_->pipe());
-+	unsigned int isp_decimation_ratio = 0;
 +	V4L2SubdeviceFormat sensorFormat;
 +	Status status = Valid;
 +
@@ -4279,6 +6742,38 @@ index 00000000..ec9abdd2
 +			order.emplace(order.begin(), index);
 +	}
 +
++	/*
++	 * First walk through all Non-RAW (going through ISP) config to figure out the
++	 * necessary ISP decimation factor to be applied
++	 */
++	Size post_isp_resolution = sensor->resolution();
++	isp_decimation_ratio = 1;
++
++	for (unsigned int index : order) {
++		StreamConfiguration &cfg = config_[index];
++
++		if (PixelFormatInfo::info(cfg.pixelFormat).colourEncoding == PixelFormatInfo::ColourEncodingRAW)
++			continue;
++
++		/*
++		 * For Main & Aux pipe postproc can perform decimate-downsize hence 8 * 8 reduction
++		 *
++		 * ISP decimation can also perform a maximum of 8 reduction.  It is also mandatory
++		 * to ensure that RAW frame size does not exceed 2688 width prior demosaicing.
++		 */
++		/* Ensure to not exceed maximum width for demosaicing */
++		while (post_isp_resolution.width > DCMIPP_RAW_MAX_WIDTH ||
++		       post_isp_resolution.width / cfg.size.width > (8 * 8) ||
++		       post_isp_resolution.height / cfg.size.height > (8 * 8)) {
++			isp_decimation_ratio *= 2;
++			if (isp_decimation_ratio > 8) {
++				LOG(DCMIPP, Error) << "Necessary decimation factor too big.";
++				return Invalid;
++			}
++			post_isp_resolution /= 2;
++		}
++	}
++
 +	/* Pick a pipe and validate each configuration */
 +	bool dumpAllocated = false, mainAllocated = false, auxAllocated = false;
 +	for (unsigned int index : order) {
@@ -4313,7 +6808,7 @@ index 00000000..ec9abdd2
 +		}
 +
 +		StreamConfiguration tryCfg = cfg;
-+		if (path->validate(sensor, &tryCfg, &isp_decimation_ratio) != Valid)
++		if (path->validate(sensor, &tryCfg, isp_decimation_ratio) != Valid)
 +			return Invalid;
 +
 +		cfg = std::move(tryCfg);
@@ -4359,8 +6854,6 @@ index 00000000..ec9abdd2
 +	DcmippCameraData *data = cameraData(camera);
 +	std::unique_ptr<CameraConfiguration> config =
 +		std::make_unique<DcmippCameraConfiguration>(data);
-+	DcmippCameraConfiguration *dcmipp_config =
-+		static_cast<DcmippCameraConfiguration *>(config.get());
 +	bool dumpAllocated = false, mainAllocated = false, auxAllocated = false;
 +	int i = 0;
 +
@@ -4399,8 +6892,6 @@ index 00000000..ec9abdd2
 +		Size maxSize;
 +		PixelFormat pixelFormat;
 +
-+		dcmipp_config->gamma_correction[i] = false;
-+
 +		switch (role) {
 +		case StreamRole::StillCapture:
 +			maxSize = data->sensor_->resolution();
@@ -4415,7 +6906,6 @@ index 00000000..ec9abdd2
 +		case StreamRole::Viewfinder:
 +			maxSize = { 1024, 600 };
 +			pixelFormat = formats::RGB888;
-+			dcmipp_config->gamma_correction[i] = true;
 +			if (auxAllocated) {
 +				LOG(DCMIPP, Error) << "Aux pipe already allocated, ABORT";
 +				return nullptr;
@@ -4475,7 +6965,7 @@ index 00000000..ec9abdd2
 +	DcmippCameraConfiguration *config =
 +		static_cast<DcmippCameraConfiguration *>(c);
 +	DcmippCameraData *data = cameraData(camera);
-+	int ret, i = 0;
++	int ret;
 +
 +	LOG(DCMIPP, Debug) << "configure";
 +
@@ -4533,15 +7023,24 @@ index 00000000..ec9abdd2
 +	if (ret)
 +		return ret;
 +
-+	/* Configuration of each path */
++	/*
++	 * Configuration of each path
++	 * If main and/or aux are used, store the number of necessary ipa buffers
++	 * this is set to the number of path buffer + 1
++	 */
++	ipaBufferCount_ = 0;
 +	for (const StreamConfiguration &cfg : *config) {
-+		bool gamma_correction = config->gamma_correction[i];
 +		if (cfg.stream() == &data->Dumpstream_)
-+			ret = dumpPath_.configure(cfg, subformat, gamma_correction);
-+		else if (cfg.stream() == &data->Mainstream_)
-+			ret = mainPath_.configure(cfg, subformat, gamma_correction);
-+		else if (cfg.stream() == &data->Auxstream_)
-+			ret = auxPath_.configure(cfg, subformat, gamma_correction);
++			ret = dumpPath_.configure(cfg, subformat, 0);
++		else if (cfg.stream() == &data->Mainstream_) {
++			ret = mainPath_.configure(cfg, subformat, config->isp_decimation_ratio);
++			if (!ret && cfg.bufferCount > ipaBufferCount_ + 1)
++				ipaBufferCount_ = cfg.bufferCount + 1;
++		} else if (cfg.stream() == &data->Auxstream_) {
++			ret = auxPath_.configure(cfg, subformat, config->isp_decimation_ratio);
++			if (!ret && cfg.bufferCount > ipaBufferCount_ + 1)
++				ipaBufferCount_ = cfg.bufferCount + 1;
++		}
 +		if (ret) {
 +			LOG(DCMIPP, Error) << "Failed to configure path";
 +			return ret;
@@ -4585,7 +7084,7 @@ index 00000000..ec9abdd2
 +		data->sensor_->sensorInfo(&sensorInfo);
 +
 +		ret = data->ipa_->configure(sensorInfo, data->sensor_->controls(),
-+					    data->mainPath_->ispDecimationRatio(),
++					    config->isp_decimation_ratio,
 +					    &data->controlInfo_);
 +		if (ret) {
 +			LOG(DCMIPP, Error) << "Failed to configure IPA";
@@ -4618,11 +7117,11 @@ index 00000000..ec9abdd2
 +	unsigned int ipaBufferId = 0;
 +	int ret;
 +
-+	ret = params_->allocateBuffers(DCMIPP_V4L2_STATS_PARAMS_BUFFER_NB, &isp_params_);
++	ret = params_->allocateBuffers(ipaBufferCount_, &isp_params_);
 +	if (ret < 0)
 +		goto error;
 +
-+	ret = stats_->allocateBuffers(DCMIPP_V4L2_STATS_PARAMS_BUFFER_NB, &isp_stats_);
++	ret = stats_->allocateBuffers(ipaBufferCount_, &isp_stats_);
 +	if (ret < 0)
 +		goto error;
 +
@@ -4903,6 +7402,7 @@ index 00000000..ec9abdd2
 +	data->ipa_->metadataReady.connect(data.get(), &DcmippCameraData::metadataReady);
 +	data->ipa_->setSensorControls.connect(data.get(), &DcmippCameraData::setSensorControls);
 +	data->ipa_->setIspControls.connect(data.get(), &DcmippCameraData::setIspControls);
++	data->ipa_->setPostprocControls.connect(data.get(), &DcmippCameraData::setPostprocControls);
 +
 +	/*
 +	 * Initialize IPA. IPA is reponsible for setting data->controlInfo_ which
@@ -5175,15 +7675,33 @@ index 00000000..ec9abdd2
 +		LOG(DCMIPP, Error) << "Failed to set ISP controls: " << ret;
 +}
 +
++void DcmippCameraData::setPostprocControls([[maybe_unused]] unsigned int id,
++					   const ControlList &postprocControls)
++{
++	PipelineHandlerDcmipp *pipe =
++		static_cast<PipelineHandlerDcmipp *>(Camera::Private::pipe());
++
++	LOG(DCMIPP, Debug) << "Function: " << __func__;
++
++	int ret = pipe->mainPath_.setControls(postprocControls);
++	if (ret)
++		LOG(DCMIPP, Error) << "Failed to set main postproc controls: " << ret;
++
++	ret = pipe->auxPath_.setControls(postprocControls);
++	if (ret)
++		LOG(DCMIPP, Error) << "Failed to set aux postproc controls: " << ret;
++}
++
++
 +REGISTER_PIPELINE_HANDLER(PipelineHandlerDcmipp, "dcmipp")
 +
 +} /* namespace libcamera */
 diff --git a/src/libcamera/pipeline/dcmipp/dcmipp.h b/src/libcamera/pipeline/dcmipp/dcmipp.h
 new file mode 100644
-index 00000000..6059c70c
+index 00000000..eaa668f3
 --- /dev/null
 +++ b/src/libcamera/pipeline/dcmipp/dcmipp.h
-@@ -0,0 +1,131 @@
+@@ -0,0 +1,120 @@
 +/* SPDX-License-Identifier: LGPL-2.1-or-later */
 +/*
 + * Copyright (C) 2024, ST Microelectronics
@@ -5225,17 +7743,18 @@ index 00000000..6059c70c
 +
 +	int setEnabled(bool enable);
 +	bool isEnabled() const { return enabled_; }
++	int setControls(const ControlList &postprocControls);
 +
 +	StreamConfiguration generateConfiguration(const CameraSensor *sensor,
 +						  const Size &maxSize,
 +						  PixelFormat rolePixelFormat);
 +	CameraConfiguration::Status validate(const CameraSensor *sensor,
 +					     StreamConfiguration *cfg,
-+					     unsigned int *isp_decimation_ratio);
++					     unsigned int isp_decimation_ratio);
 +
 +	int configure(const StreamConfiguration &config,
 +		      const V4L2SubdeviceFormat &inputFormat,
-+		      bool gamma_correction);
++		      unsigned int isp_decimation_ratio);
 +
 +	int exportBuffers(unsigned int bufferCount,
 +			  std::vector<std::unique_ptr<FrameBuffer>> *buffers)
@@ -5248,8 +7767,6 @@ index 00000000..6059c70c
 +
 +	int queueBuffer(FrameBuffer *buffer) { return video_->queueBuffer(buffer); }
 +	Signal<FrameBuffer *> &bufferReady() { return video_->bufferReady; }
-+
-+	unsigned int ispDecimationRatio() const { return isp_decimation_ratio_; }
 +
 +private:
 +	void populateFormats();
@@ -5270,8 +7787,7 @@ index 00000000..6059c70c
 +	unsigned int input_source_pad_;
 +
 +	MediaLink *link_;
-+
-+	unsigned int isp_decimation_ratio_;
++	unsigned int bufferCount_;
 +};
 +
 +class DcmippDumpPath : public DcmippPath
@@ -5295,8 +7811,6 @@ index 00000000..6059c70c
 +} /* namespace libcamera */
 +
 +#define DCMIPP_V4L2_BUFFER_NB 4
-+/* We need one more buffer for stats / params than frame buffers */
-+#define DCMIPP_V4L2_STATS_PARAMS_BUFFER_NB (DCMIPP_V4L2_BUFFER_NB + 1)
 +
 +#define DCMIPP_RAW_MAX_WIDTH 2688
 +
@@ -5308,19 +7822,12 @@ index 00000000..6059c70c
 + * DCMIPP driver during the first requests
 + */
 +#define DCMIPP_STATS_FRAME_DELAY 10
-+
-+/*
-+ * DCMIPP driver doesn't export (yet) the postproc Gamma control CID macro
-+ * hence define it here instead
-+ * \todo - to be removed once the V4L2_CID is exported by the kernel
-+ */
-+#define DCMIPP_V4L2_CID_POSTPROC_GAMMA (V4L2_CID_USER_BASE | 0x1001)
 diff --git a/src/libcamera/pipeline/dcmipp/dcmipp_path.cpp b/src/libcamera/pipeline/dcmipp/dcmipp_path.cpp
 new file mode 100644
-index 00000000..36388d65
+index 00000000..7f053792
 --- /dev/null
 +++ b/src/libcamera/pipeline/dcmipp/dcmipp_path.cpp
-@@ -0,0 +1,513 @@
+@@ -0,0 +1,496 @@
 +/* SPDX-License-Identifier: LGPL-2.1-or-later */
 +/*
 + * Copyright (C) 2024, ST Microelectronics
@@ -5448,12 +7955,12 @@ index 00000000..36388d65
 +} /* namespace */
 +
 +DcmippPath::DcmippPath(const char *name)
-+	: name_(name), enabled_(false), running_(false), input_source_pad_(1), link_(nullptr), isp_decimation_ratio_(1)
++	: name_(name), enabled_(false), running_(false), input_source_pad_(1), link_(nullptr)
 +{
 +}
 +
 +DcmippPath::DcmippPath(const char *name, const Span<const PixelFormat> &formats)
-+	: name_(name), enabled_(false), running_(false), pathFormats_(formats), input_source_pad_(1), link_(nullptr), isp_decimation_ratio_(1)
++	: name_(name), enabled_(false), running_(false), pathFormats_(formats), input_source_pad_(1), link_(nullptr)
 +{
 +}
 +
@@ -5588,7 +8095,7 @@ index 00000000..36388d65
 +
 +CameraConfiguration::Status DcmippPath::validate(const CameraSensor *sensor,
 +						 StreamConfiguration *cfg,
-+						 unsigned int *isp_decimation_ratio)
++						 unsigned int isp_decimation_ratio)
 +{
 +	bool format_found = false;
 +
@@ -5604,26 +8111,16 @@ index 00000000..36388d65
 +	 * to ensure that RAW frame size does not exceed 2688 width prior demosaicing.
 +	 */
 +	if (name_ != std::string("dump")) {
-+		if (!*isp_decimation_ratio) {
-+			*isp_decimation_ratio = 1;
-+			/* Ensure to not exceed maximum width for demosaicing */
-+			while (post_isp_resolution.width > DCMIPP_RAW_MAX_WIDTH ||
-+			       post_isp_resolution.width / cfg->size.width > (8 * 8) ||
-+			       post_isp_resolution.height / cfg->size.height > (8 * 8)) {
-+				*isp_decimation_ratio *= 2;
-+				if (*isp_decimation_ratio > 8) {
-+					LOG(DCMIPP, Error) << "Necessary decimation factor too big.";
-+					return CameraConfiguration::Invalid;
-+				}
-+				post_isp_resolution /= 2;
-+			}
-+		} else {
-+			post_isp_resolution /= *isp_decimation_ratio;
-+			if (post_isp_resolution.width / cfg->size.width > (8 * 8) ||
-+			    post_isp_resolution.height / cfg->size.height > (8 * 8)) {
-+				LOG(DCMIPP, Error) << "ISP output frame too big to reach final requested size";
-+				return CameraConfiguration::Invalid;
-+			}
++		/*
++		 * Ensure that the isp output resolution is still larger or equal to
++		 * requested size
++		 */
++		post_isp_resolution /= isp_decimation_ratio;
++
++		if (post_isp_resolution.width < cfg->size.width ||
++		    post_isp_resolution.height < cfg->size.height) {
++			LOG(DCMIPP, Error) << "Can't reach requested resolution of " << cfg->size << " since ISP output resolution is " << post_isp_resolution;
++			return CameraConfiguration::Invalid;
 +		}
 +	}
 +
@@ -5648,20 +8145,18 @@ index 00000000..36388d65
 +	cfg->stride = format.planes[0].bpl;
 +	cfg->frameSize = format.planes[0].size;
 +
-+	if (name_ == std::string("main"))
-+		isp_decimation_ratio_ = *isp_decimation_ratio;
-+
 +	return CameraConfiguration::Valid;
 +}
 +
 +int DcmippPath::configure(const StreamConfiguration &config,
 +			  const V4L2SubdeviceFormat &inputFormat,
-+			  bool gamma_correction)
++			  unsigned int isp_decimation_ratio)
 +{
 +	int ret;
 +	V4L2SubdeviceFormat subformat = inputFormat;
 +
 +	LOG(DCMIPP, Debug) << "DcmippPath::configure " << name_;
++	LOG(DCMIPP, Debug) << "Configuration: Size: " << config.size << " pixelFormat: " << config.pixelFormat << " bufferCount: " << config.bufferCount;
 +
 +	ret = input_->setFormat(input_source_pad_, &subformat);
 +	if (ret < 0)
@@ -5684,7 +8179,7 @@ index 00000000..36388d65
 +			return ret;
 +
 +		subformat.code = MEDIA_BUS_FMT_RGB888_1X24;
-+		subformat.size /= isp_decimation_ratio_;
++		subformat.size /= isp_decimation_ratio;
 +		Rectangle compose_isp{ 0, 0, subformat.size };
 +		ret = isp_->setSelection(0, V4L2_SEL_TGT_COMPOSE, &compose_isp);
 +		if (ret)
@@ -5713,18 +8208,12 @@ index 00000000..36388d65
 +		if (ret)
 +			return ret;
 +
-+		/* Gamma correction configuration */
-+		ControlList ctrls;
-+		ctrls.set(DCMIPP_V4L2_CID_POSTPROC_GAMMA, (int32_t)(gamma_correction));
-+		ret = postproc_->setControls(&ctrls);
-+		if (ret)
-+			return ret;
-+
 +		LOG(DCMIPP, Debug)
 +			<< "Configured pipe " << name_ << " with format input format "
 +			<< inputFormat << " and output format " << subformat;
 +	} else if (name_ == std::string("aux")) {
 +		subformat.code = MEDIA_BUS_FMT_RGB888_1X24;
++		subformat.size /= isp_decimation_ratio;
 +
 +		/* Configuration of the postproc block */
 +		ret = postproc_->setFormat(0, &subformat);
@@ -5744,13 +8233,6 @@ index 00000000..36388d65
 +		if (ret)
 +			return ret;
 +
-+		/* Gamma correction configuration */
-+		ControlList ctrls;
-+		ctrls.set(DCMIPP_V4L2_CID_POSTPROC_GAMMA, (int32_t)(gamma_correction));
-+		ret = postproc_->setControls(&ctrls);
-+		if (ret)
-+			return ret;
-+
 +		LOG(DCMIPP, Debug)
 +			<< "Configured pipe " << name_ << " with output format "
 +			<< subformat;
@@ -5766,14 +8248,22 @@ index 00000000..36388d65
 +	if (ret)
 +		return ret;
 +
-+	if (outputFormat.size != config.size ||
-+	    outputFormat.fourcc != video_->toV4L2PixelFormat(config.pixelFormat)) {
-+		LOG(DCMIPP, Error)
-+			<< "Unable to configure capture in " << config.toString() << " got instead: " << outputFormat;
-+		return -EINVAL;
-+	}
++	bufferCount_ = config.bufferCount;
 +
 +	return 0;
++}
++
++int DcmippPath::setControls(const ControlList &postprocControls)
++{
++	LOG(DCMIPP, Debug) << "Function: " << __func__;
++
++	ControlList ctrls = postprocControls;
++
++	int ret = postproc_->setControls(&ctrls);
++	if (ret)
++		LOG(DCMIPP, Error) << "Failed to set postproc controls: " << ret;
++
++	return ret;
 +}
 +
 +int DcmippPath::start()
@@ -5785,7 +8275,7 @@ index 00000000..36388d65
 +	if (running_)
 +		return -EBUSY;
 +
-+	ret = video_->importBuffers(DCMIPP_V4L2_BUFFER_NB);
++	ret = video_->importBuffers(bufferCount_);
 +	if (ret)
 +		return ret;
 +
@@ -5891,5 +8381,5 @@ index 4a2048cf..3131243a 100644
  				<< "Control " << utils::hex(ctrl.id)
  				<< " has unsupported type " << ctrl.type;
 -- 
-2.34.1
+2.43.0
 
