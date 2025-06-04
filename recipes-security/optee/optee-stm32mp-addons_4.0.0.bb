@@ -8,16 +8,23 @@ SRCREV = "d6521c7d02c43068c524bc66add382d2461e8047"
 
 PV = "4.0.0.${@bb.utils.contains('MACHINE_FEATURES', 'm33td', 'nocalibration', 'calibration', d)}-${SRCPV}"
 
-DEPENDS = "optee-client virtual-optee-os python3-pycryptodomex-native"
-DEPENDS += "python3-cryptography-native"
-DEPENDS += "openssl"
+DEPENDS = "virtual-optee-os"
+DEPENDS:stm32mp2aarch32common = " ${@oe.utils.ifelse(d.getVar('MULTILIBS'), 'lib64-virtual-optee-os','')} "
+
+DEPENDS:append = " optee-client python3-pycryptodomex-native "
+DEPENDS:append = " python3-cryptography-native "
+DEPENDS:append = " openssl "
 
 inherit python3native systemd
 
 S = "${WORKDIR}/git"
 
+TA_DEV_KIT_DIR      = "${STAGING_INCDIR}/optee/${@bb.utils.contains('TUNE_FEATURES', 'aarch64', 'export-user_ta_arm64', 'export-user_ta', d)}"
+TA_DEV_KIT_DIR_aarch32_aarch64 = "${WORKDIR}/lib64-recipe-sysroot${includedir}/optee/${@bb.utils.contains('TUNE_FEATURES', 'aarch64', 'export-user_ta_arm64', 'export-user_ta_arm32', d)}"
+TA_DEV_KIT_DIR:stm32mp2aarch32common = "${@oe.utils.ifelse(d.getVar('MULTILIBS'), '${TA_DEV_KIT_DIR_aarch32_aarch64}','')}"
+
 EXTRA_OEMAKE += " \
-    TA_DEV_KIT_DIR=${STAGING_INCDIR}/optee/${@bb.utils.contains('TUNE_FEATURES', 'aarch64', 'export-user_ta_arm64', 'export-user_ta', d)} \
+    TA_DEV_KIT_DIR=${TA_DEV_KIT_DIR} \
     OPTEE_CLIENT_EXPORT=${STAGING_DIR_HOST}${prefix} \
     HOST_CROSS_COMPILE=${TARGET_PREFIX} \
     TA_CROSS_COMPILE=${TARGET_PREFIX} \

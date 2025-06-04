@@ -1,15 +1,22 @@
 # Imports machine specific configs from staging to build
 PACKAGE_ARCH = "${MACHINE_ARCH}"
 
-DEPENDS = "optee-client virtual-optee-os python3-pycryptodomex-native libgcc"
-DEPENDS += "openssl"
-DEPENDS += "python3-cryptography-native"
+DEPENDS = "virtual-optee-os"
+DEPENDS:stm32mp2aarch32common = " ${@oe.utils.ifelse(d.getVar('MULTILIBS'), 'lib64-virtual-optee-os','')} "
+
+DEPENDS:append = " optee-client python3-pycryptodomex-native libgcc "
+DEPENDS:append = " openssl "
+DEPENDS:append = " python3-cryptography-native "
 
 inherit python3native cmake
 
 OPTEE_CLIENT_EXPORT = "${STAGING_DIR_HOST}${prefix}"
 TEEC_EXPORT         = "${STAGING_DIR_HOST}${prefix}"
 TA_DEV_KIT_DIR      = "${STAGING_INCDIR}/optee/${@bb.utils.contains('TUNE_FEATURES', 'aarch64', 'export-user_ta_arm64', 'export-user_ta', d)}"
+
+TA_DEV_KIT_DIR_aarch32_aarch64 = "${WORKDIR}/lib64-recipe-sysroot${includedir}/optee/${@bb.utils.contains('TUNE_FEATURES', 'aarch64', 'export-user_ta_arm64', 'export-user_ta_arm32', d)}"
+TA_DEV_KIT_DIR:stm32mp2aarch32common = "${@oe.utils.ifelse(d.getVar('MULTILIBS'), '${TA_DEV_KIT_DIR_aarch32_aarch64}','')}"
+
 TEE_PLUGIN_LOAD_PATH = "${libdir}/tee-supplicant/plugins"
 
 EXTRA_OEMAKE = " TA_DEV_KIT_DIR=${TA_DEV_KIT_DIR} \

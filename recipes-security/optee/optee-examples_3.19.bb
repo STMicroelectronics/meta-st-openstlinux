@@ -4,8 +4,11 @@ HOMEPAGE = "https://github.com/linaro-swg/optee_examples"
 LICENSE = "GPL-2.0-only"
 LIC_FILES_CHKSUM = "file://${S}/LICENSE;md5=cd95ab417e23b94f381dafc453d70c30"
 
-DEPENDS = "optee-client virtual-optee-os python3-pycryptodomex-native"
-DEPENDS += "python3-cryptography-native"
+DEPENDS = "virtual-optee-os"
+DEPENDS:stm32mp2aarch32common = " ${@oe.utils.ifelse(d.getVar('MULTILIBS'), 'lib64-virtual-optee-os','')} "
+
+DEPENDS:append = " optee-client python3-pycryptodomex-native "
+DEPENDS:append = " python3-cryptography-native "
 
 inherit python3native
 
@@ -19,6 +22,8 @@ S = "${WORKDIR}/git"
 OPTEE_CLIENT_EXPORT = "${STAGING_DIR_HOST}${prefix}"
 TEEC_EXPORT = "${STAGING_DIR_HOST}${prefix}"
 TA_DEV_KIT_DIR = "${STAGING_INCDIR}/optee/${@bb.utils.contains('TUNE_FEATURES', 'aarch64', 'export-user_ta_arm64', 'export-user_ta', d)}"
+TA_DEV_KIT_DIR_aarch32_aarch64 = "${WORKDIR}/lib64-recipe-sysroot${includedir}/optee/${@bb.utils.contains('TUNE_FEATURES', 'aarch64', 'export-user_ta_arm64', 'export-user_ta_arm32', d)}"
+TA_DEV_KIT_DIR:stm32mp2aarch32common = "${@oe.utils.ifelse(d.getVar('MULTILIBS'), '${TA_DEV_KIT_DIR_aarch32_aarch64}','')}"
 
 EXTRA_OEMAKE = " TA_DEV_KIT_DIR=${TA_DEV_KIT_DIR} \
                  OPTEE_CLIENT_EXPORT=${OPTEE_CLIENT_EXPORT} \

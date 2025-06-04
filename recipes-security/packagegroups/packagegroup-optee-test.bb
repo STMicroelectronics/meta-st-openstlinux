@@ -14,3 +14,9 @@ PROVIDES = "${PACKAGES}"
 RDEPENDS:packagegroup-optee-test = "\
     optee-test \
 "
+# RDEPENDS:packagegroup-optee-test:stm32mp2aarch32common = " \
+#     ${@oe.utils.ifelse(d.getVar('MULTILIBS'), ' \
+#         optee-test \
+#     ','')} \
+#     "
+
