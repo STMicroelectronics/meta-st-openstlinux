@@ -91,8 +91,10 @@ if [ "$DCMIPP_SENSOR" != "NOTFOUND" ]; then
     echo "sensor mbus-code: "$sensorbuscode
     print_debug media-ctl -d $mediadev --set-v4l2 "'$sensorsubdev':0[fmt:$sensorbuscode/${WIDTH}x${HEIGHT} field:none]"
     media-ctl -d $mediadev --set-v4l2 "'$sensorsubdev':0[fmt:$sensorbuscode/${WIDTH}x${HEIGHT} field:none]"
-    print_debug media-ctl -d $mediadev --set-v4l2 "'$bridgesubdev':2[fmt:$sensorbuscode/${WIDTH}x${HEIGHT}]"
-    media-ctl -d $mediadev --set-v4l2 "'$bridgesubdev':2[fmt:$sensorbuscode/${WIDTH}x${HEIGHT}]"
+    if [ "$bridgesubdev" != "dcmipp_input" ]; then
+        print_debug media-ctl -d $mediadev --set-v4l2 "'$bridgesubdev':2[fmt:$sensorbuscode/${WIDTH}x${HEIGHT}]"
+        media-ctl -d $mediadev --set-v4l2 "'$bridgesubdev':2[fmt:$sensorbuscode/${WIDTH}x${HEIGHT}]"
+    fi
     print_debug media-ctl -d $mediadev --set-v4l2 "'dcmipp_input':1[fmt:$parallelbuscode/${WIDTH}x${HEIGHT}]"
     media-ctl -d $mediadev --set-v4l2 "'dcmipp_input':1[fmt:$parallelbuscode/${WIDTH}x${HEIGHT}]"
     print_debug media-ctl -d $mediadev --set-v4l2 "'dcmipp_dump_postproc':1[fmt:$parallelbuscode/${WIDTH}x${HEIGHT}]"

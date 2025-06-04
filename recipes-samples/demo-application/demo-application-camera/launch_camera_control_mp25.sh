@@ -49,7 +49,7 @@ config_dcmipp_media_ctl() {
     fi
 
     #Use sensor in raw-bayer format
-    sensorbuscode=$(v4l2-ctl --list-subdev-mbus-codes -d "$sensor_dev" | grep SRGGB | awk -FMEDIA_BUS_FMT_ '{print $2}')
+    sensorbuscode=$(v4l2-ctl --list-subdev-mbus-codes -d "$sensor_dev" | grep SRGGB10 | awk -FMEDIA_BUS_FMT_ '{print $2}')
     echo "sensorbuscode=$sensorbuscode"
 
     SENSORWIDTH=0
