@@ -1,2 +1,3 @@
 # Add /dev/gpiochip to dialout group, like Raspberry, to allow weston user to access GPIO
-ACTION=="add", KERNEL=="gpio*", SUBSYSTEM=="gpio", GROUP="dialout"
+KERNEL=="gpio*", SUBSYSTEM=="gpio", GROUP="dialout"
+
