@@ -303,8 +303,8 @@ PACKAGE_CLASSES = "package_deb"
 REPRODUCIBLE_TIMESTAMP_ROOTFS = ""
 
 # Setup eSDK
-SDK_EXT_TYPE="minimal"
-SDK_INCLUDE_TOOLCHAIN="1"
+SDK_EXT_TYPE = "minimal"
+SDK_INCLUDE_TOOLCHAIN = "1"
 
 # Enable PR server to avoid version-going-backward issue
 PRSERV_HOST = "localhost:0"
@@ -318,4 +318,6 @@ HOSTTOOLS += "xz truncate"
 #STM32MP_SOURCE_SELECTION:pn-linux-stm32mp = "github"
 #STM32MP_SOURCE_SELECTION:pn-optee-os-stm32mp = "github"
 #STM32MP_SOURCE_SELECTION:pn-tf-a-stm32mp = "github"
+#STM32MP_SOURCE_SELECTION:pn-tf-m-stm32mp = "github"
+#STM32MP_SOURCE_SELECTION:pn-tf-m-tests-stm32mp = "github"
 #STM32MP_SOURCE_SELECTION:pn-u-boot-stm32mp = "github"

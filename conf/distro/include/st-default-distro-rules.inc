@@ -52,6 +52,8 @@ BUILDCFG_VARS += "GCCVERSION"
 BUILDCFG_VARS += "PREFERRED_PROVIDER_virtual/kernel"
 BUILDCFG_VARS += "MACHINE_FEATURES"
 
+
+
 #--------------------------
 # Configure build info file for rootfs availability
 #
