@@ -22,6 +22,7 @@ IMAGE_FEATURES += "\
 #
 # INSTALL addons
 #
+M33TD_SPLASHSCREEN = "${@bb.utils.contains('MACHINE_FEATURES', 'm33td', 'psplash-via-m33', '', d)}"
 CORE_IMAGE_EXTRA_INSTALL += " \
     resize-helper \
     st-hostname \
@@ -40,6 +41,9 @@ CORE_IMAGE_EXTRA_INSTALL += " \
     ${@bb.utils.contains('COMBINED_FEATURES', 'tpm2', 'packagegroup-security-tpm2', '', d)} \
     \
     packagegroup-st-demo \
+    \
+    ${@bb.utils.contains("COMBINED_FEATURES", "splashscreen", "", "${M33TD_SPLASHSCREEN}", d)} \
+    ${@bb.utils.contains('MACHINE_FEATURES', 'm33td', 'm33td-reset', '', d)} \
     "
 
 # NOTE:
