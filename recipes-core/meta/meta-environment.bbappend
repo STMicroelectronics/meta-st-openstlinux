@@ -10,9 +10,12 @@ do_install:append() {
             rm -f ${SDK_OUTPUT}/${SDKPATH}/site-config-cortexa35*
             rm -f ${SDK_OUTPUT}/${SDKPATH}/version-cortexa35*
             rm -f ${SDK_OUTPUT}/${SDKPATH}/environment-setup
-            ln -s environment-setup-${REAL_MULTIMACH_TARGET_SYS} ${SDK_OUTPUT}/${SDKPATH}/environment-setup
+
+            cd ${D}/${SDKPATH}/;          ln -s environment-setup-${REAL_MULTIMACH_TARGET_SYS} environment-setup; cd -
+            cd ${SDK_OUTPUT}/${SDKPATH}/; ln -s environment-setup-${REAL_MULTIMACH_TARGET_SYS} environment-setup; cd -
         fi
      else
-         ln -s environment-setup-${REAL_MULTIMACH_TARGET_SYS} ${SDK_OUTPUT}/${SDKPATH}/environment-setup
+        cd ${D}/${SDKPATH}/;             ln -s environment-setup-${REAL_MULTIMACH_TARGET_SYS} environment-setup; cd -
+        cd ${SDK_OUTPUT}/${SDKPATH}/;    ln -s environment-setup-${REAL_MULTIMACH_TARGET_SYS} environment-setup; cd -
     fi
 }
