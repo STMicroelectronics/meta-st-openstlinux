@@ -35,6 +35,7 @@ def license_create_summary(d):
     image_list_arrray = []
     # Process IMAGE_SUMMARY_LIST to feed image_list_arrray
     image_summary_list = (d.getVar('IMAGE_SUMMARY_LIST') or "").split(';')
+    bb.note("DEBUG: list of IMAGE_SUMMARY_LIST: {}".format(image_summary_list))
     mount_list = []
     for img in image_summary_list:
         if img.strip() == "":
@@ -53,11 +54,9 @@ def license_create_summary(d):
             target_deploydir = deploy_image_dir
             mount_list.append(img_mount)
         for fi in os.listdir(target_deploydir):
-            if fi.startswith(img_name) and fi.endswith(".ext4"):
-                r = re.compile(r"(.*)-(\d\d\d\d+)")
-                mi = r.match(os.path.basename(fi))
-                if mi:
-                    image_list_arrray.append([mi.group(1), mi.group(2), img_name, img_mount, img_suffix, filter])
+            if fi.startswith(img_name) and fi.endswith(".%s.ext4" % img_suffix):
+                image_list_arrray.append([fi.replace(".ext4", ''), img_name, img_mount, img_suffix, filter])
+
     # Append any INITRD image to image_list_arrray
     initrd_img = d.getVar('INITRD_IMAGE_ALL') or d.getVar('INITRD_IMAGE') or ""
     for img_name in initrd_img.split():
@@ -70,7 +69,7 @@ def license_create_summary(d):
                 r = re.compile(r"(.*)-(\d\d\d\d+)")
                 mi = r.match(os.path.basename(fi))
                 if mi:
-                    image_list_arrray.append([mi.group(1), mi.group(2), img_name, img_mount, img_suffix, filter])
+                    image_list_arrray.append([mi.group(1), img_name, img_mount, img_suffix, filter])
 
     if tab.startswith("1"):
         with_tab = 1
@@ -79,6 +78,7 @@ def license_create_summary(d):
 
     def private_open(filename):
         result = None
+        bb.note("DEBUG: Try to %s" % filename)
         if os.path.exists(filename):
             try:
                 with open(filename, "r") as lic:
@@ -480,24 +480,25 @@ def license_create_summary(d):
         html.addAnchor("image_content")
 
         # partition schema
-        html.addContent("Schema of partitions:")
+        html.addContent("List of binaries/partitions:")
         html.startTable()
         html.startRow()
         html.startColumn("width: 10%; text-align: center;")
         html.addURLContent("Boot binaries", "#boot_binaries")
+        html.stopColumn()
+        html.stopRow()
         for img in image_list_arrray:
             _image_prefix = img[0]
-            _image_date = img[1]
-            _image_name = img[2]
-            _image_mount_point = img[3]
-
+            _image_name = img[1]
+            _image_mount_point = img[2]
+            html.startRow()
             if _image_mount_point == '/':
                 html.startColumn("width: 30%; text-align: center;")
             else:
                 html.startColumn("width: 20%; text-align: center;")
             html.addURLContent(_image_name, "#%s" % _image_name)
-        html.stopColumn()
-        html.stopRow()
+            html.stopColumn()
+            html.stopRow()
         html.stopTable()
 
         html.addNewLine()
@@ -507,12 +508,11 @@ def license_create_summary(d):
         # boot binaries
         for img in image_list_arrray:
             _image_prefix = img[0]
-            _image_date = img[1]
-            _image_suffix = img[4]
+            _image_suffix = img[3]
 
             if _image_prefix == ref_image_name:
                 _image_package = "image_license.manifest"
-                boot_file_to_read = license_deploy_dir + "/" + machine_underscore + "/" + _image_prefix +  "-" + _image_date + "/" + _image_package
+                boot_file_to_read = license_deploy_dir + "/" + machine_underscore + "/" + _image_prefix + "/" + _image_package
 
         if boot_file_to_read:
             contents = private_open(boot_file_to_read)
@@ -575,11 +575,10 @@ def license_create_summary(d):
         package_processed_list = []
         for img in image_list_arrray:
             _image_prefix = img[0]
-            _image_date = img[1]
-            _image_name = img[2]
-            _image_mount_point = img[3]
-            _image_suffix = img[4]
-            _image_filter = img[5]
+            _image_name = img[1]
+            _image_mount_point = img[2]
+            _image_suffix = img[3]
+            _image_filter = img[4]
 
             html.addNewLine()
             html.addNewLine()
@@ -594,7 +593,7 @@ def license_create_summary(d):
             html.stopTable()
 
             _image_package="package.manifest"
-            file_to_read = license_deploy_dir + "/" + machine_underscore + "/" + _image_prefix + "-" + _image_date + "/" + _image_package
+            file_to_read = license_deploy_dir + "/" + machine_underscore + "/" + _image_prefix + "/" + _image_package
             contents = private_open(file_to_read)
             #print("Process for %s" % _image_prefix)
 
