@@ -1,0 +1,112 @@
+#!/bin/sh
+# Path of script on target: /usr/bin/psplash-drm-quit
+CM33_TTY=/dev/ttyRPMSG0
+
+rproc_class_dir="/sys/class/remoteproc/remoteproc0/"
+REMOTEPROC_DIR="/sys/class/remoteproc"
+TARGET_REMOTEPROC_NAME="m33"
+
+RPMSG_CREATE_EPT_BIN="rpmsg_create_ept"
+RPMSG_CTRL_DEV="/dev/rpmsg_ctrl0"
+ENDPOINT_NAME="display"
+ADDR="0x59"
+TIMEOUT=10  # seconds to wait for /dev/rpmsg device
+
+ADDR_DEC=$((ADDR))
+
+find_existing_rpmsg_dev() {
+  for dir in /sys/class/rpmsg/rpmsg*; do
+    if [ -d "$dir" ]; then
+      src_file="$dir/src"
+      if [ -f "$src_file" ]; then
+        src_val=`cat "$src_file"`
+        if [ "$src_val" -eq "$ADDR_DEC" ]; then
+          rpmsg_num=`basename "$dir" | sed 's/rpmsg//'`
+          echo "/dev/rpmsg${rpmsg_num}"
+          return 0
+        fi
+      fi
+    fi
+  done
+  return 1
+}
+
+get_rpmsg_dev() {
+  echo "Checking for existing rpmsg device with src=$ADDR_DEC..."
+  EXISTING_RPMSG_DEV=$(find_existing_rpmsg_dev)
+
+  if [ -n "$EXISTING_RPMSG_DEV" ]; then
+    RPMSG_DEV="$EXISTING_RPMSG_DEV"
+  else
+    echo "No existing rpmsg device found, creating new endpoint..."
+    $RPMSG_CREATE_EPT_BIN "$RPMSG_CTRL_DEV" "$ENDPOINT_NAME" "$ADDR"
+    if [ $? -ne 0 ]; then
+      echo "Failed to create rpmsg endpoint"
+      exit 1
+    fi
+
+    echo "Waiting for rpmsg device to be created..."
+    i=0
+    while [ $i -lt $TIMEOUT ]; do
+      RPMSG_DEV=`find_existing_rpmsg_dev`
+      if [ -n "$RPMSG_DEV" -a -e "$RPMSG_DEV" ]; then
+        echo "$RPMSG_DEV found."
+        break
+      fi
+      i=`expr $i + 1`
+      sleep 1
+    done
+
+    if [ -z "$RPMSG_DEV" ]; then
+      echo "Timeout waiting for rpmsg device"
+      exit 1
+    fi
+  fi
+}
+
+wait_file() {
+    path=$1
+    count=$2
+    for i in $(seq 0 $count)
+    do
+        if [ -e "$path" ]; then
+            echo "found $path"
+            break;
+        else
+            sleep 0.5s
+        fi
+    done
+}
+
+is_drm_available() {
+    drm_available=0
+    if [ -d /proc/device-tree/ ]; then
+        if  $(cat /proc/device-tree/compatible | grep -q "stm32mp2")
+        then
+            if [ -e /sys/class/drm/card0-LVDS-1 ]; then
+                drm_available=1
+            fi
+            if [ -e /sys/class/drm/card0-DPI-1 ]; then
+                drm_available=1
+            fi
+        fi
+    fi
+}
+
+CM33_STATE=$(cat ${rproc_class_dir}/state)
+echo "REMOTEPROC M33 STATUS = >$CM33_STATE<"
+
+# TODO: Need to have the device with 'rpmsg' group
+wait_file /dev/rpmsg_ctrl0 10
+
+get_rpmsg_dev
+
+is_drm_available
+if [ ${drm_available} -eq 1 ]; then
+    # send event only if screen is detected (no hdmi supported)
+    if [ -e $RPMSG_DEV ]; then
+        echo STOP_SPLASH_SCREEN > $RPMSG_DEV
+    else
+        echo "PSPLASH M33: [error] no RPMSG available to communicate via remote proc"
+    fi
+fi
