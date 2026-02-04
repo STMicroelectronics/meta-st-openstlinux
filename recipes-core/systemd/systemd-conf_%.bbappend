@@ -17,6 +17,7 @@ do_install:prepend() {
     install -d ${D}${systemd_unitdir}/journald.conf.d/
     echo "[Journal]" > ${D}${systemd_unitdir}/journald.conf.d/01-openstlinux.conf
     echo "Storage=volatile" >> ${D}${systemd_unitdir}/journald.conf.d/01-openstlinux.conf
+    echo "ForwardToSyslog=no" >> ${D}${systemd_unitdir}/journald.conf.d/01-openstlinux.conf
 
     # for iptable usage with wifi
     install -d ${D}${systemd_unitdir}/system.conf.d
