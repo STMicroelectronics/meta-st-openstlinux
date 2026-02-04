@@ -20,12 +20,25 @@ if [ -d /proc/device-tree/ ]; then
 		DEFAULT_SPLASH=$SPLASH_BG_LANDSCAPE_INDUS_480_272
 		echo "[DEBUG]: compatible mp13"
 	fi
+	if $(cat /proc/device-tree/compatible | grep -q "stm32mp21")
+	then
+		DEFAULT_SPLASH=$SPLASH_BG_LANDSCAPE_INDUS_480_272
+		echo "[DEBUG]: compatible mp21"
+	fi
 	# stm32mp15: 480x800 or 1280x720 (landscape) + HDMI 1280x720
 	if  $(cat /proc/device-tree/compatible | grep -q "stm32mp15")
 	then
 		DEFAULT_SPLASH=$SPLASH_BG_LANDSCAPE_INDUS_800_480
 		echo "[DEBUG]: compatible mp15"
-		hdmi_status=$(cat /sys/class/drm/card0-HDMI-A-1/status)
+		if [ -e /sys/class/drm/card0-HDMI-A-1/status ]; then
+			hdmi_status=$(cat /sys/class/drm/card0-HDMI-A-1/status)
+		else
+			if [ -e /sys/class/drm/card1-HDMI-A-1/status ]; then
+				hdmi_status=$(cat /sys/class/drm/card1-HDMI-A-1/status)
+			else
+				hdmi_status=unknown
+			fi
+		fi
 		if [ "$hdmi_status" = "connected" ]; then
 			DEFAULT_SPLASH=$SPLASH_BG_LANDSCAPE_INDUS_1280_720
 		        OPT="$OPT --force-hdmi"
@@ -33,12 +46,12 @@ if [ -d /proc/device-tree/ ]; then
 		fi
 	fi
 	# stm32mp25: 1024x600 or 1920x1080 (landscape) + HDMI 1280x720 or 1920x1080
-	if  $(cat /proc/device-tree/compatible | grep -q "stm32mp25")
+	if  $(cat /proc/device-tree/compatible | grep -q "stm32mp2[35]")
 	then
 		DEFAULT_SPLASH=$SPLASH_BG_LANDSCAPE_TSN_1024_600
 		hdmi_status=$(modetest | grep HDMI | awk -F ' ' '{print $3}')
 		lvds_status=$(cat /proc/device-tree/panel-lvds/status)
-		echo "[DEBUG]: compatible mp25"
+		echo "[DEBUG]: compatible mp25/mp23"
 		echo "[DEBUG]: hdmi status: $hdmi_status"
 		echo "[DEBUG]: lvds status: $lvds_status"
 
