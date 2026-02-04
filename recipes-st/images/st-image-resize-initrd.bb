@@ -38,6 +38,7 @@ PACKAGE_INSTALL = " \
     initramfs-module-rootfs \
     initramfs-module-udev \
     initrd-boot \
+    kmod \
     "
 
 NO_RECOMMENDATIONS = "1"
