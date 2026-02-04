@@ -3,7 +3,7 @@ Description=Weston graphical session
 
 # Make sure we are started after logins are permitted.
 Requires=systemd-user-sessions.service
-After=systemd-user-sessions.service
+After=systemd-udevd.service systemd-user-sessions.service
 
 # if you want you can make it part of the graphical session
 #Before=graphical.target
