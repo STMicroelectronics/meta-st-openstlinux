@@ -15,9 +15,3 @@ RDEPENDS:packagegroup-optee-core = "\
     optee-client \
     optee-stm32mp-addons \
 "
-# RDEPENDS:packagegroup-optee-core:stm32mp2aarch32common = "\
-#     ${@oe.utils.ifelse(d.getVar('MULTILIBS'), ' \
-#         optee-client \
-#         optee-stm32mp-addons \
-#     ','')} \
-#     "
