@@ -12,6 +12,18 @@ resize_run() {
     if [ -n "$ROOTFS_DIR" ]; then
         if [ ! -e $ROOTFS_DIR/etc/.resized ]
         then
+            # load kernel modules from rootfs
+            udevadm control --stop-exec-queue
+            rm -rf /etc/modprobe.d /lib/modules /lib/firmware
+            ln -s $ROOTFS_DIR/etc/modprobe.d /etc/
+            ln -s $ROOTFS_DIR/lib/modules /lib/
+            ln -s $ROOTFS_DIR/lib/firmware /lib/
+            echo '#' >>/etc/udev/rules.d/00-force-reload.rules
+            udevadm control --reload
+            udevadm control --start-exec-queue
+            udevadm trigger --action=add
+            udevadm settle
+
             # check command line to now storage device used
             if [ -n "$bootparam_root" ]; then
                 debug "No e2fs compatible filesystem has been mounted, mounting $bootparam_root..."
