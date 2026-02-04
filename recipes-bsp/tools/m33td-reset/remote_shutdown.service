@@ -1,0 +1,15 @@
+[Unit]
+Description=Remote Shutdown RPMsg Endpoint Service
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/remote_shutdown.sh
+Restart=always
+RestartSec=5
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=remote_shutdown
+
+[Install]
+WantedBy=multi-user.target
