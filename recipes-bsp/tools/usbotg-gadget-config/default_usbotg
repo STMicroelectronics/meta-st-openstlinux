@@ -1,0 +1,2 @@
+# Disable USBOTG gadget via udev rules
+#DISABLE_USBOTG_GADGET=1

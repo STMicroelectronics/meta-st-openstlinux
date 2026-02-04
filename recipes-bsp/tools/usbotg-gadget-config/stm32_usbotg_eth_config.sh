@@ -59,7 +59,7 @@ do_start() {
     mkdir -p "${d}/strings/0x409"
     tr -d '\0' < /proc/device-tree/serial-number > "${d}/strings/0x409/serialnumber"
     echo "STMicroelectronics" > "${d}/strings/0x409/manufacturer"
-    echo "STM32MP1" > "${d}/strings/0x409/product"
+    echo "STM32MP" > "${d}/strings/0x409/product"
 
     # Config
     mkdir -p "${d}/configs/${c}"
@@ -68,10 +68,18 @@ do_start() {
 
     if $(cat /proc/device-tree/compatible | grep -q "stm32mp215f-dk") ; then
         echo 500 > "${d}/configs/${c}/MaxPower"
-        echo 0x80 > "${d}/configs/${c}/bmAttributes" # Bus powered device
+        echo 0xa0 > "${d}/configs/${c}/bmAttributes" # Bus powered device
     else
+        if $(cat /proc/device-tree/compatible | grep -q "stm32mp21") ; then
+            echo 0xe0 > "${d}/configs/${c}/bmAttributes" # Self powered device.
+        else
+            if $(cat /proc/device-tree/compatible | grep -q "stm32mp1") ; then
+                echo 0xe0 > "${d}/configs/${c}/bmAttributes" # self powered device
+            else
+                echo 0xC0 > "${d}/configs/${c}/bmAttributes" # self powered device
+            fi
+        fi
         echo 0 > "${d}/configs/${c}/MaxPower"
-        echo 0xC0 > "${d}/configs/${c}/bmAttributes" # self powered device
     fi
 
     # Enable use of OS descriptor (for windows to bind drivers like NCM, RNDIS...

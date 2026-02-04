@@ -1,3 +1,6 @@
-ACTION=="add", SUBSYSTEM=="udc", RUN+="/sbin/stm32_usbotg_eth_config.sh start"
-ACTION=="remove", SUBSYSTEM=="udc", RUN+="/sbin/stm32_usbotg_eth_config.sh stop"
+# to disable the rules:
+# echo "DISABLE_USBOTG_GADGET=1 > /etc/default/usbotg"
+# /sbin/stm32_usbotg_eth_config.sh stop
+ACTION=="add", SUBSYSTEM=="udc", RUN+="/sbin/stm32_usbotg_eth_via_udev.sh start"
+ACTION=="remove", SUBSYSTEM=="udc", RUN+="/sbin/stm32_usbotg_eth_via_udev.sh stop"
 
