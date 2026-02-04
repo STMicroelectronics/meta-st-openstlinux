@@ -1,0 +1,10 @@
+[Desktop Entry]
+Encoding=UTF-8
+Name=Shutdown Via Cortex M33
+Comment=Shutdown Via Cortex M33
+Exec=/usr/local/demo/application/m33/bin/launch_m33_reboot.sh
+Terminal=false
+Icon=linux_black_shutdown.png
+Type=Application
+Categories=Application;
+# vi: encoding=utf-8

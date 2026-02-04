@@ -1,0 +1,14 @@
+Application:
+    Name: Restart
+    Description: Via Cortex M33
+    Icon: application/m33/pictures/linux_black_shutdown.png
+    Type: script
+    Board:
+        List: all
+    Script:
+        Start: application/m33/bin/launch_m33_reboot.sh
+    Action:
+        button_release_event: script_start
+        button_press_event: highlight_eventBox
+
+
