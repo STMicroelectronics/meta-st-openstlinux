@@ -10,6 +10,7 @@ SRC_URI = "git://github.com/OP-TEE/optee_client.git;protocol=https;branch=master
            file://tee-supplicant.service \
            file://create-tee-supplicant-env \
            file://optee-udev.rules \
+           file://default.tee-supplicant \
     "
 
 SRCREV = "acb0885c117e73cb6c5c9b1dd9054cb3f93507ee"
@@ -39,6 +40,7 @@ do_install:append() {
 
         install -D -p -m0644 ${WORKDIR}/tee-supplicant.service ${D}${systemd_system_unitdir}/tee-supplicant.service
         install -D -p -m0755 ${WORKDIR}/create-tee-supplicant-env ${D}${sbindir}/
+        install -D -p -m0644 ${WORKDIR}/default.tee-supplicant ${D}${sysconfdir}/default/tee-supplicant
     fi
     install -d ${D}${sysconfdir}/udev/rules.d
     install -m 0644 ${WORKDIR}/optee-udev.rules ${D}${sysconfdir}/udev/rules.d/optee.rules
