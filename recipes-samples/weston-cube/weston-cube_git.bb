@@ -5,8 +5,8 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=23e79a8a8bc2486f30a780e6f8de22c4"
 SRC_URI = "git://github.com/STMicroelectronics/st-openstlinux-application.git;protocol=https;branch=main"
 
 # Modify these as desired
-PV = "6.1+git-${@d.getVar("SRCREV")[0:8]}"
-SRCREV = "1ab21d8400036235771d70becdcf6f92b665025d"
+PV = "5.0+git-${@d.getVar("SRCREV")[0:8]}"
+SRCREV = "da2899a2cf3922061f02a095662b0016b3a12c2a"
 
 DEPENDS += "wayland wayland-native wayland-protocols libdrm pixman libpng libjpeg-turbo \
 	virtual/egl virtual/libgles2 gstreamer1.0 gstreamer1.0-plugins-base"
