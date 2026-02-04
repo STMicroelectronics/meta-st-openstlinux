@@ -26,6 +26,11 @@ require conf/distro/include/yocto-uninative.inc
 INHERIT += "uninative"
 
 # =========================================================================
+# CVE exclusion
+# =========================================================================
+require conf/distro/include/cve-extra-exclusions.inc
+
+# =========================================================================
 # DISTRO features
 # =========================================================================
 DISTRO_FEATURES  = "alsa"
@@ -92,6 +97,11 @@ VIRTUAL-RUNTIME_init_manager = "systemd"
 VIRTUAL-RUNTIME_initscripts = "systemd-compat-units"
 
 # =========================================================================
+# SDK
+# =========================================================================
+SDKIMAGE_FEATURES = "dev-pkgs dbg-pkgs"
+
+# =========================================================================
 # Preferred version
 # =========================================================================
 
@@ -104,6 +114,3 @@ LICENSE_FLAGS_ACCEPTED += " non-commercial commercial"
 
 # X11 addons
 DISTRO_EXTRA_RDEPENDS:append = " ${@bb.utils.contains('DISTRO_FEATURES', 'x11', 'xf86-video-modesetting', '', d)} "
-
-# INITRD addons to image
-DISTRO_EXTRA_RRECOMMENDS:append = " ${@bb.utils.contains('COMBINED_FEATURES', 'initrd', '${INITRD_PACKAGE}', '', d)} "

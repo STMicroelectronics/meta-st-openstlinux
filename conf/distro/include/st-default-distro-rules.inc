@@ -52,8 +52,6 @@ BUILDCFG_VARS += "GCCVERSION"
 BUILDCFG_VARS += "PREFERRED_PROVIDER_virtual/kernel"
 BUILDCFG_VARS += "MACHINE_FEATURES"
 
-
-
 #--------------------------
 # Configure build info file for rootfs availability
 #
@@ -62,3 +60,9 @@ DISTRO_EXTRA_RDEPENDS:append = " build-info-openstlinux "
 IMAGE_BUILDINFO_FILE ?= "${sysconfdir}/build"
 # Avoid conflict with image-buildinfo class that may feed same file on rootfs
 INHERIT:remove = "${@bb.utils.contains('DISTRO_EXTRA_RDEPENDS', 'build-info-openstlinux', 'image-buildinfo', '', d)}"
+
+# =========================================================================
+# IMAGE addons
+# =========================================================================
+# INITRD addons to image
+DISTRO_EXTRA_RRECOMMENDS:append = " ${@bb.utils.contains('COMBINED_FEATURES', 'initrd', '${INITRD_PACKAGE}', '', d)} "
