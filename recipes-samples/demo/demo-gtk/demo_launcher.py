@@ -65,6 +65,14 @@ def print_debug(level, msg):
     if level <= LOG_LEVEL:
         print("[DEBUG] {}".format(str(msg)))
 
+# -------------------------------------------------------------------
+# add extra space
+EXTRA_SPACE=0
+# -------------------------------------------------------------------
+# no exit button displayed
+# 0: exit button displayed
+# 1: exit button not displayed
+NO_EXIT_BUTTON=0
 
 # -------------------------------------------------------------------
 # Managment of lock file to have only excution of this script as same time
@@ -221,7 +229,7 @@ class InfoWindow(Gtk.Dialog):
 
 # -------------------------------------------------------------------
 # -------------------------------------------------------------------
-def _load_image_eventBox(parent, filename, label_text1, label_text2, scale_w, scale_h, font_size):
+def _load_image_eventBox(parent, filename, label_text1, label_text2, scale_w, scale_h, font_size, space=None):
     # Create box for xpm and label
     box = Gtk.VBox(homogeneous=False, spacing=0)
     # Create an eventBox
@@ -241,9 +249,16 @@ def _load_image_eventBox(parent, filename, label_text1, label_text2, scale_w, sc
     label.set_justify(Gtk.Justification.CENTER)
     label.set_line_wrap(True)
 
+    space_label = Gtk.Label()
+    space_label.set_markup("<span font='%d' color='#FFFFFFFF'>                   </span>" %
+                     font_size)
     # Pack the pixmap and label into the box
+    if space and space == 1:
+        box.pack_start(space_label, True, False, 0)
     box.pack_start(image, True, False, 0)
     box.pack_start(label, True, False, 0)
+    if space and space == 2:
+        box.pack_start(space_label, True, False, 0)
 
     # Add the image to the eventBox
     eventBox.add(box)
@@ -399,7 +414,7 @@ class ApplicationButton():
                 self.event_box = _load_image_eventBox(self, "%s/%s" % (DEMO_PATH, self.yaml_configuration["Application"]["Icon"]),
                                                   self.yaml_configuration["Application"]["Name"],
                                                   self.yaml_configuration["Application"]["Description"],
-                                                  -1, self.icon_size, self.font_size)
+                                                  -1, self.icon_size, self.font_size, space=EXTRA_SPACE)
                 if (self.yaml_configuration["Application"]["Type"].rstrip() == "script"):
                     if "Installer" in self.yaml_configuration["Application"]:
                         self.event_box.connect("button_release_event", self.installer_script_handle)
@@ -501,12 +516,12 @@ class ApplicationButton():
                     module_imported.create_subdialogwindow(self._parent, log=LOG_LEVEL)
                     print_debug(3, "[Python_event stop]\n")
                     widget.set_name("transparent_bg")
-                    self._parent.button_exit.show()
+                    self._parent.exit_button_show()
         elif (self.exist_MSG_present(self.yaml_configuration["Application"]["Python"])):
             print("[WARNING] {} not detected\n".format(self.yaml_configuration["Application"]["Python"]["Exist"]["Msg_false"]))
             self._parent.display_message("<span font='15' color='#FFFFFFFF'>%s\n</span>" % self.yaml_configuration["Application"]["Python"]["Exist"]["Msg_false"])
         widget.set_name("transparent_bg")
-        self._parent.button_exit.show()
+        self._parent.exit_button_show()
 
     def script_start(self):
         global lock
@@ -536,7 +551,7 @@ class ApplicationButton():
 
         print_debug(3, "[script_event stop]\n")
         widget.set_name("transparent_bg")
-        self._parent.button_exit.show()
+        self._parent.exit_button_show()
 
     def installer_script_handle(self, widget, event):
         install_type = self.yaml_configuration["Application"]["Installer"]["Type"].rstrip()
@@ -573,7 +588,7 @@ class ApplicationButton():
 
         # restore the cursor after installing packages
         self._parent.get_window().set_cursor(None)
-        self._parent.button_exit.show()
+        self._parent.exit_button_show()
 
 
 # -------------------------------------------------------------------
@@ -726,7 +741,7 @@ class MainUIWindow(Gtk.Window):
         info_window.destroy()
         print_debug(2, "[info_event stop]\n")
         widget.set_name("transparent_bg")
-        self.button_exit.show()
+        self.exit_button_show()
 
 
     # Button event of main screen
@@ -734,7 +749,7 @@ class MainUIWindow(Gtk.Window):
         ''' highlight the eventBox widget '''
         print_debug(3, "[highlight_eventBox start]")
         widget.set_name("highlight_bg")
-        self.button_exit.hide()
+        self.exit_button_hide()
         print_debug(3, "[highlight_eventBox stop]\n")
 
     def create_page_icon_autodetected(self, application_path):
@@ -784,20 +799,30 @@ class MainUIWindow(Gtk.Window):
         self.create_page_icon_by_page(0)
         self.page_main.add(self.icon_grid)
 
-        overlay = Gtk.Overlay()
-        self._overlay = overlay
-        overlay.add(self.page_main)
-        self.button_exit = Gtk.Button()
-        self.button_exit.connect("clicked", detroy_quit_application)
-        self.button_exit_image = _load_image_on_button(self, "%s/pictures/close_70x70_white.png" % DEMO_PATH, "Exit", -1, self.exit_size)
-        self.button_exit.set_halign(Gtk.Align.END)
-        self.button_exit.set_valign(Gtk.Align.START)
-        self.button_exit.add(self.button_exit_image)
-        self.button_exit.set_relief(Gtk.ReliefStyle.NONE)
-        overlay.add_overlay(self.button_exit)
-        self.add(overlay)
+        if NO_EXIT_BUTTON == 0:
+            overlay = Gtk.Overlay()
+            self._overlay = overlay
+            overlay.add(self.page_main)
+            self.button_exit = Gtk.Button()
+            self.button_exit.connect("clicked", detroy_quit_application)
+            self.button_exit_image = _load_image_on_button(self, "%s/pictures/close_70x70_white.png" % DEMO_PATH, "Exit", -1, self.exit_size)
+            self.button_exit.set_halign(Gtk.Align.END)
+            self.button_exit.set_valign(Gtk.Align.START)
+            self.button_exit.add(self.button_exit_image)
+            self.button_exit.set_relief(Gtk.ReliefStyle.NONE)
+            overlay.add_overlay(self.button_exit)
+            self.add(overlay)
+        else:
+            self.add(self.page_main)
 
         self.show_all()
+
+    def exit_button_show(self):
+        if NO_EXIT_BUTTON == 0:
+            self.button_exit.show()
+    def exit_button_hide(self):
+        if NO_EXIT_BUTTON == 0:
+            self.button_exit.hide()
 
     def create_page_icon_by_page(self, app_start):
         '''
@@ -888,13 +913,13 @@ class MainUIWindow(Gtk.Window):
     def create_eventbox_back_next(self,back):
         if back > 0:
             back_eventbox = _load_image_eventBox(self, "%s/pictures/ST10261_back_button_medium_grey.png" % DEMO_PATH,
-                                                 "BACK", "menu", -1, self.icon_size, self.font_size)
+                                                 "BACK", "menu", -1, self.icon_size, self.font_size, space=EXTRA_SPACE)
             back_eventbox.connect("button_release_event", self.on_back_menu_event)
             back_eventbox.connect("button_press_event", self.highlight_eventBox)
             return back_eventbox
         else:
             next_eventbox = _load_image_eventBox(self, "%s/pictures/ST10261_play_button_medium_grey.png" % DEMO_PATH,
-                                                 "NEXT", "menu", -1, self.icon_size, self.font_size)
+                                                 "NEXT", "menu", -1, self.icon_size, self.font_size, space=EXTRA_SPACE)
             next_eventbox.connect("button_release_event", self.on_next_menu_event)
             next_eventbox.connect("button_press_event", self.highlight_eventBox)
             return next_eventbox
@@ -933,8 +958,13 @@ if __name__ == "__main__":
     # Parse argument if any
     parser = argparse.ArgumentParser(description='OpenSTLinux Demonstration Launcher')
     parser.add_argument("-l", "--log_level", type=int, action="store", default=0, help="Message log level")
+    parser.add_argument("-o", "--extra_space", type=int, action="store", default=0, help="add extra space (1:top, 2: bottom)")
+    parser.add_argument("-E", "--no_exit_button", type=int, action="store", default=0, help="add extra space (1:top, 2: bottom)")
+
     args = parser.parse_args()
     LOG_LEVEL = args.log_level
+    EXTRA_SPACE= args.extra_space
+    NO_EXIT_BUTTON= args.no_exit_button
     try:
         win = MainUIWindow()
         win.connect("delete-event", Gtk.main_quit)
