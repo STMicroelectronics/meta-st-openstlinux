@@ -51,4 +51,4 @@ do_install() {
 
 FILES:${PN} += "${prefix}/local/demo/"
 RDEPENDS:${PN} += "gtk+3 gstreamer1.0-plugins-base demo-launcher"
-RDEPENDS:${PN}:append:stm32mpcommon = " m4projects-stm32mp1-userfs "
+RDEPENDS:${PN}:append:stm32mpcommon = " m4projects-stm32mp1 "
