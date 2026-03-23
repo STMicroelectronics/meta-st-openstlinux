@@ -1120,7 +1120,7 @@ next:
 
             x = (iter->width - img_width) / 2;
             y = (iter->height - img_height) / 2;
-            if ((img_width < iter->width) && (img_height < iter->height) )
+            if ((img_width <= iter->width) && (img_height <= iter->height) )
                 splash_draw_image_for_modeset32 (iter, x, y, img_width, img_height,
                     (uint32_t *)pixman_image_get_data(pixman_image));
             else {
