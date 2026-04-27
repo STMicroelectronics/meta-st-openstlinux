@@ -46,6 +46,7 @@ static int animation = 0;
 static int display_max_size = MAX_HEIGHT_THRESHOLD;
 static int force_hdmi = 0;
 static int force_no_hdmi = 0;
+static int rotation_angle = 0;
 volatile int loop = 0;
 //----------------------
 // Prototype
@@ -493,28 +494,55 @@ splash_draw_image_for_modeset (struct modeset_dev *iter,
 }
 
 static void
+blit_buffer_to_modeset(struct modeset_dev *iter,
+        int start_x,
+        int start_y,
+        int rotation_angle,
+        int img_width,
+        int img_height,
+        const uint32_t *src_data)
+{
+    uint8_t *dst_map = (uint8_t *)iter->map;
+
+    for (int y = 0; y < img_height; y++) {
+        for (int x = 0; x < img_width; x++) {
+            int dx = x;
+            int dy = y;
+
+            if (rotation_angle == 90) {
+                dx = img_height - 1 - y;
+                dy = x;
+            } else if (rotation_angle == 180) {
+                dx = img_width - 1 - x;
+                dy = img_height - 1 - y;
+            } else if (rotation_angle == 270) {
+                dx = y;
+                dy = img_width - 1 - x;
+            }
+
+            dx += start_x;
+            dy += start_y;
+
+            if (dx >= 0 && dx < iter->width && dy >= 0 && dy < iter->height) {
+                uint32_t pixel = src_data[y * img_width + x];
+                unsigned int dst_off = (iter->stride * dy) + (dx * 4);
+                *(uint32_t *)(&dst_map[dst_off]) = pixel;
+            }
+        }
+    }
+}
+
+static void
 splash_draw_image_for_modeset32 (struct modeset_dev *iter,
-        int x,
-        int y,
+        int start_x,
+        int start_y,
+        int rotation_angle,
         int img_width,
         int img_height,
         uint32_t * rle_data)
 {
-    uint32_t *p = rle_data;
-    int dx = 0, dy = 0, total_len, i;
-    unsigned int off;
-
-    total_len = img_width * img_height;
-
-    for (i = 0; i < total_len; i++) {
-        off = iter->stride * (y + dy) + (x + dx)*4;
-        *(uint32_t *) & iter->map[off] = (*(p));
-        if (++dx >= img_width) {
-            dx = 0;
-            dy++;
-        }
-        p += 1;
-    }
+    blit_buffer_to_modeset(iter, start_x, start_y, rotation_angle, img_width,
+			   img_height, rle_data);
 }
 
 static void
@@ -853,7 +881,7 @@ end:
 
 
 int
-draw_frame(struct modeset_dev *dev, const char *filename)
+draw_frame(struct modeset_dev *dev, int rotation_angle, const char *filename)
 {
     //fprintf(stderr,"[info] draw frame >'%s'<\n",filename);
     pixman_image_t *image = load_image(filename);
@@ -865,11 +893,8 @@ draw_frame(struct modeset_dev *dev, const char *filename)
     int src_width = pixman_image_get_width(image);
     int src_height = pixman_image_get_height(image);
 
-    for(int y = 0;y<dev->height && y <src_height;y++){
-        for(int x= 0; x<dev->width && x< src_width;x++){
-            ((uint32_t*)(dev->map))[y * (dev->stride /4)+x] = µsrc[y * src_width + x];
-        }
-    }
+    blit_buffer_to_modeset(dev, 0, 0, rotation_angle, src_width, src_height,
+			   µsrc);
     pixman_image_unref(image);
     return 0;
 }
@@ -884,7 +909,7 @@ get_time_in_microseconds() {
 // --------------------------------------------- //
 //           Main
 // --------------------------------------------- //
-static const char *shortopts = "wb:f:hFNrn:l";
+static const char *shortopts = "wb:f:hFNrn:lR:";
 
 static const struct option longopts[] = {
     {"wait",    no_argument,       0, 'w'},
@@ -897,13 +922,14 @@ static const struct option longopts[] = {
     {"force-no-hdmi", no_argument,       0, 'N'},
     {"help",          no_argument,       0, 'h'},
     {"loop", no_argument, 0, 'l'},
+    {"rotate", required_argument, 0, 'R'},
     {0, 0, 0, 0}
 };
 
 static void
 usage(int error_code)
 {
-    fprintf(stderr, "Usage: psplash-drm [-w][-h][-f <image name>][-r <framerate>][-, <numbre>][-b RRGGBB][-l]\n"
+    fprintf(stderr, "Usage: psplash-drm [-w][-h][-f <image name>][-r <framerate>][-, <numbre>][-b RRGGBB][-l][-R <angle>]\n"
         "\n"
         "options:\n"
             "  -w, --wait                  Display image and wait\n"
@@ -915,6 +941,7 @@ usage(int error_code)
             "  -F, --force-hdmi            Force to display on hdmi\n"
             "  -m, --maxsize=max           size to negociate\n"
             "  -N, --force-no-hdmi         Force to not use hdmi\n"
+            "  -R, --rotate=angle          Rotate image (0, 90, 180, 270)\n"
             "  -h, --help                  This help text\n");
     exit(error_code);
 }
@@ -1007,6 +1034,15 @@ main (int argc, char **argv)
                 usage(EXIT_FAILURE);
             }
             break;
+        case 'R':
+            rotation_angle = atoi(optarg);
+            if (rotation_angle != 0 && rotation_angle != 90 &&
+		rotation_angle != 180 && rotation_angle != 270) {
+                fprintf(stderr, "Invalid rotation angle. Use 0, 90, 180, or 270.\n");
+                usage(EXIT_FAILURE);
+            }
+            printf("Image rotation set to %d degrees\n", rotation_angle);
+            break;
         default:
             usage(EXIT_FAILURE);
             break;
@@ -1083,7 +1119,7 @@ main (int argc, char **argv)
                 snprintf(image_path,sizeof(image_path),filename,i);
                 for(struct modeset_dev *iter = modeset_list; iter; iter = iter->next){
                     long start_time = get_time_in_microseconds();
-                    if (draw_frame(iter,image_path) < 0) goto next;
+                    if (draw_frame(iter,rotation_angle,image_path) < 0) goto next;
                     long end_time = get_time_in_microseconds();
                     long frame_time = end_time - start_time;
                     long delay = frame_delay_us - frame_time;
@@ -1111,21 +1147,33 @@ next:
     if (pixman_image != NULL) {
         struct modeset_dev *iter;
         int img_width, img_height;
+        int rot_width, rot_height;
         int x, y;
         int bad_size = 0;
 
         for (iter = modeset_list; iter; iter = iter->next) {
+
             img_width = pixman_image_get_width(pixman_image);
             img_height = pixman_image_get_height(pixman_image);
 
-            x = (iter->width - img_width) / 2;
-            y = (iter->height - img_height) / 2;
-            if ((img_width <= iter->width) && (img_height <= iter->height) )
-                splash_draw_image_for_modeset32 (iter, x, y, img_width, img_height,
+            if (rotation_angle == 90 || rotation_angle == 270) {
+                rot_width = img_height;
+                rot_height = img_width;
+            } else {
+                rot_width = img_width;
+                rot_height = img_height;
+            }
+
+            x = (iter->width - rot_width) / 2;
+            y = (iter->height - rot_height) / 2;
+
+            if ((rot_width <= iter->width) && (rot_height <= iter->height) )
+		    splash_draw_image_for_modeset32 (iter, x, y, rotation_angle,
+                    img_width, img_height,
                     (uint32_t *)pixman_image_get_data(pixman_image));
             else {
-                fprintf(stderr, "[ISSUE] Image %s is greater than screen (Image: %dx%d, screen: %dx%d)\n",
-                        filename, img_width, img_height, iter->width, iter->height);
+                fprintf(stderr, "[ISSUE] Image %s (Rotated: %dx%d) is greater than screen (screen: %dx%d)\n",
+                        filename, rot_width, rot_height, iter->width, iter->height);
                 fprintf(stderr, "       use fallback picture\n");
                 bad_size = 1;
             }
