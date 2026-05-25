@@ -1,0 +1,30 @@
+From 7e8971a208092829ceeb8d9a7f0fde619cdf1bc2 Mon Sep 17 00:00:00 2001
+From: Christophe Priouzeau <christophe.priouzeau@foss.st.com>
+Date: Thu, 21 May 2026 11:23:16 +0200
+Subject: [PATCH] PLUGIN: load libpythonxx.x.so.1.0
+
+The plugin try to load /usr/lib/libpython3.12.so why there is only
+/usr/lib/libpython3.12.so.1.0 available
+
+---
+Upstream-Status: Inappropriate [Yocto specific]
+
+ plugin/gstpythonplugin.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/plugin/gstpythonplugin.c b/plugin/gstpythonplugin.c
+index 692b472..e66785a 100644
+--- a/plugin/gstpythonplugin.c
++++ b/plugin/gstpythonplugin.c
+@@ -234,7 +234,7 @@ plugin_init (GstPlugin * plugin)
+     GST_LOG ("libpython is already loaded");
+   } else {
+     const gchar *libpython_path =
+-        PY_LIB_LOC "/libpython" PYTHON_VERSION PY_ABI_FLAGS "." PY_LIB_SUFFIX;
++        PY_LIB_LOC "/libpython" PYTHON_VERSION PY_ABI_FLAGS "." PY_LIB_SUFFIX ".1.0";
+     GST_LOG ("loading libpython from '%s'", libpython_path);
+     libpython = g_module_open (libpython_path, 0);
+     if (!libpython) {
+-- 
+2.43.0
+
