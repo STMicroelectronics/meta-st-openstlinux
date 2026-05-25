@@ -1,7 +1,7 @@
-From 41822aa9dd25f85c99d6027642dbc029e7cc1c64 Mon Sep 17 00:00:00 2001
+From afcc3d544da385bf00c007fe110f7b9d88968e97 Mon Sep 17 00:00:00 2001
 From: Christophe Priouzeau <christophe.priouzeau@foss.st.com>
 Date: Wed, 4 Feb 2026 11:45:17 +0100
-Subject: [PATCH] v0.3.0-stm32mp
+Subject: [PATCH] v0.3.0-stm32mp-6.2.1
 
 ---
 Upstream-Status: Pending
@@ -17,14 +17,14 @@ Upstream-Status: Pending
  meson_options.txt                             |   15 +-
  src/apps/cam/camera_session.cpp               |   11 +-
  src/apps/common/options.cpp                   |   12 +-
- src/gstreamer/gstlibcamera-utils.cpp          |   16 +
+ src/gstreamer/gstlibcamera-utils.cpp          |   21 +-
  src/gstreamer/gstlibcamerapad.cpp             |    4 +
- src/gstreamer/gstlibcamerasrc.cpp             | 1170 +++++++++++++-
- src/ipa/dcmipp/algorithms/aec.cpp             |  718 +++++++++
- src/ipa/dcmipp/algorithms/aec.h               |   69 +
+ src/gstreamer/gstlibcamerasrc.cpp             | 1363 +++++++++++++++-
+ src/ipa/dcmipp/algorithms/aec.cpp             | 1070 ++++++++++++
+ src/ipa/dcmipp/algorithms/aec.h               |   94 ++
  src/ipa/dcmipp/algorithms/algorithm.h         |   35 +
- src/ipa/dcmipp/algorithms/awb.cpp             |  979 +++++++++++
- src/ipa/dcmipp/algorithms/awb.h               |   65 +
+ src/ipa/dcmipp/algorithms/awb.cpp             |  797 +++++++++
+ src/ipa/dcmipp/algorithms/awb.h               |   71 +
  src/ipa/dcmipp/algorithms/badpixel.cpp        |  185 +++
  src/ipa/dcmipp/algorithms/badpixel.h          |   50 +
  src/ipa/dcmipp/algorithms/blc.cpp             |  144 ++
@@ -40,19 +40,18 @@ Upstream-Status: Pending
  src/ipa/dcmipp/algorithms/meson.build         |   13 +
  src/ipa/dcmipp/algorithms/statistic.cpp       |  216 +++
  src/ipa/dcmipp/algorithms/statistic.h         |   45 +
- src/ipa/dcmipp/data/imx335.yaml               |   56 +
- .../dcmipp/data/imx335_mini_light_box.yaml    |   54 +
+ src/ipa/dcmipp/data/imx335.yaml               |   61 +
  src/ipa/dcmipp/data/meson.build               |   12 +
  src/ipa/dcmipp/data/uncalibrated.yaml         |   21 +
- src/ipa/dcmipp/data/vd56g3.yaml               |   54 +
- src/ipa/dcmipp/data/vd56g3_mono.yaml          |   54 +
+ src/ipa/dcmipp/data/vd56g3.yaml               |   61 +
+ src/ipa/dcmipp/data/vd56g3_mono.yaml          |   61 +
  src/ipa/dcmipp/dcmipp.cpp                     |  578 +++++++
  src/ipa/dcmipp/ipa_context.h                  |  133 ++
  src/ipa/dcmipp/meson.build                    |   51 +
  src/ipa/dcmipp/module.h                       |   27 +
  src/ipa/libipa/camera_sensor_helper.cpp       |   11 +
  src/ipa/rpi/controller/rpi/alsc.cpp           |    7 +-
- src/libcamera/control_ids_draft.yaml          |  256 +++
+ src/libcamera/control_ids_draft.yaml          |  288 ++++
  src/libcamera/ipc_unixsocket.cpp              |   13 +-
  src/libcamera/media_device.cpp                |    6 +-
  src/libcamera/pipeline/dcmipp/dcmipp.cpp      | 1436 +++++++++++++++++
@@ -61,7 +60,7 @@ Upstream-Status: Pending
  src/libcamera/pipeline/dcmipp/meson.build     |    5 +
  .../sensor/camera_sensor_properties.cpp       |    4 +
  src/libcamera/v4l2_device.cpp                 |   20 +-
- 55 files changed, 8027 insertions(+), 39 deletions(-)
+ 54 files changed, 8421 insertions(+), 41 deletions(-)
  create mode 100644 include/libcamera/ipa/dcmipp.mojom
  create mode 100644 include/linux/stm32-dcmipp-config.h
  create mode 100644 src/ipa/dcmipp/algorithms/aec.cpp
@@ -85,7 +84,6 @@ Upstream-Status: Pending
  create mode 100644 src/ipa/dcmipp/algorithms/statistic.cpp
  create mode 100644 src/ipa/dcmipp/algorithms/statistic.h
  create mode 100644 src/ipa/dcmipp/data/imx335.yaml
- create mode 100644 src/ipa/dcmipp/data/imx335_mini_light_box.yaml
  create mode 100644 src/ipa/dcmipp/data/meson.build
  create mode 100644 src/ipa/dcmipp/data/uncalibrated.yaml
  create mode 100644 src/ipa/dcmipp/data/vd56g3.yaml
@@ -589,7 +587,7 @@ index f6d4f006..ab19aa3d 100644
  }
  
 diff --git a/src/gstreamer/gstlibcamera-utils.cpp b/src/gstreamer/gstlibcamera-utils.cpp
-index ec4da435..d7ac64cb 100644
+index ec4da435..3cf29343 100644
 --- a/src/gstreamer/gstlibcamera-utils.cpp
 +++ b/src/gstreamer/gstlibcamera-utils.cpp
 @@ -322,6 +322,22 @@ bare_structure_from_format(const PixelFormat &format)
@@ -615,6 +613,20 @@ index ec4da435..d7ac64cb 100644
  		return gst_structure_new("video/x-bayer", "format", G_TYPE_STRING,
  					 bayer_format_to_string(format), nullptr);
  
+@@ -480,9 +496,12 @@ gst_libcamera_configure_stream_from_caps(StreamConfiguration &stream_cfg,
+ 
+ 	/* Configure colorimetry */
+ 	if (gst_structure_has_field(s, "colorimetry")) {
+-		const gchar *colorimetry_str = gst_structure_get_string(s, "colorimetry");
++		const gchar *colorimetry_str;
+ 		GstVideoColorimetry colorimetry;
+ 
++		gst_structure_fixate_field(s, "colorimetry");
++		colorimetry_str = gst_structure_get_string(s, "colorimetry");
++
+ 		if (!gst_video_colorimetry_from_string(&colorimetry, colorimetry_str))
+ 			g_critical("Invalid colorimetry %s", colorimetry_str);
+ 
 diff --git a/src/gstreamer/gstlibcamerapad.cpp b/src/gstreamer/gstlibcamerapad.cpp
 index 7b22aebe..af0fe477 100644
 --- a/src/gstreamer/gstlibcamerapad.cpp
@@ -631,7 +643,7 @@ index 7b22aebe..af0fe477 100644
  		{ 0, NULL, NULL }
  	};
 diff --git a/src/gstreamer/gstlibcamerasrc.cpp b/src/gstreamer/gstlibcamerasrc.cpp
-index 6a95b6af..5aa3dee1 100644
+index 6a95b6af..5ca9b204 100644
 --- a/src/gstreamer/gstlibcamerasrc.cpp
 +++ b/src/gstreamer/gstlibcamerasrc.cpp
 @@ -30,6 +30,7 @@
@@ -652,7 +664,7 @@ index 6a95b6af..5aa3dee1 100644
  	int queueRequest();
  	void requestCompleted(Request *request);
  	int processRequest();
-@@ -144,6 +148,48 @@ struct _GstLibcameraSrc {
+@@ -144,6 +148,55 @@ struct _GstLibcameraSrc {
  	gchar *camera_name;
  	controls::AfModeEnum auto_focus_mode = controls::AfModeManual;
  
@@ -686,6 +698,7 @@ index 6a95b6af..5aa3dee1 100644
 +		std::array<int, 5> awb_algo_profile_color_temps;
 +		std::array<int, 5 * 3> awb_algo_profile_isp_gains;
 +		std::array<int, 5 * 3 * 3> awb_algo_profile_ccms;
++		std::array<int, 5 * 3> awb_algo_profile_ref_rgb;
 +		std::string awb_current_profile_name;
 +		int awb_current_profile_color_temp;
 +		bool demosaicing_enable;
@@ -696,12 +709,18 @@ index 6a95b6af..5aa3dee1 100644
 +		std::array<int, 12> statistic_hist_up;
 +		std::array<int, 12> statistic_hist_down;
 +		bool gamma_enable;
++		std::array<int, 2> lux_ref;
++		std::array<int, 4> lux_ref_expo;
++		std::array<int, 4> lux_ref_lum;
++		float lux_ref_calib_factor;
++		float lux_estimate;
++
 +	} ctrl;
 +
  	std::atomic<GstEvent *> pending_eos;
  
  	GstLibcameraSrcState *state;
-@@ -155,9 +201,54 @@ enum {
+@@ -155,9 +208,60 @@ enum {
  	PROP_0,
  	PROP_CAMERA_NAME,
  	PROP_AUTO_FOCUS_MODE,
@@ -734,6 +753,7 @@ index 6a95b6af..5aa3dee1 100644
 +	PROP_AWB_ALGO_PROFILE_COLOR_TEMPS,
 +	PROP_AWB_ALGO_PROFILE_ISP_GAINS,
 +	PROP_AWB_ALGO_PROFILE_CCMS,
++	PROP_AWB_ALGO_PROFILE_REF_RGB,
 +	PROP_AWB_CURRENT_PROFILE_NAME,
 +	PROP_AWB_CURRENT_PROFILE_COLOR_TEMP,
 +	PROP_DEMOSAICING_ENABLE,
@@ -745,6 +765,11 @@ index 6a95b6af..5aa3dee1 100644
 +	PROP_STATISTIC_GET_HISTOGRAM_DOWN,
 +	PROP_GAMMA_ENABLE,
 +	PROP_SCALER_CROPS,
++	PROP_LUX_REF,
++	PROP_LUX_REF_EXPO,
++	PROP_LUX_REF_LUM,
++	PROP_LUX_REF_CALIB_FACTOR,
++	PROP_LUX_ESTIMATE,
  };
  
 +static void gst_libcamera_src_child_proxy_init(gpointer g_iface,
@@ -756,7 +781,7 @@ index 6a95b6af..5aa3dee1 100644
  			GST_DEBUG_CATEGORY_INIT(source_debug, "libcamerasrc", 0,
  						"libcamera Source"))
  
-@@ -203,7 +294,19 @@ int GstLibcameraSrcState::queueRequest()
+@@ -203,7 +307,19 @@ int GstLibcameraSrcState::queueRequest()
  	}
  
  	GST_TRACE_OBJECT(src_, "Requesting buffers");
@@ -777,7 +802,7 @@ index 6a95b6af..5aa3dee1 100644
  
  	{
  		GLibLocker locker(&lock_);
-@@ -234,6 +337,179 @@ GstLibcameraSrcState::requestCompleted(Request *request)
+@@ -234,6 +350,203 @@ GstLibcameraSrcState::requestCompleted(Request *request)
  		return;
  	}
  
@@ -913,6 +938,10 @@ index 6a95b6af..5aa3dee1 100644
 +	if (AwbAlgoProfilesCcms) {
 +		std::copy(std::begin(*AwbAlgoProfilesCcms), std::end(*AwbAlgoProfilesCcms), src_->ctrl.awb_algo_profile_ccms.begin());
 +	}
++	const auto AwbAlgoProfilesRefRGB = request->metadata().get(controls::draft::AwbReferenceRGB);
++	if (AwbAlgoProfilesRefRGB) {
++		std::copy(std::begin(*AwbAlgoProfilesRefRGB), std::end(*AwbAlgoProfilesRefRGB), src_->ctrl.awb_algo_profile_ref_rgb.begin());
++	}
 +	const auto AwbCurProfileName = request->metadata().get(controls::draft::AwbCurrentProfileName);
 +	if (AwbCurProfileName) {
 +		src_->ctrl.awb_current_profile_name = *AwbCurProfileName;
@@ -953,11 +982,41 @@ index 6a95b6af..5aa3dee1 100644
 +	if (GammaEnable) {
 +		src_->ctrl.gamma_enable = *GammaEnable;
 +	}
++	const auto LuxRef = request->metadata().get(controls::draft::LuxRef);
++	if (LuxRef) {
++		std::copy(std::begin(*LuxRef), std::end(*LuxRef), src_->ctrl.lux_ref.begin());
++	}
++	const auto LuxRefExpo = request->metadata().get(controls::draft::LuxRefExpo);
++	if (LuxRefExpo) {
++		std::copy(std::begin(*LuxRefExpo), std::end(*LuxRefExpo), src_->ctrl.lux_ref_expo.begin());
++	}
++	const auto LuxRefLum = request->metadata().get(controls::draft::LuxRefLum);
++	if (LuxRefLum) {
++		std::copy(std::begin(*LuxRefLum), std::end(*LuxRefLum), src_->ctrl.lux_ref_lum.begin());
++	}
++	const auto LuxRefCalibFactor = request->metadata().get(controls::draft::LuxRefCalibFactor);
++	if (LuxRefCalibFactor) {
++		src_->ctrl.lux_ref_calib_factor = *LuxRefCalibFactor;
++	}
++	const auto LuxEstimate = request->metadata().get(controls::Lux);
++	if (LuxEstimate) {
++		src_->ctrl.lux_estimate = *LuxEstimate;
++	}
 +
  	if (GST_ELEMENT_CLOCK(src_)) {
  		int64_t timestamp = request->metadata().get(controls::SensorTimestamp).value_or(0);
  
-@@ -669,6 +945,7 @@ gst_libcamera_src_task_enter(GstTask *task, [[maybe_unused]] GThread *thread,
+@@ -531,7 +844,8 @@ gst_libcamera_src_task_run(gpointer user_data)
+ 		if (gst_pad_check_reconfigure(srcpad)) {
+ 			/* Check if the caps even need changing. */
+ 			g_autoptr(GstCaps) caps = gst_pad_get_current_caps(srcpad);
+-			if (!gst_pad_peer_query_accept_caps(srcpad, caps)) {
++			g_autoptr(GstCaps) peercaps = gst_pad_peer_query_caps(srcpad, caps);
++			if (gst_caps_is_empty(peercaps)) {
+ 				reconfigure = true;
+ 				break;
+ 			}
+@@ -669,6 +983,7 @@ gst_libcamera_src_task_enter(GstTask *task, [[maybe_unused]] GThread *thread,
  		}
  	}
  
@@ -965,7 +1024,7 @@ index 6a95b6af..5aa3dee1 100644
  	ret = state->cam_->start(&state->initControls_);
  	if (ret) {
  		GST_ELEMENT_ERROR(self, RESOURCE, SETTINGS,
-@@ -730,6 +1007,7 @@ gst_libcamera_src_set_property(GObject *object, guint prop_id,
+@@ -730,6 +1045,7 @@ gst_libcamera_src_set_property(GObject *object, guint prop_id,
  {
  	GLibLocker lock(GST_OBJECT(object));
  	GstLibcameraSrc *self = GST_LIBCAMERA_SRC(object);
@@ -973,7 +1032,7 @@ index 6a95b6af..5aa3dee1 100644
  
  	switch (prop_id) {
  	case PROP_CAMERA_NAME:
-@@ -739,6 +1017,289 @@ gst_libcamera_src_set_property(GObject *object, guint prop_id,
+@@ -739,6 +1055,337 @@ gst_libcamera_src_set_property(GObject *object, guint prop_id,
  	case PROP_AUTO_FOCUS_MODE:
  		self->auto_focus_mode = static_cast<controls::AfModeEnum>(g_value_get_enum(value));
  		break;
@@ -1191,6 +1250,16 @@ index 6a95b6af..5aa3dee1 100644
 +		state->pendingControls_.set(controls::draft::AwbColourCorrection, Ccms);
 +		break;
 +	}
++	case PROP_AWB_ALGO_PROFILE_REF_RGB:
++	{
++		std::array<int, 5 * 3>  RefRGB;
++		for (unsigned int i = 0; i < RefRGB.size(); i++) {
++				RefRGB[i] = g_value_get_int(gst_value_array_get_value(value, i));
++		}
++		GLibLocker locker(&state->controlsLock_);
++		state->pendingControls_.set(controls::draft::AwbReferenceRGB, RefRGB);
++		break;
++	}
 +	case PROP_DEMOSAICING_ENABLE:
 +	{
 +		bool enable = g_value_get_boolean(value);
@@ -1260,10 +1329,48 @@ index 6a95b6af..5aa3dee1 100644
 +		state->initControls_.set(controls::draft::ScalerCrops, crops);
 +		break;
 +	}
++	case PROP_LUX_REF:
++	{
++		std::array<int, 2>  LuxRef;
++		for (unsigned int i = 0; i < LuxRef.size(); i++) {
++				LuxRef[i] = g_value_get_int(gst_value_array_get_value(value, i));
++		}
++		GLibLocker locker(&state->controlsLock_);
++		state->pendingControls_.set(controls::draft::LuxRef, LuxRef);
++		break;
++	}
++	case PROP_LUX_REF_EXPO:
++	{
++		std::array<int, 4>  LuxRefExpo;
++		for (unsigned int i = 0; i < LuxRefExpo.size(); i++) {
++				LuxRefExpo[i] = g_value_get_int(gst_value_array_get_value(value, i));
++		}
++		GLibLocker locker(&state->controlsLock_);
++		state->pendingControls_.set(controls::draft::LuxRefExpo, LuxRefExpo);
++		break;
++	}
++	case PROP_LUX_REF_LUM:
++	{
++		std::array<int, 4>  LuxRefLum;
++		for (unsigned int i = 0; i < LuxRefLum.size(); i++) {
++				LuxRefLum[i] = g_value_get_int(gst_value_array_get_value(value, i));
++		}
++		GLibLocker locker(&state->controlsLock_);
++		state->pendingControls_.set(controls::draft::LuxRefLum, LuxRefLum);
++		break;
++	}
++	case PROP_LUX_REF_CALIB_FACTOR:
++	{
++		float factor = g_value_get_float(value);
++		GLibLocker locker(&state->controlsLock_);
++		state->pendingControls_.set(controls::draft::LuxRefCalibFactor, factor);
++		break;
++	}
++
  	default:
  		G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
  		break;
-@@ -759,6 +1320,262 @@ gst_libcamera_src_get_property(GObject *object, guint prop_id, GValue *value,
+@@ -759,6 +1406,317 @@ gst_libcamera_src_get_property(GObject *object, guint prop_id, GValue *value,
  	case PROP_AUTO_FOCUS_MODE:
  		g_value_set_enum(value, static_cast<gint>(self->auto_focus_mode));
  		break;
@@ -1448,6 +1555,18 @@ index 6a95b6af..5aa3dee1 100644
 +		g_value_unset (&val);
 +		break;
 +	}
++	case PROP_AWB_ALGO_PROFILE_REF_RGB:
++	{
++		GValue val = G_VALUE_INIT;
++		g_value_reset (value);
++		g_value_init (&val, G_TYPE_INT);
++		for (guint i = 0; i < self->ctrl.awb_algo_profile_ref_rgb.size(); ++i) {
++			g_value_set_int(&val, self->ctrl.awb_algo_profile_ref_rgb[i]);
++			gst_value_array_append_value(value, &val);
++		}
++		g_value_unset (&val);
++		break;
++	}
 +	case PROP_AWB_CURRENT_PROFILE_NAME:
 +		g_value_set_string(value, self->ctrl.awb_current_profile_name.c_str());
 +		break;
@@ -1523,10 +1642,53 @@ index 6a95b6af..5aa3dee1 100644
 +	case PROP_GAMMA_ENABLE:
 +		g_value_set_boolean(value, self->ctrl.gamma_enable);
 +		break;
++	case PROP_LUX_REF:
++	{
++		GValue val = G_VALUE_INIT;
++		g_value_reset (value);
++		g_value_init (&val, G_TYPE_INT);
++		for (guint i = 0; i < self->ctrl.lux_ref.size(); ++i) {
++			g_value_set_int(&val, self->ctrl.lux_ref[i]);
++			gst_value_array_append_value(value, &val);
++		}
++		g_value_unset (&val);
++		break;
++	}
++	case PROP_LUX_REF_EXPO:
++	{
++		GValue val = G_VALUE_INIT;
++		g_value_reset (value);
++		g_value_init (&val, G_TYPE_INT);
++		for (guint i = 0; i < self->ctrl.lux_ref_expo.size(); ++i) {
++			g_value_set_int(&val, self->ctrl.lux_ref_expo[i]);
++			gst_value_array_append_value(value, &val);
++		}
++		g_value_unset (&val);
++		break;
++	}
++	case PROP_LUX_REF_LUM:
++	{
++		GValue val = G_VALUE_INIT;
++		g_value_reset (value);
++		g_value_init (&val, G_TYPE_INT);
++		for (guint i = 0; i < self->ctrl.lux_ref_lum.size(); ++i) {
++			g_value_set_int(&val, self->ctrl.lux_ref_lum[i]);
++			gst_value_array_append_value(value, &val);
++		}
++		g_value_unset (&val);
++		break;
++	}
++	case PROP_LUX_REF_CALIB_FACTOR:
++		g_value_set_float(value, self->ctrl.lux_ref_calib_factor);
++		break;
++	case PROP_LUX_ESTIMATE:
++		g_value_set_float(value, self->ctrl.lux_estimate);
++		break;
++
  	default:
  		G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
  		break;
-@@ -844,6 +1661,7 @@ gst_libcamera_src_finalize(GObject *object)
+@@ -844,6 +1802,7 @@ gst_libcamera_src_finalize(GObject *object)
  	g_rec_mutex_clear(&self->stream_lock);
  	g_clear_object(&self->task);
  	g_mutex_clear(&self->state->lock_);
@@ -1534,7 +1696,7 @@ index 6a95b6af..5aa3dee1 100644
  	g_free(self->camera_name);
  	delete self->state;
  
-@@ -863,9 +1681,12 @@ gst_libcamera_src_init(GstLibcameraSrc *self)
+@@ -863,9 +1822,12 @@ gst_libcamera_src_init(GstLibcameraSrc *self)
  	gst_task_set_lock(self->task, &self->stream_lock);
  
  	g_mutex_init(&state->lock_);
@@ -1549,7 +1711,7 @@ index 6a95b6af..5aa3dee1 100644
  
  	GST_OBJECT_FLAG_SET(self, GST_ELEMENT_FLAG_SOURCE);
  
-@@ -896,6 +1717,8 @@ gst_libcamera_src_request_new_pad(GstElement *element, GstPadTemplate *templ,
+@@ -896,6 +1858,8 @@ gst_libcamera_src_request_new_pad(GstElement *element, GstPadTemplate *templ,
  		return NULL;
  	}
  
@@ -1558,7 +1720,7 @@ index 6a95b6af..5aa3dee1 100644
  	return reinterpret_cast<GstPad *>(g_steal_pointer(&pad));
  }
  
-@@ -904,6 +1727,8 @@ gst_libcamera_src_release_pad(GstElement *element, GstPad *pad)
+@@ -904,6 +1868,8 @@ gst_libcamera_src_release_pad(GstElement *element, GstPad *pad)
  {
  	GstLibcameraSrc *self = GST_LIBCAMERA_SRC(element);
  
@@ -1567,7 +1729,7 @@ index 6a95b6af..5aa3dee1 100644
  	GST_DEBUG_OBJECT(self, "Pad %" GST_PTR_FORMAT " being released", pad);
  
  	{
-@@ -963,4 +1788,343 @@ gst_libcamera_src_class_init(GstLibcameraSrcClass *klass)
+@@ -963,4 +1929,393 @@ gst_libcamera_src_class_init(GstLibcameraSrcClass *klass)
  				 static_cast<gint>(controls::AfModeManual),
  				 G_PARAM_WRITABLE);
  	g_object_class_install_property(object_class, PROP_AUTO_FOCUS_MODE, spec);
@@ -1796,6 +1958,15 @@ index 6a95b6af..5aa3dee1 100644
 +						      G_PARAM_READWRITE),
 +				    G_PARAM_READWRITE);
 +	g_object_class_install_property(object_class, PROP_AWB_ALGO_PROFILE_CCMS, spec);
++	/* AWB algo reference RGB matrix values property */
++	spec = gst_param_spec_array("awb-algo-profile-ref-rgb",
++				    "AWB algo reference RGB values",
++				    "Array of reference RGB (one entry per profile) used by the AWB algorithm  ('<Ref0R, Ref0G, Ref0B, ... , Ref4R, Ref4G, Ref4B>')",
++				    g_param_spec_int ("awb-algo-profile-ref-rgb", "AWB profile ISP Reference value",
++						      "One of Ref0R, Ref0G, Ref0B, ..., Ref4R, Ref4G, Ref4B value.", 0, 255, 128,
++						      G_PARAM_READWRITE),
++				    G_PARAM_READWRITE);
++	g_object_class_install_property(object_class, PROP_AWB_ALGO_PROFILE_REF_RGB, spec);
 +	/* AWB current profile name */
 +	spec = g_param_spec_string("awb-current-profile-name",
 +					"AWB current profile name",
@@ -1875,11 +2046,52 @@ index 6a95b6af..5aa3dee1 100644
 +				    false,
 +				    G_PARAM_READWRITE);
 +	g_object_class_install_property(object_class, PROP_GAMMA_ENABLE, spec);
++	/* Lux reference property */
++	spec = gst_param_spec_array("lux-ref",
++				    "Lux reference values in lux",
++				    "Lux reference values in lux. First one is HL_LuxRef. Second one is LL_LuxRef",
++				    g_param_spec_int ("lux-ref", "Lux reference values in lux",
++						      "One of HL_LuxRef, LL_LuxRef value.", 0, 16777215, 0,
++						      G_PARAM_READWRITE),
++				    G_PARAM_READWRITE);
++	g_object_class_install_property(object_class, PROP_LUX_REF, spec);
++	/* Lux exposure property */
++	spec = gst_param_spec_array("lux-ref-expo",
++				    "Lux exposure values",
++				    "Lux exposure values. HL_Expo1, HL_Expo2, LL_Expo1 and LL_Expo2",
++				    g_param_spec_int ("lux-ref-expo", "Lux exposure values",
++						      "One of HL_Expo1, HL_Expo2, LL_Expo1 and LL_Expo2 value.", 0, 16777215, 0,
++						      G_PARAM_READWRITE),
++				    G_PARAM_READWRITE);
++	g_object_class_install_property(object_class, PROP_LUX_REF_EXPO, spec);
++	/* Lux luminance property */
++	spec = gst_param_spec_array("lux-ref-luma",
++				    "Lux luminance values",
++				    "Lux luminance values. HL_Lum1, HL_Lum2, LL_Lum1 and LL_Lum2",
++				    g_param_spec_int ("lux-ref-luma", "Lux luminance values",
++						      "One of HL_Lum1, HL_Lum2, LL_Lum1 and LL_Lum2 value.", 0, 255, 0,
++						      G_PARAM_READWRITE),
++				    G_PARAM_READWRITE);
++	g_object_class_install_property(object_class, PROP_LUX_REF_LUM, spec);
++	/* Lux calibration factor property */
++	spec = g_param_spec_float("lux-ref-calib-factor",
++				  "Lux calibration factor value",
++				  "Lux calibration factor",
++				  0, 1, 1,
++				  G_PARAM_READWRITE);
++	g_object_class_install_property(object_class, PROP_LUX_REF_CALIB_FACTOR, spec);
 +	/* Scaler Crops property */
 +	spec = g_param_spec_string("scaler-crops", "Scaler Crops",
 +				   "Array of crop rectangles x1,y1,w1,h1;x2,y2,w2,h2;x3,y3,w3,h3", NULL,
 +				   G_PARAM_WRITABLE);
 +	g_object_class_install_property(object_class, PROP_SCALER_CROPS, spec);
++	/* Lux estimate */
++	spec = g_param_spec_float("lux-estimate",
++				  "Lux estimate",
++				  "Estimate of the current illuminance level in lux",
++				  0, 16777215, 0,
++				  G_PARAM_READABLE);
++	g_object_class_install_property(object_class, PROP_LUX_ESTIMATE, spec);
 +}
 +
 +/* GstChildProxy implementation */
@@ -1913,14 +2125,13 @@ index 6a95b6af..5aa3dee1 100644
  }
 diff --git a/src/ipa/dcmipp/algorithms/aec.cpp b/src/ipa/dcmipp/algorithms/aec.cpp
 new file mode 100644
-index 00000000..6cdae318
+index 00000000..53014b1a
 --- /dev/null
 +++ b/src/ipa/dcmipp/algorithms/aec.cpp
-@@ -0,0 +1,718 @@
+@@ -0,0 +1,1070 @@
 +/* SPDX-License-Identifier: LGPL-2.1-or-later */
 +/*
 + * Copyright (C) 2024 ST Microelectronics
-+ * Copyright (C) 2024 LACROIX - Impulse
 + *
 + * aec.cpp - STM32 DCMIPP AE control
 + */
@@ -1936,20 +2147,28 @@ index 00000000..6cdae318
 +
 +#include "luminance_utils.h"
 +
-+#ifdef EVISION_ALGO_ENABLED
-+#include <dlfcn.h>
-+#include <iostream>
-+
-+#include "evision-api-st-ae.h"
-+#endif /* EVISION_ALGO_ENABLED */
-+
 +namespace libcamera {
 +
 +namespace ipa::dcmipp::algorithms {
 +
 +LOG_DEFINE_CATEGORY(DcmippAec)
 +
++static constexpr uint32_t kAlgoFineTolerance = 5;
++static constexpr uint32_t kAlgoCoarseTolerance = 10;
++static constexpr float kAlgoTolerance = 0.10f;             /* % */
++static constexpr float kAlgoToleranceLowLux = 0.15f;       /* % */
++static constexpr uint32_t kAlgoLowLuxLimit = 50;           /* lux */
++static constexpr uint32_t kAlgoExpoCoarseIncrement = 500 ; /* us */
++static constexpr uint32_t kAlgoExpoCoarseDecrement = 300 ; /* us */
++static constexpr uint32_t kAlgoExpoFineIncrement = 150 ;   /* us */
++static constexpr uint32_t kAlgoExpoFineDecrement = 100 ;   /* us */
++static constexpr uint32_t kAlgoGainCoarseIncrement = 2000; /* mdB */
++static constexpr uint32_t kAlgoGainCoarseDecrement = 1500; /* mdB */
++static constexpr uint32_t kAlgoGainFineIncrement = 500;    /* mdB */
++static constexpr uint32_t kAlgoGainFineDecrement = 300;    /* mdB */
++static constexpr uint32_t kAlgoMaxGainIncrement = 10000;   /* mdB */
 +static constexpr uint8_t kAlgoIdealExposureTarget = 56;
++
 +static constexpr float kEVMin = -2.0f;
 +static constexpr float kEVMax = 2.0f;
 +static constexpr float kEVDef = 0.0f;
@@ -1959,25 +2178,31 @@ index 00000000..6cdae318
 +static constexpr int32_t kSensorDelayMin = 1;
 +static constexpr int32_t kSensorDelayMax = 255;
 +static constexpr int32_t kSensorDelayDef = 1;
++static constexpr int32_t kLuxMin = 0;
++static constexpr int32_t kLuxMax = 262144;
++static constexpr int32_t kLuxDef = 1000;
++static constexpr int32_t kExpoMin = 0;
++static constexpr int32_t kExpoMax = 1000000;
++static constexpr int32_t kExpoDef = 10000;
++static constexpr int32_t kLumMin = 0;
++static constexpr int32_t kLumMax = 255;
++static constexpr int32_t kLumDef = 128;
++static constexpr float kFactorMin = 0.0f;
++static constexpr float kFactorMax = 1.0f;
++static constexpr float kFactorDef = 0.95f;
++static constexpr int32_t kAecSensorDelayMax = 10;
++static constexpr int32_t kAecSensorDelayLMargin = 2;
++static constexpr int32_t kAecSensorStartupFrames = 30;
 +
-+#ifdef EVISION_ALGO_ENABLED
-+static constexpr uint32_t kmdB = 1000;
++static inline uint32_t algoCoarseToleranceLowLux(uint32_t target)
++{
++	return target < 15 ? 10 : 15;
++}
 +
-+static void *plib_handle = nullptr;
-+static evision_st_ae_process_t *pIspAEprocess = nullptr;
-+
-+typedef evision_st_ae_process_t *(*evision_api_st_ae_new_t)(evision_api_log_callback log_cb);
-+typedef evision_return_t (*evision_api_st_ae_delete_t)(evision_st_ae_process_t *self);
-+typedef evision_return_t (*evision_api_st_ae_init_t)(evision_st_ae_process_t *const self);
-+typedef evision_return_t (*evision_api_st_ae_process_t)(evision_st_ae_process_t *const self, uint32_t current_gain, uint32_t current_exposure, uint8_t average_lum);
-+
-+static evision_api_st_ae_new_t evision_api_st_ae_new = nullptr;
-+static evision_api_st_ae_init_t evision_api_st_ae_init = nullptr;
-+static evision_api_st_ae_delete_t evision_api_st_ae_delete = nullptr;
-+static evision_api_st_ae_process_t evision_api_st_ae_process = nullptr;
-+#endif /* EVISION_ALGO_ENABLED */
-+
-+static bool process_simple_algo = true;
++static inline uint32_t algoFineToleranceLowLux(uint32_t target)
++{
++	return target < 15 ? 8 : 10;
++}
 +
 +static bool isExposureValueValid(float exposureValue)
 +{
@@ -2004,137 +2229,77 @@ index 00000000..6cdae318
 +	return delay >= kSensorDelayMin && delay <= kSensorDelayMax;
 +}
 +
-+#ifdef EVISION_ALGO_ENABLED
-+static bool initializeLibrary()
++static bool isLuxValid(int32_t lux)
 +{
-+	const char *lib_name = "libevision-st-ae.so.1";
++	return lux >= kLuxMin && lux <= kLuxMax;
++}
 +
-+	plib_handle = dlopen(lib_name, RTLD_LAZY);
-+	if (!plib_handle) {
-+		LOG(DcmippAec, Warning) << "Cannot open library: " << dlerror();
-+		LOG(DcmippAec, Warning) << "Fall back to simple AEC algorithm processing";
-+		return true;
-+	}
-+
-+	dlerror(); // Clear any existing error
-+
-+	process_simple_algo = false;
-+	evision_api_st_ae_new = (evision_api_st_ae_new_t)dlsym(plib_handle, "evision_api_st_ae_new");
-+	const char *dlsym_error = dlerror();
-+	if (dlsym_error) {
-+		LOG(DcmippAec, Error) << "Cannot load symbol 'evision_api_st_ae_new': " << dlsym_error;
-+		dlclose(plib_handle);
-+		return false;
-+	}
-+
-+	evision_api_st_ae_init = (evision_api_st_ae_init_t)dlsym(plib_handle, "evision_api_st_ae_init");
-+	dlsym_error = dlerror();
-+	if (dlsym_error) {
-+		LOG(DcmippAec, Error) << "Cannot load symbol 'evision_api_st_ae_init': " << dlsym_error;
-+		dlclose(plib_handle);
-+		return false;
-+	}
-+
-+	evision_api_st_ae_delete = (evision_api_st_ae_delete_t)dlsym(plib_handle, "evision_api_st_ae_delete");
-+	dlsym_error = dlerror();
-+	if (dlsym_error) {
-+		LOG(DcmippAec, Error) << "Cannot load symbol 'evision_api_st_ae_delete': " << dlsym_error;
-+		dlclose(plib_handle);
-+		return false;
-+	}
-+
-+	evision_api_st_ae_process = (evision_api_st_ae_process_t)dlsym(plib_handle, "evision_api_st_ae_process");
-+	dlsym_error = dlerror();
-+	if (dlsym_error) {
-+		LOG(DcmippAec, Error) << "Cannot load symbol 'evision_api_st_ae_process': " << dlsym_error;
-+		dlclose(plib_handle);
-+		return false;
-+	}
-+
++static bool isLuxValid(std::vector<int32_t> lux)
++{
++	for (auto const &l : lux)
++		if (!isLuxValid(l))
++			return false;
 +	return true;
 +}
 +
-+static void log_cb(const char *const msg)
++static bool isLuxValid(Span<const int32_t> lux)
 +{
-+	LOG(DcmippAec, Debug) << msg;
-+}
-+
-+static bool initializeAeInstance()
-+{
-+	if (!plib_handle) {
-+		LOG(DcmippAec, Error) << "Library not loaded";
-+		return false;
-+	}
-+
-+	pIspAEprocess = evision_api_st_ae_new(log_cb);
-+	if (pIspAEprocess == nullptr) {
-+		LOG(DcmippAec, Error) << "Failed to create pIspAEprocess";
-+		return false;
-+	}
-+
-+	evision_return_t init_result = evision_api_st_ae_init(pIspAEprocess);
-+	if (init_result != EVISION_RET_SUCCESS) {
-+		LOG(DcmippAec, Error) << "Failed to initialize pIspAEprocess";
-+		evision_api_st_ae_delete(pIspAEprocess);
-+		pIspAEprocess = nullptr;
-+		return false;
-+	}
-+
++	for (auto const &l : lux)
++		if (!isLuxValid(l))
++			return false;
 +	return true;
 +}
 +
-+static void deinitializeAeInstance()
++static bool isExpoValid(int32_t expo)
 +{
-+	if (pIspAEprocess) {
-+		evision_api_st_ae_delete(pIspAEprocess);
-+		pIspAEprocess = nullptr;
-+	}
++	return expo >= kExpoMin && expo <= kExpoMax;
 +}
 +
-+static void deinitializeLibrary()
++static bool isExpoValid(std::vector<int32_t> expo)
 +{
-+	if (plib_handle) {
-+		dlclose(plib_handle);
-+		plib_handle = nullptr;
-+	}
++	for (auto const &e : expo)
++		if (!isExpoValid(e))
++			return false;
++	return true;
 +}
 +
-+evision_return_t processAeInstance(double *gain, int32_t *exposure, uint32_t average_lum)
++static bool isExpoValid(Span< const int32_t> expo)
 +{
-+	if (!pIspAEprocess) {
-+		LOG(DcmippAec, Error) << "AE instance not initialized";
-+		return EVISION_RET_PARAM_ERR;
-+	}
-+
-+	if (!gain || !exposure) {
-+		LOG(DcmippAec, Error) << "Null pointer passed for gain or exposure";
-+		return EVISION_RET_PARAM_ERR;
-+	}
-+
-+	evision_return_t e_ret = evision_api_st_ae_process(pIspAEprocess, static_cast<uint32_t>(*gain * kmdB), static_cast<uint32_t>(*exposure), static_cast<uint8_t>(average_lum));
-+	if (e_ret != EVISION_RET_SUCCESS) {
-+		LOG(DcmippAec, Error) << "AE process failed";
-+		return EVISION_RET_FAILURE;
-+	}
-+
-+	*gain = static_cast<double>(pIspAEprocess->new_gain) / kmdB;
-+	*exposure = static_cast<int32_t>(pIspAEprocess->new_exposure);
-+
-+	return EVISION_RET_SUCCESS;
++	for (auto const &e : expo)
++		if (!isExpoValid(e))
++			return false;
++	return true;
 +}
-+#endif /* EVISION_ALGO_ENABLED */
 +
-+const int32_t kAecTolerance = 15;
-+const float kAecCoeffLumGain = 0.1f;
-+const float kAecGainUpdateMax = 5.0f;
-+const float kAecExposureUpdateRatio = 1.2f;
-+const int32_t kAecExposureMin = 400;
-+const int32_t kAecSensorDelayMax = 10;
-+const int32_t kAecSensorDelayLMargin = 2;
-+const int32_t kAecSensorStartupFrames = 30;
++static bool isLumValid(int32_t lum)
++{
++	return lum >= kLumMin && lum <= kLumMax;
++}
++
++static bool isLumValid(std::vector<int32_t> luma)
++{
++	for (auto const &l : luma)
++		if (!isLumValid(l))
++			return false;
++	return true;
++}
++
++static bool isLumValid(Span<const int32_t> luma)
++{
++	for (auto const &l : luma)
++		if (!isLumValid(l))
++			return false;
++	return true;
++}
++
++static bool isFactorValid(double factor)
++{
++	return factor >= kFactorMin && factor <= kFactorMax;
++}
 +
 +int Aec::init([[maybe_unused]] IPAContext &context, const YamlObject &tuningData)
 +{
++	internal_.lux_estimate = -1;
 +	/* Check for AEC algo config  */
 +	params_.algoEnable = tuningData["AeEnable"].get<bool>(0);
 +	params_.algoExposureValue = tuningData["ExposureValue"].get<double>(kEVDef);
@@ -2186,36 +2351,58 @@ index 00000000..6cdae318
 +		return -EINVAL;
 +	}
 +
-+#ifdef EVISION_ALGO_ENABLED
-+	/* Iniitialize the ST AE algorithm library */
-+	if (params_.algoEnable) {
-+		if (!initializeLibrary()) {
-+			return 1;
++	/* check for LuxRef */
++	std::vector<int32_t> data = tuningData["LuxRef"]["Lux"].getList<int32_t>().value_or(std::vector<int32_t>{});
++	if (data.size() == 2) {
++		if (!isLuxValid(data)) {
++			LOG(DcmippAec, Error) << "Invalid lux reference value";
++			return -EINVAL;
 +		}
-+
-+		if (!process_simple_algo) {
-+			if (!initializeAeInstance()) {
-+				deinitializeLibrary();
-+				return 1;
-+			}
-+
-+			/* Configure algo (AEC target) */
-+			pIspAEprocess->hyper_params.target = (int32_t)params_.algoTarget;
-+
-+			/* Configure algo (sensor config) */
-+			pIspAEprocess->hyper_params.exposure_min = context.info.sensorExposureMin;
-+			pIspAEprocess->hyper_params.exposure_max = context.info.sensorExposureMax;
-+			pIspAEprocess->hyper_params.gain_min = (uint32_t)(context.info.sensorGainMin * kmdB);
-+			pIspAEprocess->hyper_params.gain_max = (uint32_t)(context.info.sensorGainMax * kmdB);
-+			pIspAEprocess->hyper_params.compat_freq = (uint32_t)params_.antiFlickerFreq;
-+		}
-+	} else {
-+		if (!process_simple_algo) {
-+			deinitializeAeInstance();
-+			deinitializeLibrary();
-+		}
++		params_.HL_LuxRef = data[0];
++		params_.LL_LuxRef = data[1];
++	} else if (data.size() != 0) {
++		LOG(DcmippAec, Error) << "Invalid lux reference";
++		return -EINVAL;
 +	}
-+#endif /* EVISION_ALGO_ENABLED */
++
++	/* check for Expo */
++	data = tuningData["LuxRef"]["Expo"].getList<int32_t>().value_or(std::vector<int32_t>{});
++	if (data.size() == 4) {
++		if (!isExpoValid(data)) {
++			LOG(DcmippAec, Error) << "Invalid exposure value";
++			return -EINVAL;
++		}
++		params_.HL_Expo1 = data[0];
++		params_.HL_Expo2 = data[1];
++		params_.LL_Expo1 = data[2];
++		params_.LL_Expo2 = data[3];
++	} else if (data.size() != 0) {
++		LOG(DcmippAec, Error) << "Invalid exposure";
++		return -EINVAL;
++	}
++
++	/* check for Lum */
++	data = tuningData["LuxRef"]["Lum"].getList<int32_t>().value_or(std::vector<int32_t>{});
++	if (data.size() == 4) {
++		if (!isLumValid(data)) {
++			LOG(DcmippAec, Error) << "Invalid luminance value";
++			return -EINVAL;
++		}
++		params_.HL_Lum1 = data[0];
++		params_.HL_Lum2 = data[1];
++		params_.LL_Lum1 = data[2];
++		params_.LL_Lum2 = data[3];
++	} else if (data.size() != 0) {
++		LOG(DcmippAec, Error) << "Invalid luminance";
++		return -EINVAL;
++	}
++
++	/* check for calibration factor */
++	params_.calibFactor = tuningData["LuxRef"]["CalibFactor"].get<double>(kFactorMin);
++	if (!isFactorValid(params_.calibFactor)) {
++		LOG(DcmippAec, Error) << "Invalid calibration factor: " << params_.calibFactor;
++		return -EINVAL;
++	}
 +
 +	/* Configure exposed controls */
 +	context.dcmippControls[&controls::AeEnable] = ControlInfo(false, true);
@@ -2233,6 +2420,10 @@ index 00000000..6cdae318
 +	context.dcmippControls[&controls::draft::AntiFlickerFreq] = ControlInfo((int32_t)kAntiflickerFreqMin,
 +										(int32_t)kAntiflickerFreqMax,
 +										(int32_t)kAntiflickerFreqDef);
++	context.dcmippControls[&controls::draft::LuxRef] = ControlInfo(kLuxMin, kLuxMax, kLuxDef);
++	context.dcmippControls[&controls::draft::LuxRefExpo] = ControlInfo(kExpoMin, kExpoMax, kExpoDef);
++	context.dcmippControls[&controls::draft::LuxRefLum] = ControlInfo(kLumMin, kLumMax, kLumDef);
++	context.dcmippControls[&controls::draft::LuxRefCalibFactor] = ControlInfo(kFactorMin, kFactorMax, kFactorDef);
 +
 +	return 0;
 +}
@@ -2244,11 +2435,8 @@ index 00000000..6cdae318
 +	if (params_.algoEnable) {
 +		/* Start with gain and exposure = min */
 +		config_.sensor.gain = context.info.sensorGainMin;
-+		if (process_simple_algo) {
-+			config_.sensor.exposure = context.info.sensorExposureMax;
-+		} else {
-+			config_.sensor.exposure = context.info.sensorExposureMin;
-+		}
++		config_.sensor.exposure = context.info.sensorExposureMin;
++		internal_.previous_lux = 0;
 +	} else {
 +		/* Static config */
 +		config_.sensor = params_.sensorStatic;
@@ -2256,6 +2444,9 @@ index 00000000..6cdae318
 +
 +	/* Set monoSensor flag in config_ */
 +	config_.monoSensor = configInfo.cfaPattern == properties::draft::ColorFilterArrangementEnum::MONO;
++	config_.isImx335 = configInfo.model.compare("imx335") == 0;
++	if (config_.isImx335)
++		LOG(DcmippAec, Info) << "imx335 detected";
 +
 +	/* Update context immediately, so IPA can apply the sensor settings at start up */
 +	context.info.AECEnable = params_.algoEnable;
@@ -2287,6 +2478,10 @@ index 00000000..6cdae318
 +	const auto &algoAntiFlickerFreq = controls.get(controls::draft::AntiFlickerFreq);
 +	const auto &sensorDelay = controls.get(controls::draft::SensorDelay);
 +	const auto &doSensorDelayMeasure = controls.get(controls::draft::DoSensorDelayMeasure);
++	const auto &luxRef = controls.get(controls::draft::LuxRef);
++	const auto &luxExpo = controls.get(controls::draft::LuxRefExpo);
++	const auto &luxLum = controls.get(controls::draft::LuxRefLum);
++	const auto &luxCalibFactor = controls.get(controls::draft::LuxRefCalibFactor);
 +
 +	if (algoEnable) {
 +		params_.algoEnable = *algoEnable;
@@ -2339,6 +2534,45 @@ index 00000000..6cdae318
 +		config_.pending = true;
 +
 +		LOG(DcmippAec, Debug) << "Starting sensor delay measure";
++	}
++
++	if (luxRef) {
++		if (!isLuxValid(*luxRef)) {
++			LOG(DcmippAec, Error) << "Invalid lux reference";
++			return ;
++		}
++		params_.HL_LuxRef = (*luxRef)[0];
++		params_.LL_LuxRef = (*luxRef)[1];
++	}
++
++	if (luxExpo) {
++		if (!isExpoValid(*luxExpo)) {
++			LOG(DcmippAec, Error) << "Invalid exposure";
++			return ;
++		}
++		params_.HL_Expo1 = (*luxExpo)[0];
++		params_.HL_Expo2 = (*luxExpo)[1];
++		params_.LL_Expo1 = (*luxExpo)[2];
++		params_.LL_Expo2 = (*luxExpo)[3];
++	}
++
++	if (luxLum) {
++		if (!isLumValid(*luxLum)) {
++			LOG(DcmippAec, Error) << "Invalid luminance";
++			return ;
++		}
++		params_.HL_Lum1 = (*luxLum)[0];
++		params_.HL_Lum2 = (*luxLum)[1];
++		params_.LL_Lum1 = (*luxLum)[2];
++		params_.LL_Lum2 = (*luxLum)[3];
++	}
++
++	if (luxCalibFactor) {
++		if (!isFactorValid(*luxCalibFactor)) {
++			LOG(DcmippAec, Error) << "Invalid calibration factor";
++			return ;
++		}
++		params_.calibFactor = *luxCalibFactor;
 +	}
 +
 +	/* Static config: update params_ and if applicable force config_ update now */
@@ -2497,6 +2731,435 @@ index 00000000..6cdae318
 +	}
 +}
 +
++int32_t Aec::getEstimatedLux(IPAContext &context, int32_t averageL)
++{
++	uint32_t exposure = context.sensor.exposure;
++	uint32_t gain = context.sensor.gain * 1000;
++	float calibFactor = params_.calibFactor;
++	int32_t HL_LuxRef = params_.HL_LuxRef;
++	int32_t HL_Expo1 = params_.HL_Expo1;
++	int32_t HL_Lum1 = params_.HL_Lum1;
++	int32_t HL_Expo2 = params_.HL_Expo2;
++	int32_t HL_Lum2 = params_.HL_Lum2;
++	int32_t LL_LuxRef = params_.LL_LuxRef;
++	int32_t LL_Expo1 = params_.LL_Expo1;
++	int32_t LL_Lum1 = params_.LL_Lum1;
++	int32_t LL_Expo2 = params_.LL_Expo2;
++	int32_t LL_Lum2 = params_.LL_Lum2;
++	double globalExposure;
++	int32_t lux;
++	double a, b;
++
++	if ((HL_Expo1 == HL_Expo2) || (LL_Expo1 == LL_Expo2) || (HL_Lum1 == 0) || (LL_Lum1 == 0)) {
++	/* Uncalibrated lux reference points */
++		return -1;
++	}
++
++	globalExposure = exposure * pow(10, (double)gain / 20000);
++	if (globalExposure == 0)
++		return 0;
++
++	/* Calculate K coefficient value to estimate lux from current luminance and global exposure
++	 * K = a * exposure + b;
++	 * Lux = calibration_ factor * K * Luminance / exposure
++	 */
++
++	/* Calculate a and b with the high lux references */
++	a = (HL_LuxRef * ((double)HL_Expo1 / HL_Lum1 - (double)HL_Expo2 / HL_Lum2)) / ((double)HL_Expo1 - HL_Expo2);
++	b = (HL_LuxRef * (double)HL_Expo1 / HL_Lum1) - (a * HL_Expo1);
++	lux = (int32_t)(calibFactor * (a * globalExposure + b) * averageL / globalExposure);
++	if (lux > HL_LuxRef * 0.9)
++		return lux;
++
++	/* Calculate a and b with the low lux references to improve precision when lux is under 90% of the HL_LuxRef */
++	a = (LL_LuxRef * ((double)LL_Expo1 / LL_Lum1 - (double)LL_Expo2 / LL_Lum2)) / ((double)LL_Expo1 - LL_Expo2);
++	b = (LL_LuxRef * (double)LL_Expo1 / LL_Lum1) - (a * LL_Expo1);
++	lux = (int32_t)(calibFactor * (a * globalExposure + b) * averageL / globalExposure);
++
++	return lux < 0 ? 0 : lux;
++}
++
++void Aec::isp_ae_compute_antiflicker(IPAContext &context, uint32_t gain, uint32_t exposure, uint32_t *adjusted_gain,
++				    uint32_t *adjusted_exposure)
++{
++	/* Get equivalent gain/exposure where exposure is a multiple of the flickering period */
++	uint32_t gain_max = context.info.sensorGainMax * 1000;
++	uint32_t antiFlickerFreq = params_.antiFlickerFreq;
++	uint32_t compensation_gain_mdb;
++	uint32_t up_equiv_exposure;
++	uint32_t compat_period_us;
++	float compensation_gain;
++
++	if (antiFlickerFreq == 0) {
++		*adjusted_gain = gain;
++		*adjusted_exposure = exposure;
++		return;
++	}
++
++	compat_period_us = 1000U * 1000U / (2U * antiFlickerFreq);
++	up_equiv_exposure = (1 + exposure / compat_period_us) * compat_period_us;
++	if ((exposure > compat_period_us) && (exposure < 0.95 * up_equiv_exposure)) {
++		/* Make exposure a multiple of the flickering period in case exposure is higher than the
++		flickering period and we are 5% under a multiple value */
++		*adjusted_exposure = (exposure / compat_period_us) * compat_period_us;
++
++		/* Increase the gain accordingly */
++		compensation_gain = (float)exposure / (float)(*adjusted_exposure + 1);
++		compensation_gain_mdb = (uint32_t)(20 * 1000 * log10(compensation_gain));
++		*adjusted_gain = gain + compensation_gain_mdb;
++		if (*adjusted_gain > gain_max)
++			*adjusted_gain = gain_max;
++	} else {
++		/* Keep the initial values in case:
++		 * - We cannot update the exposure because the values are under the flickering period (will flicker)
++		 * - Or we are close to the upper multiple value (the acceptance criteria is set to 95% of the
++		 * multiple value to ensure no flickering effect will be visible)
++		 */
++		*adjusted_gain = gain;
++		*adjusted_exposure = exposure;
++	}
++}
++
++void Aec::isp_ae_reverse_antiflicker(IPAContext &context, uint32_t gain, uint32_t exposure, uint32_t *original_gain,
++				     uint32_t *original_exposure)
++{
++	/* Get equivalent gain/exposure where exposure has a maximum value (reverse processing of the above function) */
++	uint32_t exposure_max = context.info.sensorExposureMax;
++	float compensation_gain;
++	uint32_t global_exposure;
++
++	/* In case the exposure time is set to the maximum value, no antiflicker compensation is detected.
++	 * Return the same sensor settings */
++	if (exposure == exposure_max) {
++		*original_exposure = exposure;
++		*original_gain = gain;
++		return;
++	}
++
++	/* Otherwise, compute adjusted gain and exposure even if antiflicker is disabled
++	 * This way, in case there is no light condition change, previous adjustment for antiflicker
++	 * will be removed
++	 */
++	global_exposure = (uint32_t)(exposure * pow(10, (float)gain / (20 * 1000)));
++	if (global_exposure < exposure_max) {
++		*original_gain = 0;
++		*original_exposure = global_exposure;
++		/* Fix rounding error when close to max value */
++		*original_exposure = (*original_exposure > 0.98 * exposure_max) ? exposure_max : *original_exposure;
++	} else {
++		/* Set exposure to max, and compute the compensation gain */
++		*original_exposure = exposure_max;
++		/* Increase the gain accordingly */
++		compensation_gain = (float)global_exposure / (float)*original_exposure;
++		*original_gain = (uint32_t)(20 * 1000 * log10(compensation_gain));
++	}
++}
++
++void Aec::getNewExpoParameters(IPAContext &context, uint32_t lux, uint32_t averageL, uint32_t *pExposure,
++			       uint32_t *pGain, uint32_t exposure, uint32_t gain)
++{
++	uint32_t exposure_max = context.info.sensorExposureMax;
++	uint32_t exposure_min = context.info.sensorExposureMin;
++	uint32_t gain_min = context.info.sensorGainMin * 1000;
++	uint32_t gain_max = context.info.sensorGainMax * 1000;
++	uint32_t again_max = config_.isImx335 ? 30 * 1000 :
++						context.info.sensorGainMax * 1000;
++	uint32_t previous_lux = internal_.previous_lux;
++	uint32_t exposureTarget = params_.algoTarget;
++	float calibFactor = params_.calibFactor;
++	uint32_t HL_LuxRef = params_.HL_LuxRef;
++	uint32_t HL_Expo1 = params_.HL_Expo1;
++	uint8_t HL_Lum1 = params_.HL_Lum1;
++	uint32_t HL_Expo2 = params_.HL_Expo2;
++	uint8_t HL_Lum2 = params_.HL_Lum2;
++	uint32_t LL_LuxRef = params_.LL_LuxRef;
++	uint32_t LL_Expo1 = params_.LL_Expo1;
++	uint8_t LL_Lum1 = params_.LL_Lum1;
++	uint32_t LL_Expo2 = params_.LL_Expo2;
++	uint8_t LL_Lum2 = params_.LL_Lum2;
++	uint32_t custom_high_lux_limit;
++	uint32_t custom_low_lux_limit;
++	double cur_global_exposure;
++	double new_global_exposure;
++	uint32_t curExposure;
++	uint32_t curGain;
++	double a, b, c, d;
++
++	cur_global_exposure = exposure * pow(10, (double)gain / 20000);
++	custom_low_lux_limit = ((uint32_t)(((double)exposureTarget * calibFactor *(LL_LuxRef *
++					   ((double)LL_Expo1 / LL_Lum1 -
++					    (double)LL_Expo2 / LL_Lum2) /
++					   ((double)LL_Expo1 - LL_Expo2))) / kAlgoLowLuxLimit) + 1) * kAlgoLowLuxLimit;
++	custom_high_lux_limit = ((uint32_t)(((double)exposureTarget * calibFactor * (HL_LuxRef *
++					   ((double)HL_Expo1 / HL_Lum1 -
++					    (double)HL_Expo2 / HL_Lum2) /
++					   ((double)HL_Expo1 - HL_Expo2))) / kAlgoLowLuxLimit) + 1) * kAlgoLowLuxLimit;
++
++	/**** Handle start conditions ****/
++	/* This code aims to slightly deviate from the camera's minimum exposure settings
++	 * in order to capture enough light and make a first non-zero estimate of lux
++	 */
++	if (averageL <= 5 && exposure == exposure_min && gain == gain_min) {
++		new_global_exposure = gain ? exposure * pow(10, ((double)gain + 3000) / 20000) : exposure + 2000;
++		if (new_global_exposure <= exposure_max) {
++			*pGain = 0;
++			*pExposure = (new_global_exposure < exposure_min) ? exposure_min : (uint32_t)new_global_exposure;
++		} else {
++			*pExposure = exposure_max;
++			*pGain = (uint32_t)(20 * 1000 * log10((float)new_global_exposure / (float)(*pExposure)));
++			*pGain = (*pGain < gain_min) ? gain_min : (*pGain > again_max) ? again_max : *pGain;
++		}
++		return;
++	}
++
++	/**** Get equivalent sensor gain/exposure where exposure is at its max possible value ****/
++	/* ONLY USEFUL WHEN WHEN ANTI-FLICKER IS ACTIVATED
++	 * In case, sensor exposure time has been compensated by sensor gain for anti-flicker,
++	 * calculate the value that would be applied without anti-flicker activated
++	 */
++	isp_ae_reverse_antiflicker(context, gain, exposure, &curGain, &curExposure);
++
++	/**** Check if coarse convergence is reached ****/
++	/* Tolerance for coarse convergence is different in case we are in very low lux conditions (slightly increased) */
++	if (((lux > kAlgoLowLuxLimit) && (abs((int32_t)averageL - (int32_t)exposureTarget) > std::max((float)exposureTarget * kAlgoTolerance, (float)kAlgoCoarseTolerance))) ||
++	    ((lux <= kAlgoLowLuxLimit) && (abs((int32_t)averageL - (int32_t)exposureTarget) > std::max((float)exposureTarget * kAlgoToleranceLowLux, (float)algoCoarseToleranceLowLux(exposureTarget))))) {
++		/**** COARSE CONVERGENCE not reached ****/
++		/* The AE algorithm process intends to calculate the sensor exposure needed to approach the luminance target */
++
++		/**** Select the estimation model to apply according to the lux value ****/
++		if ((lux <= HL_LuxRef) || (lux <= custom_high_lux_limit)) {
++			/**** Apply ESTIMATION 2 model below 𝐿𝑢𝑥𝑅𝑒𝑓_𝐻𝐿 ****/
++			/* Calculate a and b with the low lux references to improve precision when lux is under HL_LuxRef */
++			a = (LL_LuxRef * ((double)LL_Expo1 / LL_Lum1 - (double)LL_Expo2 / LL_Lum2)) /
++			    ((double)LL_Expo1 - LL_Expo2);
++
++			b = (LL_LuxRef * (double)LL_Expo1 / LL_Lum1) - (a * LL_Expo1);
++		} else {
++			/**** Apply ESTIMATION 1 model above 𝐿𝑢𝑥𝑅𝑒𝑓_𝐻𝐿 ****/
++			/* Calculate a and b with the high lux references for higher lux conditions*/
++			a = (HL_LuxRef * ((double)HL_Expo1 / HL_Lum1 - (double)HL_Expo2 / HL_Lum2)) /
++			    ((double)HL_Expo1 - HL_Expo2);
++
++			b = (HL_LuxRef * (double)HL_Expo1 / HL_Lum1) - (a * HL_Expo1);
++		}
++
++		if (lux <= custom_low_lux_limit) {
++			/**** Switch to ESTIMATION 3 model below 𝑐𝑢𝑠𝑡𝑜𝑚_𝑙𝑜𝑤_𝑙𝑢𝑥_𝑙𝑖𝑚𝑖𝑡 ****/
++			/* Calculate coefficient for very low lux model as we reach the limit of the previous one */
++			d = exposure_max * pow(10, (double)again_max / 20000);
++			c = ((b / (((double)custom_low_lux_limit / ((double)exposureTarget * calibFactor)) - (double)a)) - d) / custom_low_lux_limit;
++
++			/* Compute new global exposure to apply in ESTIMATION 3 model*/
++			new_global_exposure = (c * (double)lux) + d;
++		} else {
++			/**** Process ESTIMATION 1 or 2 model ****/
++			/* Compute new global exposure to apply in ESTIMATION 1 or 2 model*/
++			/* Else apply previous estimation model with a and b coefficients */
++			new_global_exposure = b / (((double)lux / ((double)exposureTarget * calibFactor)) - (double)a);
++		}
++
++		/**** Check validity of new global exposure ****/
++		/* Check the different cases:
++		 * - CASE 1: when averageL is under the target, the exposure is supposed to be increased
++		 * - CASE 2: when averageL is above the target, the exposure is supposed to be decreased
++		 * If the new exposure is not valid, then we switch to a standard incremental method,
++		 * using the averageL statistic as a parameter to calculate the new exposure.
++		 * This will ensure that the target will be reach in any case.
++		 */
++		if (averageL < exposureTarget) {
++			/**** CASE 1 ****/
++			/* Exposure should be increased */
++			if (new_global_exposure <= cur_global_exposure) {
++				/* Wrong estimation, to be corrected */
++				new_global_exposure = -1; // reset to -1
++
++				/* Same lux estimation but previous setting did not allow convergence, so we need to change it */
++				if ((abs((int32_t)lux - (int32_t)previous_lux) <= (float)lux * 0.05) && (lux != 0)) {
++					/* Use the luminance information for readjustment */
++					new_global_exposure = cur_global_exposure * ((double)exposureTarget / averageL);
++				}
++
++				if (new_global_exposure <= 0) {
++					/* Increase exposure with small increment to get closer to target */
++					if (cur_global_exposure <= exposure_max) {
++						new_global_exposure = averageL ? cur_global_exposure * (double)exposureTarget / averageL : cur_global_exposure + kAlgoExpoCoarseIncrement;
++					} else {
++						new_global_exposure = exposure_max * pow(10, ((double)curGain + kAlgoGainCoarseIncrement) / 20000);
++					}
++				}
++			}
++
++			/**** Additional safeguards to ensure the proper behavior of the algorithm ****/
++			/* Check ratios are consistent when big or small changes are requested */
++			if (cur_global_exposure != 0 && averageL != 0) {
++				/* Compare exposure ratio and luminance ratio, to check the consistency of the results */
++				if ((((new_global_exposure / cur_global_exposure) < 1.10) && (((double)exposureTarget / averageL) > 1.40)) || /* new global exposure is very close to previous exposure while luminance is at least 40% higher */
++				    (((new_global_exposure / cur_global_exposure) < 1.50) && (((double)exposureTarget / averageL) > 1.80)) || /* new global exposure is less than 50% higher while luminance is more than 80% higher */
++				    (((new_global_exposure / cur_global_exposure) > 1.65) && (((double)exposureTarget / averageL) < 1.30)) || /* new global exposure is very high while luminance is less than 30% higher */
++				    (((new_global_exposure / cur_global_exposure) > 1.35) && (((double)exposureTarget / averageL) < 1.10)) || /* new global exposure is too high when luminance is very close to the target */
++				      (new_global_exposure / cur_global_exposure) < 1.02) /* Or same exposure estimation but we are not within tolerance margin */ {
++					/* Apply the same ratio */
++					new_global_exposure = cur_global_exposure * ((double)exposureTarget / averageL);
++				}
++			}
++		} else {
++			/**** CASE 2 ****/
++			/* Exposure should be decreased */
++			if (new_global_exposure >= cur_global_exposure) {
++				/* Wrong estimation, to be corrected */
++				new_global_exposure = -1;
++
++				/* Same lux estimation but previous setting did not allow convergence, so we need to change it */
++				if ((abs((int32_t)lux - (int32_t)previous_lux) <= (float)lux * 0.05) && (lux != 0)) {
++					/* Use the luminance information for readjustment */
++					new_global_exposure = cur_global_exposure * ((double)exposureTarget / averageL);
++				}
++
++				if (new_global_exposure <= 0) /*small step to get closer to target */ {
++					/* Decrease exposure with small decrement to get closer to target */
++					if (cur_global_exposure <= exposure_max) {
++						new_global_exposure = averageL ? cur_global_exposure * (double)exposureTarget / averageL : cur_global_exposure - kAlgoExpoCoarseDecrement;
++					} else {
++						new_global_exposure = exposure_max * pow(10, ((double)curGain - kAlgoGainCoarseDecrement) / 20000);
++					}
++				}
++			}
++
++			/**** Additional safeguards to ensure the proper behavior of the algorithm ****/
++			/* Check ratios are consistent when big or small changes are requested */
++			if (cur_global_exposure != 0 && averageL != 0) {
++				/* Compare exposure ratio and luminance ratio, to check the consistency of the results */
++				if ((((new_global_exposure / cur_global_exposure) > 0.60) && (((double)exposureTarget / averageL) < 0.40)) || /* new global exposure is at least 60% of the current exposure while luminance is less than 40% of the target */
++				    (((new_global_exposure / cur_global_exposure) < 0.45) && (((double)exposureTarget / averageL) > 0.65)) || /* new global exposure is less than 45% of the current exposure while luminance is more than 65% of the target */
++				    (((new_global_exposure / cur_global_exposure) < 0.15) && (((double)exposureTarget / averageL) > 0.50)) || /* new global exposure is very low while luminance is more than 50% of the target */
++				    (((new_global_exposure / cur_global_exposure) < 0.60) && (((double)exposureTarget / averageL) > 0.85)) || /* new global exposure is less than 60% of the current exposure while luminance is very close to the target */
++				      (new_global_exposure / cur_global_exposure) > 0.98) /* Or same exposure estimation but we are not within tolerance margin */ {
++					/* Apply the same ratio */
++					new_global_exposure = cur_global_exposure * ((double)exposureTarget / averageL);
++				}
++			}
++		}
++
++		/**** Clamp and split exposure into exposure value and gain ****/
++		if (new_global_exposure <= exposure_max) {
++			*pGain = 0;
++			*pExposure = (new_global_exposure < exposure_min) ? exposure_min : (uint32_t)new_global_exposure;
++		} else {
++			*pExposure = exposure_max;
++			*pGain = (uint32_t)(20 * 1000 * log10(new_global_exposure / (float)(*pExposure)));
++
++			/* Limit digital gain (lux value is very low and the gain is already very high and we need to avoid oscillations) */
++			if ((*pGain > again_max) && (abs((int32_t)*pGain - (int32_t)curGain) > kAlgoMaxGainIncrement)) {
++				*pGain = *pGain < curGain ? (curGain < kAlgoMaxGainIncrement ? 0 : curGain - kAlgoMaxGainIncrement) : curGain + kAlgoMaxGainIncrement;
++			}
++			*pGain = (*pGain < gain_min) ? gain_min : (*pGain > gain_max) ? gain_max : *pGain;
++		}
++	} else {
++		/**** COARSE CONVERGENCE is reached ****/
++		/* Check if fine convergence processing is required to reach high accuracy */
++
++		/* Coarse convergence reached, refine convergence */
++		if (((lux > kAlgoLowLuxLimit) && (abs((int32_t)averageL - (int32_t)exposureTarget) > kAlgoFineTolerance)) ||
++		    ((lux <= kAlgoLowLuxLimit) && (abs((int32_t)averageL - (int32_t)exposureTarget) > algoFineToleranceLowLux(exposureTarget)))) {
++			/**** FINE CONVERGENCE not reached ****/
++			if (averageL < exposureTarget) {
++				/* Slightly increase exposure */
++				if (cur_global_exposure <= exposure_max) {
++					new_global_exposure = averageL ? cur_global_exposure * (double)exposureTarget / averageL : cur_global_exposure + kAlgoExpoFineIncrement;
++				} else {
++					new_global_exposure = exposure_max * pow(10, ((double)curGain + kAlgoGainFineIncrement) / 20000);
++				}
++			} else {
++				/* Slightly decrease exposure */
++				if (cur_global_exposure <= exposure_max) {
++					new_global_exposure = averageL ? cur_global_exposure * (double)exposureTarget / averageL : cur_global_exposure - kAlgoExpoFineDecrement;
++				} else {
++					new_global_exposure = exposure_max * pow(10, ((double)curGain - kAlgoGainFineDecrement) / 20000);
++				}
++			}
++
++			/* Clamp and split exposure into exposure value and gain */
++			if (new_global_exposure <= exposure_max) {
++				*pGain = 0;
++				*pExposure = (new_global_exposure < exposure_min) ? exposure_min : (uint32_t)new_global_exposure;
++			} else {
++				*pExposure = exposure_max;
++				*pGain = (uint32_t)(20 * 1000 * log10((float)new_global_exposure / (float)(*pExposure)));
++
++				*pGain = (*pGain < gain_min) ? gain_min : (*pGain > gain_max) ? gain_max : *pGain;
++			}
++		} else {
++			/**** FINE CONVERGENCE is reached ****/
++			/* Converged */
++			*pExposure = curExposure;
++			*pGain = curGain;
++		}
++	}
++
++	/**** Consider flickering period constraint ****/
++	/* ONLY USEFUL WHEN WHEN ANTI-FLICKER IS ACTIVATED */
++	isp_ae_compute_antiflicker(context, *pGain, *pExposure, &curGain, &curExposure);
++
++	/* Return final value of sensor exposure time and gain */
++	*pExposure = curExposure;
++	*pGain = curGain;
++
++	/* Store lux value to avoid making the same exposure estimation if it did not allow to reach convergence */
++	previous_lux = lux;
++
++	internal_.previous_lux = previous_lux;
++}
++
++void Aec::updateLuxEstimate(IPAContext &context, const stm32_dcmipp_stat_buf *stats)
++{
++	int32_t avgL;
++
++	/* Update invalidStats counter */
++	if (internal_.invalidStats)
++		internal_.invalidStats--;
++	/* and exit if stats are still invalid */
++	if (internal_.invalidStats) {
++		return ;
++	}
++
++	avgL = (config_.monoSensor || !context.isp.demosaicing.enable) ? luminanceFromRgbMono(stats->post.average_RGB) :
++									 luminanceFromRgb(stats->post.average_RGB);
++	internal_.lux_estimate = getEstimatedLux(context, avgL);
++}
++
++void Aec::processAec(IPAContext &context, const stm32_dcmipp_stat_buf *stats)
++{
++	int32_t estimated_lux = internal_.lux_estimate;
++	uint32_t newGain_mdb;
++	uint32_t newExpo;
++	int32_t avgL;
++
++	/* exit if stats are still invalid */
++	if (internal_.invalidStats) {
++		LOG(DcmippAec, Debug) << "Can't update now";
++		return ;
++	}
++	/* or we can't estimate lux */
++	if (estimated_lux < 0) {
++		return ;
++	}
++
++	avgL = (config_.monoSensor || !context.isp.demosaicing.enable) ? luminanceFromRgbMono(stats->post.average_RGB) :
++									 luminanceFromRgb(stats->post.average_RGB);
++	/* Compute new sensors params */
++	getNewExpoParameters(context, (uint32_t)estimated_lux, (uint32_t)avgL, &newExpo, &newGain_mdb,
++			     config_.sensor.exposure, config_.sensor.gain * 1000);
++	if (config_.sensor.exposure == (int32_t)newExpo && config_.sensor.gain == (double)newGain_mdb / 1000)
++		return ;
++
++	/* Aply new parameters */
++	LOG(DcmippAec, Debug) << "Apply gain " << config_.sensor.gain << " db / expo " << config_.sensor.exposure <<
++				 " us (lux : " << estimated_lux << " / lum : " << avgL << ")";
++	config_.sensor.exposure = newExpo;
++	config_.sensor.gain = (double)newGain_mdb / 1000;
++	config_.pending = true;
++}
++
 +void Aec::process(IPAContext &context,
 +		  [[maybe_unused]] const uint32_t frame,
 +		  [[maybe_unused]] IPAFrameContext &frameContext,
@@ -2507,116 +3170,10 @@ index 00000000..6cdae318
 +	if (internal_.measure.doSensorDelayMeasure) {
 +		/* Special case: prosess sensor delay measure */
 +		processSensorDelayMeasure(stats, context);
-+	} else if (params_.algoEnable) {
-+		/* Check if stats can be considered as valid */
-+		if (internal_.invalidStats)
-+			internal_.invalidStats--;
-+
-+		if (internal_.invalidStats) {
-+			LOG(DcmippAec, Debug) << "Can't update now";
-+		} else {
-+			if (process_simple_algo) {
-+				bool do_exposure_update;
-+				float gain_update;
-+				double gain = context.sensor.gain;
-+				int32_t exposure = context.sensor.exposure;
-+				int32_t target = (int32_t)params_.algoTarget;
-+				int32_t avgL = (config_.monoSensor || !context.isp.demosaicing.enable) ? luminanceFromRgbMono(stats->post.average_RGB) : luminanceFromRgb(stats->post.average_RGB);
-+
-+				LOG(DcmippAec, Debug) << "Status: L = " << avgL << " - "
-+						      << "Gain = " << gain << " db - "
-+						      << "Exposure = " << exposure << " us";
-+
-+				/* Compare the average luminance with the target */
-+				gain_update = 0.0f;
-+				if (avgL > target + kAecTolerance) {
-+					/* Too bright, decrease gain */
-+					gain_update = (float)(target - avgL) * kAecCoeffLumGain;
-+					if (gain_update < -kAecGainUpdateMax)
-+						gain_update = -kAecGainUpdateMax;
-+				} else if (avgL < target - kAecTolerance) {
-+					/* Too dark vador, call a Jedi and increase gain */
-+					gain_update = (float)(target - avgL) * kAecCoeffLumGain;
-+					if (gain_update > kAecGainUpdateMax)
-+						gain_update = kAecGainUpdateMax;
-+				}
-+
-+				if (gain_update == 0.0f) {
-+					LOG(DcmippAec, Debug) << "No change required";
-+				} else {
-+					/* Need to change something (gain or exposure) */
-+					/* Check current exposure to decide whether we shall update gain or exposure */
-+					if ((gain == context.info.sensorGainMin) &&
-+					    ((exposure != context.info.sensorExposureMax) || (gain_update < 0)))
-+						do_exposure_update = true;
-+					else
-+						do_exposure_update = false;
-+
-+					if (!do_exposure_update) {
-+						/* Update gain as it has not reached its min value */
-+						gain += gain_update;
-+						if (gain < context.info.sensorGainMin)
-+							gain = context.info.sensorGainMin;
-+						else if (gain > context.info.sensorGainMax)
-+							gain = context.info.sensorGainMax;
-+
-+						LOG(DcmippAec, Debug) << "New gain: " << gain << " db";
-+						config_.sensor.gain = gain;
-+						config_.pending = true;
-+					} else {
-+						/* Update exposure since gain has reached its min value */
-+						if (gain_update < 0) {
-+							/* Decrease exposure */
-+							exposure /= kAecExposureUpdateRatio;
-+							/* Note: sensorExposureMin for IMX335 is wrong: use alternate value */
-+							if (exposure < kAecExposureMin)
-+								exposure = kAecExposureMin;
-+						} else {
-+							/* Increase exposure */
-+							exposure *= kAecExposureUpdateRatio;
-+							if (exposure > context.info.sensorExposureMax)
-+								exposure = context.info.sensorExposureMax;
-+						}
-+
-+						LOG(DcmippAec, Debug) << "New exposure: " << exposure << " us";
-+						config_.sensor.exposure = exposure;
-+						config_.pending = true;
-+					}
-+				}
-+			}
-+#ifdef EVISION_ALGO_ENABLED
-+			else {
-+				double gain = context.sensor.gain;
-+				int32_t exposure = context.sensor.exposure;
-+				int32_t avgL = (config_.monoSensor || !context.isp.demosaicing.enable) ? luminanceFromRgbMono(stats->post.average_RGB) : luminanceFromRgb(stats->post.average_RGB);
-+
-+				LOG(DcmippAec, Debug) << "Status: L = " << avgL << " - "
-+						      << "Gain = " << gain << " db - "
-+						      << "Exposure = " << exposure << " us";
-+
-+				/* Align on the target update (may have been updated with ISP_SetExposureTarget()) */
-+				pIspAEprocess->hyper_params.target = (uint8_t)params_.algoTarget;
-+				pIspAEprocess->hyper_params.compat_freq = (uint32_t)params_.antiFlickerFreq;
-+
-+				evision_return_t process_result = processAeInstance(&gain, &exposure, avgL);
-+				if (process_result != EVISION_RET_SUCCESS) {
-+					LOG(DcmippAec, Error) << "Failed to process pIspAEprocess";
-+				}
-+
-+				if (config_.sensor.exposure != exposure) {
-+					LOG(DcmippAec, Debug) << "New exposure: " << exposure << " us";
-+					config_.sensor.exposure = exposure;
-+					config_.pending = true;
-+				}
-+
-+				if (config_.sensor.gain != gain) {
-+					LOG(DcmippAec, Debug) << "New gain: " << gain << " db";
-+					config_.sensor.gain = gain;
-+					config_.pending = true;
-+				}
-+			}
-+#endif /* EVISION_ALGO_ENABLED */
-+		}
++	} else {
++		updateLuxEstimate(context, stats);
++		if (params_.algoEnable)
++			processAec(context, stats);
 +	}
 +
 +	/* Set metadata */
@@ -2628,6 +3185,13 @@ index 00000000..6cdae318
 +	metadata.set(controls::ExposureTime, config_.sensor.exposure);
 +	metadata.set(controls::draft::SensorDelay, params_.sensorDelay);
 +	metadata.set(controls::draft::SensorDelayMeasure, internal_.measure.sensorDelayMeasure);
++	metadata.set(controls::draft::LuxRef, std::array<int32_t, 2>{params_.HL_LuxRef, params_.LL_LuxRef});
++	metadata.set(controls::draft::LuxRefExpo, std::array<int32_t, 4>{params_.HL_Expo1, params_.HL_Expo2,
++									 params_.LL_Expo1, params_.LL_Expo2});
++	metadata.set(controls::draft::LuxRefLum, std::array<int32_t, 4>{params_.HL_Lum1, params_.HL_Lum2,
++									params_.LL_Lum1, params_.LL_Lum2});
++	metadata.set(controls::draft::LuxRefCalibFactor, params_.calibFactor);
++	metadata.set(controls::Lux, internal_.lux_estimate < 0 ? 0.0f : (float)internal_.lux_estimate);
 +}
 +
 +REGISTER_IPA_ALGORITHM(Aec, "Aec")
@@ -2637,10 +3201,10 @@ index 00000000..6cdae318
 +} /* namespace libcamera */
 diff --git a/src/ipa/dcmipp/algorithms/aec.h b/src/ipa/dcmipp/algorithms/aec.h
 new file mode 100644
-index 00000000..222a5afa
+index 00000000..c4678f76
 --- /dev/null
 +++ b/src/ipa/dcmipp/algorithms/aec.h
-@@ -0,0 +1,69 @@
+@@ -0,0 +1,94 @@
 +/* SPDX-License-Identifier: LGPL-2.1-or-later */
 +/*
 + * Copyright (C) 2024 ST Microelectronics
@@ -2682,6 +3246,18 @@ index 00000000..222a5afa
 +		uint32_t antiFlickerFreq;
 +		struct IPASensor sensorStatic;
 +		int32_t sensorDelay;
++		/* LuxRef tuning parameters */
++		int32_t HL_LuxRef;
++		int32_t HL_Expo1;
++		int32_t HL_Lum1;
++		int32_t HL_Expo2;
++		int32_t HL_Lum2;
++		int32_t LL_LuxRef;
++		int32_t LL_Expo1;
++		int32_t LL_Lum1;
++		int32_t LL_Expo2;
++		int32_t LL_Lum2;
++		float calibFactor;
 +	} params_;
 +
 +	struct algoInternal {
@@ -2696,15 +3272,28 @@ index 00000000..222a5afa
 +			int32_t delay;
 +			int32_t refL;
 +		} measure;
++		int32_t lux_estimate;
++		uint32_t previous_lux;
 +	} internal_;
 +
 +	struct algoConfig {
 +		bool pending;
 +		struct IPASensor sensor;
 +		bool monoSensor;
++		bool isImx335;
 +	} config_;
 +
 +	void processSensorDelayMeasure(const stm32_dcmipp_stat_buf *stats, IPAContext &context);
++	void updateLuxEstimate(IPAContext &context, const stm32_dcmipp_stat_buf *stats);
++	void processAec(IPAContext &context, const stm32_dcmipp_stat_buf *stats);
++	int32_t getEstimatedLux(IPAContext &context, int32_t avgL);
++	void getNewExpoParameters(IPAContext &context, uint32_t lux, uint32_t averageL, uint32_t *pExposure,
++				  uint32_t *pGain, uint32_t exposure, uint32_t gain);
++	void isp_ae_compute_antiflicker(IPAContext &context, uint32_t gain, uint32_t exposure, uint32_t *adjusted_gain, uint32_t *adjusted_exposure);
++	void isp_ae_reverse_antiflicker(IPAContext &context, uint32_t gain, uint32_t exposure, uint32_t *original_gain,
++					uint32_t *original_exposure);
++	void getNewExpoParametersTest(IPAContext &context, uint32_t lux, uint32_t averageL, uint32_t *pExposure,
++				  uint32_t *pGain, uint32_t exposure, uint32_t gain);
 +};
 +
 +} /* namespace ipa::dcmipp::algorithms */
@@ -2753,14 +3342,13 @@ index 00000000..8c59ceb0
 +} /* namespace libcamera */
 diff --git a/src/ipa/dcmipp/algorithms/awb.cpp b/src/ipa/dcmipp/algorithms/awb.cpp
 new file mode 100644
-index 00000000..cdbc0159
+index 00000000..9643071c
 --- /dev/null
 +++ b/src/ipa/dcmipp/algorithms/awb.cpp
-@@ -0,0 +1,979 @@
+@@ -0,0 +1,797 @@
 +/* SPDX-License-Identifier: LGPL-2.1-or-later */
 +/*
 + * Copyright (C) 2024 ST Microelectronics
-+ * Copyright (C) 2024 LACROIX - Impulse
 + *
 + * awb.cpp - STM32 DCMIPP AWB control
 + */
@@ -2774,13 +3362,6 @@ index 00000000..cdbc0159
 +
 +#include <libcamera/control_ids.h>
 +
-+#ifdef EVISION_ALGO_ENABLED
-+#include <dlfcn.h>
-+#include <iostream>
-+
-+#include "evision-api-awb.h"
-+#endif /* EVISION_ALGO_ENABLED */
-+
 +namespace libcamera {
 +
 +namespace ipa::dcmipp::algorithms {
@@ -2790,6 +3371,8 @@ index 00000000..cdbc0159
 +static constexpr uint32_t kPrecisionFactor = 100000000;
 +static constexpr uint32_t kIdle = 128;
 +static constexpr char kDelimiter = '$';
++static constexpr float kStickyThreshold = 0.05f;
++static constexpr int kStatNoChangeThreshold = 1;
 +static constexpr int kColGainMin = 0;
 +static constexpr int kColGainMax = 1600000000;
 +static constexpr int kColGainDef = 100000000;
@@ -2798,46 +3381,13 @@ index 00000000..cdbc0159
 +static constexpr int kColCorrectionDef = 0;
 +static constexpr int kProfileNameLen = 32;
 +static constexpr int kColTemperatureMin = 0;
-+static constexpr int kColTemperatureMax = 10000;
++static constexpr int kColTemperatureMax = 12000;
 +static constexpr int kColTemperatureDef = 0;
 +static constexpr int kIspApplyConfigLatency = 4;
 +static constexpr int kColorTempAlgoDefaultMin = 4500;
-+
-+#ifdef EVISION_ALGO_ENABLED
-+static void *plib_handle = nullptr;
-+static evision_awb_estimator_t *pIspAWBestimator = nullptr;
-+static evision_awb_profile_t awbProfiles[EVISION_AWB_MAX_PROFILE_COUNT];
-+static float colorTempThresholds[EVISION_AWB_MAX_PROFILE_COUNT - 1];
-+
-+typedef evision_awb_estimator_t *(*evision_api_awb_new_t)(evision_api_log_callback log_cb);
-+typedef evision_return_t (*evision_api_awb_delete_t)(evision_awb_estimator_t *self);
-+typedef void (*evision_api_awb_set_profile_t)(evision_awb_profile_t *awb_profile,
-+					      float color_temperature, const float cfa_gains[EVISION_AWB_NB_DG_CFA_GAINS],
-+					      const float ccm_coefficients[EVISION_AWB_CCM_SIZE][EVISION_AWB_CCM_SIZE],
-+					      const float ccm_offsets[EVISION_AWB_CCM_SIZE]);
-+typedef evision_return_t (*evision_api_awb_init_profiles_t)(evision_awb_estimator_t *const self,
-+							    double min_temp, double max_temp,
-+							    uint16_t nb_profiles, float decision_thresholds[EVISION_AWB_MAX_PROFILE_COUNT - 1],
-+							    evision_awb_profile_t awb_profiles[EVISION_AWB_MAX_PROFILE_COUNT]);
-+typedef evision_return_t (*evision_api_awb_run_average_t)(evision_awb_estimator_t *const self, const evision_image_t *const image,
-+							  uint8_t use_ext_meas, double ext_meas[EVISION_AWB_EXT_MEAS_SIZE]);
-+
-+static evision_api_awb_new_t evision_api_awb_new = nullptr;
-+static evision_api_awb_delete_t evision_api_awb_delete = nullptr;
-+static evision_api_awb_set_profile_t evision_api_awb_set_profile = nullptr;
-+static evision_api_awb_init_profiles_t evision_api_awb_init_profiles = nullptr;
-+static evision_api_awb_run_average_t evision_api_awb_run_average = nullptr;
-+
-+static constexpr uint8_t kIspStatCheckSkipAfterInit = 10;
-+static constexpr uint8_t kIspStatCheckSkipAfterCTEstimation = 6;
-+static constexpr int32_t kIspStatDeltaMax = 2;
-+
-+static int32_t stats_history[3][3] = { 0 };
-+static int32_t color_temperature_history[2] = { 0 };
-+static uint8_t skip_stat_check_count = kIspStatCheckSkipAfterInit;
-+#endif
-+
-+static bool process_simple_algo = true;
++static constexpr int kRefRGBMin = 0;
++static constexpr int kRefRGBMax = 255;
++static constexpr int kRefRGBDef = 128;
 +
 +static bool isColourGainValid(int32_t gain)
 +{
@@ -2861,6 +3411,27 @@ index 00000000..cdbc0159
 +{
 +	for (auto const &c : matrix)
 +		if (!isColourCorrectionValid(c))
++			return false;
++	return true;
++}
++
++static bool isReferenceRGBValid(int32_t refValue)
++{
++	return refValue >= kRefRGBMin && refValue <= kRefRGBMax;
++}
++
++static bool isReferenceRGBValid(std::vector<int32_t> matrix)
++{
++	for (auto const &c : matrix)
++		if (!isReferenceRGBValid(c))
++			return false;
++	return true;
++}
++
++static bool isReferenceRGBValid(Span<const int32_t> matrix)
++{
++	for (auto const &c : matrix)
++		if (!isReferenceRGBValid(c))
 +			return false;
 +	return true;
 +}
@@ -2924,11 +3495,10 @@ index 00000000..cdbc0159
 +	return reg;
 +}
 +
-+#ifdef EVISION_ALGO_ENABLED
-+static void getStatUp(IPAContext &context, const __u32 average_RGB[3],
-+		      int32_t avgUpRGB[3])
++static void getStatUp(IPAContext &context, const uint32_t average_RGB[3], int32_t avgUpRGB[3])
 +{
 +	uint64_t R, G, B;
++	int i;
 +
 +	/* Read the current ISP gain */
 +	if (context.isp.gain.enable == 1) {
@@ -2951,206 +3521,16 @@ index 00000000..cdbc0159
 +		avgUpRGB[1] = (int32_t)average_RGB[1];
 +		avgUpRGB[2] = (int32_t)average_RGB[2];
 +	}
++
++	for (i = 0; i < 3; i++) {
++		avgUpRGB[i] = std::clamp(avgUpRGB[i], 0, 255);
++	}
 +}
 +
-+double applyGammaInverse(uint32_t comp)
++static double interpolateValue(int32_t a, int32_t b, double ratio)
 +{
-+	return 255 * std::pow(static_cast<float>(comp) / 255, 1.0 / 2.2);
++	return a + ratio * (b - a);
 +}
-+
-+void applyCConv(IPAContext &context, const uint32_t inRGB[3], uint32_t outRGB[3])
-+{
-+	if (context.isp.cconv.enable) {
-+		const int32_t(*coeff)[3] = context.isp.cconv.coeff;
-+		int64_t ccR, ccG, ccB;
-+
-+		// Apply ColorConversion matrix to the input components
-+		ccR = static_cast<int64_t>(inRGB[0]) * coeff[0][0] + static_cast<int64_t>(inRGB[1]) * coeff[0][1] + static_cast<int64_t>(inRGB[2]) * coeff[0][2];
-+		ccG = static_cast<int64_t>(inRGB[0]) * coeff[1][0] + static_cast<int64_t>(inRGB[1]) * coeff[1][1] + static_cast<int64_t>(inRGB[2]) * coeff[1][2];
-+		ccB = static_cast<int64_t>(inRGB[0]) * coeff[2][0] + static_cast<int64_t>(inRGB[1]) * coeff[2][1] + static_cast<int64_t>(inRGB[2]) * coeff[2][2];
-+
-+		ccR /= kPrecisionFactor;
-+		ccG /= kPrecisionFactor;
-+		ccB /= kPrecisionFactor;
-+
-+		// Clamp values to 0-255
-+		ccR = std::clamp(ccR, static_cast<int64_t>(0), static_cast<int64_t>(255));
-+		ccG = std::clamp(ccG, static_cast<int64_t>(0), static_cast<int64_t>(255));
-+		ccB = std::clamp(ccB, static_cast<int64_t>(0), static_cast<int64_t>(255));
-+
-+		outRGB[0] = static_cast<uint32_t>(ccR);
-+		outRGB[1] = static_cast<uint32_t>(ccG);
-+		outRGB[2] = static_cast<uint32_t>(ccB);
-+	} else {
-+		outRGB[0] = inRGB[0];
-+		outRGB[1] = inRGB[1];
-+		outRGB[2] = inRGB[2];
-+	}
-+}
-+
-+static bool initializeLibrary()
-+{
-+	const char *lib_name = "libevision-awb.so.1";
-+
-+	plib_handle = dlopen(lib_name, RTLD_LAZY);
-+	if (!plib_handle) {
-+		LOG(DcmippAwb, Warning) << "Cannot open library: " << dlerror();
-+		LOG(DcmippAwb, Warning) << "Fall back to simple AWB algorithm processing";
-+		return true;
-+	}
-+
-+	dlerror(); // Clear any existing error
-+
-+	process_simple_algo = false;
-+	evision_api_awb_new = (evision_api_awb_new_t)dlsym(plib_handle, "evision_api_awb_new");
-+	const char *dlsym_error = dlerror();
-+	if (dlsym_error) {
-+		LOG(DcmippAwb, Error) << "Cannot load symbol 'evision_api_awb_new': " << dlsym_error;
-+		dlclose(plib_handle);
-+		return false;
-+	}
-+
-+	evision_api_awb_delete = (evision_api_awb_delete_t)dlsym(plib_handle, "evision_api_awb_delete");
-+	dlsym_error = dlerror();
-+	if (dlsym_error) {
-+		LOG(DcmippAwb, Error) << "Cannot load symbol 'evision_api_awb_delete': " << dlsym_error;
-+		dlclose(plib_handle);
-+		return false;
-+	}
-+
-+	evision_api_awb_set_profile = (evision_api_awb_set_profile_t)dlsym(plib_handle, "evision_api_awb_set_profile");
-+	dlsym_error = dlerror();
-+	if (dlsym_error) {
-+		LOG(DcmippAwb, Error) << "Cannot load symbol 'evision_api_awb_set_profile': " << dlsym_error;
-+		dlclose(plib_handle);
-+		return false;
-+	}
-+
-+	evision_api_awb_init_profiles = (evision_api_awb_init_profiles_t)dlsym(plib_handle, "evision_api_awb_init_profiles");
-+	dlsym_error = dlerror();
-+	if (dlsym_error) {
-+		LOG(DcmippAwb, Error) << "Cannot load symbol 'evision_api_awb_init_profiles': " << dlsym_error;
-+		dlclose(plib_handle);
-+		return false;
-+	}
-+
-+	evision_api_awb_run_average = (evision_api_awb_run_average_t)dlsym(plib_handle, "evision_api_awb_run_average");
-+	dlsym_error = dlerror();
-+	if (dlsym_error) {
-+		LOG(DcmippAwb, Error) << "Cannot load symbol 'evision_api_awb_run_average': " << dlsym_error;
-+		dlclose(plib_handle);
-+		return false;
-+	}
-+
-+	return true;
-+}
-+
-+static void log_cb(const char *const msg)
-+{
-+	LOG(DcmippAwb, Debug) << msg;
-+}
-+
-+bool initializeAwbInstance()
-+{
-+	if (!plib_handle) {
-+		LOG(DcmippAwb, Error) << "Library not loaded";
-+		return false;
-+	}
-+
-+	pIspAWBestimator = evision_api_awb_new(log_cb);
-+	if (pIspAWBestimator == nullptr) {
-+		LOG(DcmippAwb, Error) << "Failed to create pIspAWBestimator";
-+		return false;
-+	}
-+
-+	return true;
-+}
-+
-+bool Awb::configureAwbAlgo()
-+{
-+	if (process_simple_algo) {
-+		LOG(DcmippAwb, Debug) << "No algorithm reconfiguration needed";
-+		return true;
-+	}
-+
-+	evision_return_t e_ret;
-+	uint32_t colorTemp, profId, profNb = 0;
-+	float cfaGains[4], ccmCoeffs[3][3], ccmOffsets[3] = { 0 };
-+
-+	if (pIspAWBestimator == nullptr) {
-+		LOG(DcmippAwb, Error) << "pIspAWBestimator not found";
-+		return false;
-+	}
-+
-+	/* Set profiles (color temperature, gains, color conv matrix) */
-+	for (profId = 0; profId < EVISION_AWB_MAX_PROFILE_COUNT; profId++) {
-+		colorTemp = static_cast<float>(params_.referenceColorTemp[profId]);
-+		if (colorTemp == 0)
-+			break;
-+
-+		if (profNb > 0) {
-+			/* Profile decision threshold = lowest ref. temperature + 1/4 of the distance between two reference temperatures */
-+			colorTempThresholds[profNb - 1] = static_cast<float>((colorTemp + 3 * params_.referenceColorTemp[profId - 1]) / 4);
-+		}
-+
-+		/* Set cfa gains (RGGB) */
-+		cfaGains[0] = static_cast<float>(params_.gainRGB[profId + 0 * kAwbNbRef]) / kPrecisionFactor;
-+		cfaGains[1] = static_cast<float>(params_.gainRGB[profId + 1 * kAwbNbRef]) / kPrecisionFactor;
-+		cfaGains[2] = cfaGains[1];
-+		cfaGains[3] = static_cast<float>(params_.gainRGB[profId + 2 * kAwbNbRef]) / kPrecisionFactor;
-+
-+		/* Set CCM Coeff */
-+		for (uint32_t i = 0; i < 3; i++) {
-+			for (uint32_t j = 0; j < 3; j++) {
-+				ccmCoeffs[i][j] = static_cast<float>(params_.cconv[profId * 9 + i * 3 + j]) / kPrecisionFactor;
-+			}
-+		}
-+
-+		/* Set profile */
-+		evision_api_awb_set_profile(&awbProfiles[profId], static_cast<float>(colorTemp), cfaGains, ccmCoeffs, ccmOffsets);
-+		profNb++;
-+	}
-+
-+	if (profNb == 0) {
-+		LOG(DcmippAwb, Error) << "No valid AWB profiles found";
-+		return false;
-+	}
-+
-+	/* Register profiles */
-+	e_ret = evision_api_awb_init_profiles(pIspAWBestimator, static_cast<double>(params_.referenceColorTemp[0]),
-+					      static_cast<double>(params_.referenceColorTemp[profNb - 1]), profNb,
-+					      colorTempThresholds, awbProfiles);
-+	if (e_ret != EVISION_RET_SUCCESS) {
-+		LOG(DcmippAwb, Error) << "Failed to initialize AWB profiles";
-+		return false;
-+	}
-+
-+	/* Configure algo */
-+	/* TODO: check if this shall be an IQ tuning parameter (like the LUT tables of AE algo) */
-+	pIspAWBestimator->hyper_params.speed_p_min = 1.35;
-+	pIspAWBestimator->hyper_params.speed_p_max = (profNb < 4) ? 1.8 : 2.0;
-+	pIspAWBestimator->hyper_params.gm_tolerance = 1;
-+	pIspAWBestimator->hyper_params.conv_criterion = 3;
-+
-+	return true;
-+}
-+
-+static void deinitializeAwbInstance()
-+{
-+	if (pIspAWBestimator) {
-+		evision_api_awb_delete(pIspAWBestimator);
-+		pIspAWBestimator = nullptr;
-+	}
-+}
-+
-+static void deinitializeLibrary()
-+{
-+	if (plib_handle) {
-+		dlclose(plib_handle);
-+		plib_handle = nullptr;
-+	}
-+}
-+#endif /* EVISION_ALGO_ENABLED */
 +
 +void Awb::applyProfile(int profId)
 +{
@@ -3171,6 +3551,143 @@ index 00000000..cdbc0159
 +
 +	internal_.profileDirty = false;
 +	config_.pending = true;
++}
++
++void Awb::applyInterpolatedProfile(int downProfId, int upProfId, double ratio)
++{
++	int offsetD = 3 * 3 * downProfId;
++	int offsetU = 3 * 3 * upProfId;
++	int r, c;
++
++	/* FIXME : return what here ? */
++	internal_.profileName = params_.profileName[downProfId];
++	internal_.colorTemp = (int32_t) interpolateValue(params_.referenceColorTemp[downProfId],
++							 params_.referenceColorTemp[upProfId], ratio);
++
++	LOG(DcmippAwb, Debug) << "Changing AWB profile to interpolated " << params_.profileName[downProfId] << "-"
++			      << params_.profileName[upProfId] << "-" << ratio
++			      << " (" << internal_.colorTemp << ")";
++
++	config_.gain.enable = 1;
++	config_.gain.gainR = (uint32_t) interpolateValue(params_.gainRGB[downProfId + 0 * kAwbNbRef],
++							 params_.gainRGB[upProfId + 0 * kAwbNbRef], ratio);
++	config_.gain.gainG = (uint32_t) interpolateValue(params_.gainRGB[downProfId + 1 * kAwbNbRef],
++							 params_.gainRGB[upProfId + 1 * kAwbNbRef], ratio);
++	config_.gain.gainB = (uint32_t) interpolateValue(params_.gainRGB[downProfId + 2 * kAwbNbRef],
++							 params_.gainRGB[upProfId + 2 * kAwbNbRef], ratio);
++
++	config_.cconv.enable = 1;
++	for (r = 0; r < 3; r++) {
++		for (c = 0; c < 3; c++) {
++			int32_t a = params_.cconv[offsetD + r * 3 + c];
++			int32_t b = params_.cconv[offsetU + r * 3 + c];
++
++			config_.cconv.coeff[r][c] = (int32_t) interpolateValue(a, b, ratio);
++		}
++	}
++
++	internal_.profileDirty = false;
++	config_.pending = true;
++}
++
++bool Awb::configureAwbAlgo()
++{
++	uint32_t colorTemp;
++	uint32_t profId;
++
++	if (!params_.algoEnable)
++		return true;
++
++	internal_.currentAverageRGB.fill(0);
++	internal_.profileRBRatio.fill(0);
++	/* Compute red / blue ratio for profiles. Checking refRGB are not zero */
++	for (profId = 0; profId < kAwbNbRef; profId++) {
++		colorTemp = params_.referenceColorTemp[profId];
++		if (colorTemp == 0)
++			break;
++
++		if (!(params_.refRGB[profId * 3]) || !(params_.refRGB[profId * 3 + 1]) ||
++		    !(params_.refRGB[profId * 3 +2]))
++			return false;
++
++		internal_.profileRBRatio[profId] = (1000U * params_.refRGB[profId * 3]) / params_.refRGB[profId * 3 + 2];
++	}
++	internal_.profileNb = profId;
++
++	/* Check that the R/B ratio are sorted in decreasing order */
++	for (profId = 0; profId < internal_.profileNb - 1; profId++) {
++		if (internal_.profileRBRatio[profId] <= internal_.profileRBRatio[profId + 1])
++			return false;
++	}
++
++	return true;
++}
++
++void Awb::processAwb(IPAContext &context, const stm32_dcmipp_stat_buf *stats)
++{
++	double interpolRatio;
++	int32_t avgUpGain[3];
++	uint32_t rb_ratio;
++	int exactProfId;
++	uint32_t profId;
++	int downProfId;
++	int upProfId;
++
++	/* Update invalidStats counter */
++	if (internal_.invalidStats)
++		internal_.invalidStats--;
++	/* and exit if stats are still invalid */
++	if (internal_.invalidStats)
++		return ;
++
++	/* convert stats as if they were computed before gain and black level stage */
++	getStatUp(context, stats->post.average_RGB, avgUpGain);
++
++	/* Anti oscillation : if the statistics did not 'really' change, continue with current parameters */
++	if ((abs(avgUpGain[0] - internal_.currentAverageRGB[0]) <= kStatNoChangeThreshold) &&
++	    (abs(avgUpGain[1] - internal_.currentAverageRGB[1]) <= kStatNoChangeThreshold) &&
++	    (abs(avgUpGain[2] - internal_.currentAverageRGB[2]) <= kStatNoChangeThreshold))
++		return ;
++	internal_.currentAverageRGB = {avgUpGain[0] , avgUpGain[1], avgUpGain[2]};
++
++	/* compute red / blue ratio */
++	rb_ratio = avgUpGain[2] != 0 ? (uint32_t)(avgUpGain[0] * 1000 / avgUpGain[2]) : internal_.profileRBRatio[0];
++
++	/* Find the two (up and down) profiles where R/B enclose the reported R/B */
++	for (profId = 0; profId < internal_.profileNb; profId++) {
++		if (rb_ratio > internal_.profileRBRatio[profId])
++			break;
++	}
++
++	/* find exactProfId else compute interpolRatio */
++	if (profId == 0) {
++		/* R/B ratio is greater than the largest reference. Select the first profile (lowest color temp) */
++		exactProfId = 0;
++	} else if (profId == internal_.profileNb) {
++		/* R/B ratio is lower than the lowest reference. Select the last defined profile (highest color temp) */
++		exactProfId = profId - 1;
++	} else {
++		/* Between two profiles. Evaluate the interpolation ratio between these profiles */
++		exactProfId = -1;
++		upProfId = profId;
++		downProfId = profId - 1;
++		interpolRatio = (double)(internal_.profileRBRatio[downProfId] - rb_ratio) /
++					(internal_.profileRBRatio[downProfId] - internal_.profileRBRatio[upProfId]);
++
++		/* Check if we are close to a profile, in which case we select it instead of interpolating */
++		if (interpolRatio <= kStickyThreshold) {
++			/* Select the 'down' profile */
++			exactProfId = downProfId;
++		} else if (interpolRatio >= 1.0f - kStickyThreshold) {
++			exactProfId = upProfId;
++		}
++	}
++
++	/* Either apply an exact profile or interpolate between two using interpolRatio */
++	if (exactProfId != -1)
++		applyProfile(exactProfId);
++	else
++		applyInterpolatedProfile(downProfId, upProfId, interpolRatio);
 +}
 +
 +int Awb::init([[maybe_unused]] IPAContext &context, const YamlObject &tuningData)
@@ -3223,6 +3740,18 @@ index 00000000..cdbc0159
 +		std::copy(matrix.begin(), matrix.end(), params_.cconv.begin());
 +	} else if (matrix.size() != 0) {
 +		LOG(DcmippAwb, Error) << "Invalid Cconv";
++		return -EINVAL;
++	}
++
++	matrix = tuningData["ReferenceRGB"].getList<int32_t>().value_or(std::vector<int32_t>{});
++	if (matrix.size() == kAwbNbRef * 3) {
++		if (!isReferenceRGBValid(matrix)) {
++			LOG(DcmippAwb, Error) << "Invalid ReferenceRGB values";
++			return -EINVAL;
++		}
++		std::copy(matrix.begin(), matrix.end(), params_.refRGB.begin());
++	} else if (matrix.size() != 0) {
++		LOG(DcmippAwb, Error) << "Invalid ReferenceRGB";
 +		return -EINVAL;
 +	}
 +
@@ -3279,29 +3808,10 @@ index 00000000..cdbc0159
 +		return -EINVAL;
 +	}
 +
-+#ifdef EVISION_ALGO_ENABLED
-+	if (params_.algoEnable) {
-+		if (!initializeLibrary()) {
-+			LOG(DcmippAwb, Error) << "Initialize library failed";
-+			return -EINVAL;
-+		}
-+
-+		if (!process_simple_algo) {
-+			if (!initializeAwbInstance()) {
-+				LOG(DcmippAwb, Error) << "Cannot initialize awb instance";
-+				deinitializeLibrary();
-+				return -EINVAL;
-+			}
-+
-+			if (!configureAwbAlgo()) {
-+				LOG(DcmippAwb, Error) << "Cannot configure awb algorithm";
-+				deinitializeAwbInstance();
-+				deinitializeLibrary();
-+				return -EINVAL;
-+			}
-+		}
++	if (!configureAwbAlgo()) {
++		LOG(DcmippAwb, Error) << "Cannot configure awb algorithm";
++		return -EINVAL;
 +	}
-+#endif /* EVISION_ALGO_ENABLED */
 +
 +	/* Configure exposed controls */
 +	context.dcmippControls[&controls::draft::ColourGains3Enable] = ControlInfo(false, true);
@@ -3314,6 +3824,7 @@ index 00000000..cdbc0159
 +	context.dcmippControls[&controls::draft::AwbReferenceColorTemperature] = ControlInfo(kColTemperatureMin, kColTemperatureMax, kColTemperatureDef);
 +	context.dcmippControls[&controls::draft::AwbColourGains3] = ControlInfo(kColGainMin, kColGainMax, kColGainDef);
 +	context.dcmippControls[&controls::draft::AwbColourCorrection] = ControlInfo(kColCorrectionMin, kColCorrectionMax, kColCorrectionDef);
++	context.dcmippControls[&controls::draft::AwbReferenceRGB] = ControlInfo(kRefRGBMin, kRefRGBMax, kRefRGBDef);
 +	context.dcmippControls[&controls::draft::AwbCustomColorTemperature] = ControlInfo(kColTemperatureMin, kColTemperatureMax, kColTemperatureDef);
 +
 +	return 0;
@@ -3323,6 +3834,7 @@ index 00000000..cdbc0159
 +		   [[maybe_unused]] const IPACameraSensorInfo &configInfo)
 +{
 +	int profId;
++
 +	/* Set the initial ISP values in the pending config */
 +	if (!params_.algoEnable) {
 +		if (internal_.customColorTemp) {
@@ -3369,6 +3881,7 @@ index 00000000..cdbc0159
 +	const auto &referenceColorTemp = controls.get(controls::draft::AwbReferenceColorTemperature);
 +	const auto &gainRGB = controls.get(controls::draft::AwbColourGains3);
 +	const auto &cconv = controls.get(controls::draft::AwbColourCorrection);
++	const auto &refRGB = controls.get(controls::draft::AwbReferenceRGB);
 +
 +	if (algoEnable) {
 +		params_.algoEnable = *algoEnable;
@@ -3439,13 +3952,20 @@ index 00000000..cdbc0159
 +		internal_.profileDirty = true;
 +		LOG(DcmippAwb, Debug) << "Updating AwbColourConv to " << (*cconv)[0] << "...";
 +	}
++	if (refRGB) {
++		if (!isReferenceRGBValid(*refRGB)) {
++			LOG(DcmippAwb, Error) << "Invalid ReferenceRGB values";
++			return;
++		}
++		std::copy(std::begin(*refRGB), std::end(*refRGB), params_.refRGB.begin());
++		internal_.profileDirty = true;
++		LOG(DcmippAwb, Debug) << "Updating AwbReferenceRGB to " << (*refRGB)[0] << "...";
++	}
 +
-+#ifdef EVISION_ALGO_ENABLED
 +	if (internal_.profileDirty && !configureAwbAlgo()) {
 +		LOG(DcmippAwb, Error) << "Cannot reconfigure awb algorithm";
 +		return;
 +	}
-+#endif /* EVISION_ALGO_ENABLED */
 +
 +	/* Static config: update params_ and if applicable force config_ update now */
 +	const auto &customColorTemp = controls.get(controls::draft::AwbCustomColorTemperature);
@@ -3578,122 +4098,8 @@ index 00000000..cdbc0159
 +		  [[maybe_unused]] const stm32_dcmipp_stat_buf *stats,
 +		  ControlList &metadata)
 +{
-+	/* Compute a new pending config from stats */
-+	if (params_.algoEnable) {
-+		if (process_simple_algo) {
-+			/* Fall back to simple AWB algorithm if evision library is not found or used.
-+			   In this case, we apply the first profile with color temp above the minimum value */
-+			int i, profId;
-+
-+			profId = 0;
-+			for (i = 0; i < kAwbNbRef; i++) {
-+				if (params_.referenceColorTemp[i] >= kColorTempAlgoDefaultMin) {
-+					profId = i;
-+					break;
-+				}
-+			}
-+
-+			/* Apply the first profile with color temperature higher than 4500.
-+			   If no such profile has been found, apply the first profile by default (id = 0) */
-+			applyProfile(profId);
-+		}
-+#ifdef EVISION_ALGO_ENABLED
-+		else {
-+			int32_t colorTemp = 0;
-+			uint32_t ccAvgRGB[3];
-+			double meas[3];
-+			uint32_t profId = 0;
-+			int32_t avgUpGain[3];
-+
-+			/* Check if stats can be considered as valid */
-+			if (internal_.invalidStats)
-+				internal_.invalidStats--;
-+
-+			if (!internal_.invalidStats) {
-+				evision_return_t e_ret;
-+
-+				/* Get RGB before ISP gain and Black level */
-+				getStatUp(context, stats->post.average_RGB, avgUpGain);
-+
-+				bool stat_has_changed = false;
-+				if (internal_.profileDirty) {
-+					skip_stat_check_count = kIspStatCheckSkipAfterCTEstimation;
-+					color_temperature_history[0] = 0;
-+					color_temperature_history[1] = 0;
-+				} else {
-+					for (int i = 0; i < 3; ++i)
-+						for (int j = 0; j < 3; ++j)
-+							if (abs(avgUpGain[j] - stats_history[i][j]) > kIspStatDeltaMax)
-+								stat_has_changed = true;
-+				}
-+
-+				if (skip_stat_check_count || stat_has_changed) {
-+					stats_history[2][0] = avgUpGain[0];
-+					stats_history[2][1] = avgUpGain[1];
-+					stats_history[2][2] = avgUpGain[2];
-+
-+					/* Apply the current color conversion matrix to get stats after color conversion ISP block*/
-+					applyCConv(context, stats->post.average_RGB, ccAvgRGB);
-+
-+					/* Invert gamma */
-+					for (int i = 0; i < 3; ++i) {
-+						meas[i] = applyGammaInverse(ccAvgRGB[i]);
-+					}
-+
-+					/* Run algo to estimate gain and color conversion to apply */
-+					e_ret = evision_api_awb_run_average(pIspAWBestimator, NULL, 1, meas);
-+					if (e_ret == EVISION_RET_SUCCESS) {
-+						if ((pIspAWBestimator->out_temp != internal_.colorTemp) || internal_.profileDirty) {
-+							if ((pIspAWBestimator->out_temp == color_temperature_history[1]) && !internal_.profileDirty) {
-+								skip_stat_check_count = 0; //oscillation detected
-+								LOG(DcmippAwb, Debug) << "Oscillation detected";
-+							} else {
-+								if (skip_stat_check_count <= kIspStatCheckSkipAfterCTEstimation)
-+									skip_stat_check_count = kIspStatCheckSkipAfterCTEstimation;
-+								/* Find the index profile for this referenceColorTemp */
-+								for (profId = 0; profId < EVISION_AWB_MAX_PROFILE_COUNT; profId++) {
-+									if (pIspAWBestimator->out_temp == params_.referenceColorTemp[profId])
-+										break;
-+								}
-+
-+								if (profId == EVISION_AWB_MAX_PROFILE_COUNT) {
-+									LOG(DcmippAwb, Error) << "Unknown AWB profile";
-+									return;
-+								} else {
-+									/* Apply new ISP Color Conversion */
-+									colorTemp = params_.referenceColorTemp[profId];
-+								}
-+							}
-+						}
-+
-+						if (colorTemp || internal_.profileDirty) {
-+							applyProfile((int)profId);
-+						}
-+
-+					} else {
-+						LOG(DcmippAwb, Error) << "Unable to run evivion library";
-+						return;
-+					}
-+				}
-+
-+				/* Decrease counter to limit the number of estmations before reaching convergence */
-+				if (skip_stat_check_count > 0) {
-+					skip_stat_check_count--;
-+				}
-+
-+				/* Store history to be able to detect variation */
-+				stats_history[1][0] = stats_history[0][0];
-+				stats_history[1][1] = stats_history[0][1];
-+				stats_history[1][2] = stats_history[0][2];
-+				stats_history[0][0] = avgUpGain[0];
-+				stats_history[0][1] = avgUpGain[1];
-+				stats_history[0][2] = avgUpGain[2];
-+				color_temperature_history[1] = color_temperature_history[0];
-+				color_temperature_history[0] = colorTemp ? colorTemp : internal_.colorTemp;
-+			}
-+		}
-+#endif /* EVISION_ALGO_ENABLED */
-+	}
++	if (params_.algoEnable)
++		processAwb(context, stats);
 +
 +	/* Set metadata */
 +	metadata.set(controls::draft::ColourGains3Enable, config_.gain.enable);
@@ -3722,6 +4128,7 @@ index 00000000..cdbc0159
 +	metadata.set(controls::draft::AwbReferenceColorTemperature, params_.referenceColorTemp);
 +	metadata.set(controls::draft::AwbColourGains3, params_.gainRGB);
 +	metadata.set(controls::draft::AwbColourCorrection, params_.cconv);
++	metadata.set(controls::draft::AwbReferenceRGB, params_.refRGB);
 +
 +	if (internal_.colorTemp)
 +		metadata.set(controls::ColourTemperature, internal_.colorTemp);
@@ -3738,10 +4145,10 @@ index 00000000..cdbc0159
 +} /* namespace libcamera */
 diff --git a/src/ipa/dcmipp/algorithms/awb.h b/src/ipa/dcmipp/algorithms/awb.h
 new file mode 100644
-index 00000000..239868c9
+index 00000000..d581ebe8
 --- /dev/null
 +++ b/src/ipa/dcmipp/algorithms/awb.h
-@@ -0,0 +1,65 @@
+@@ -0,0 +1,71 @@
 +/* SPDX-License-Identifier: LGPL-2.1-or-later */
 +/*
 + * Copyright (C) 2024 ST Microelectronics
@@ -3782,6 +4189,7 @@ index 00000000..239868c9
 +		std::array<int32_t, kAwbNbRef> referenceColorTemp;
 +		std::array<int32_t, kAwbNbRef * 3> gainRGB;
 +		std::array<int32_t, kAwbNbRef * 3 * 3> cconv;
++		std::array<int32_t, kAwbNbRef * 3> refRGB;
 +		struct IPAIspGain gainStatic;
 +		struct IPAIspColorConv cconvStatic;
 +	} params_;
@@ -3792,6 +4200,9 @@ index 00000000..239868c9
 +		std::string profileName;
 +		int32_t customColorTemp;
 +		bool profileDirty;
++		std::array<int32_t, 3> currentAverageRGB;
++		std::array<uint32_t, kAwbNbRef> profileRBRatio;
++		uint32_t profileNb;
 +	} internal_;
 +
 +	struct algoConfig {
@@ -3802,6 +4213,8 @@ index 00000000..239868c9
 +
 +	bool configureAwbAlgo();
 +	void applyProfile(int profId);
++	void applyInterpolatedProfile(int downProfId, int upProfId, double ratio);
++	void processAwb(IPAContext &context, const stm32_dcmipp_stat_buf *stats);
 +};
 +
 +} /* namespace ipa::dcmipp::algorithms */
@@ -5159,18 +5572,19 @@ index 00000000..91c0701a
 +} /* namespace libcamera */
 diff --git a/src/ipa/dcmipp/data/imx335.yaml b/src/ipa/dcmipp/data/imx335.yaml
 new file mode 100644
-index 00000000..6e780d10
+index 00000000..4bf84218
 --- /dev/null
 +++ b/src/ipa/dcmipp/data/imx335.yaml
-@@ -0,0 +1,56 @@
-+# Copyright (c) 2025 STMicroelectronics.
+@@ -0,0 +1,61 @@
++# Copyright (c) 2026 STMicroelectronics.
 +# All rights reserved.
 +#
 +# This software is licensed under SLA0044 terms that can be found here:
 +# https://www.st.com/resource/en/license_agreement/SLA0044.txt
 +#
-+# imx335 configuration file for the STM32 dcmipp IPA.
-+# Tuned with the JudgeII Light Box
++# IMX335 configuration file for the STM32 dcmipp IPA.
++#
++# THIS FILE WAS GENERATED BY THE STM32 ISP IQTune ON 2026-04-20 09:55:36
 +#
 +
 +%YAML 1.1
@@ -5178,26 +5592,32 @@ index 00000000..6e780d10
 +version: 1
 +algorithms:
 +  - Aec:
-+      AnalogueGain_dB: 0.0
-+      ExposureTime: 6318
-+      AeEnable: true
-+      AntiFlickerFreq: 0
-+      ExposureValue: 0.0
++      AnalogueGain_dB: 0
 +      SensorDelay: 3
++      ExposureTime: 5000
++      AeEnable: true
++      ExposureValue: 0.0
++      AntiFlickerFreq: 0
++      LuxRef:
++        Lux: [1050, 270]
++        Expo: [5000, 33266, 9000, 33266]
++        Lum: [20, 117, 10, 36]
++        CalibFactor: 0.905
 +  - Awb:
 +      FixedGainEnable: true
-+      FixedGainR: 182000000
++      FixedGainR: 244000000
 +      FixedGainG: 100000000
-+      FixedGainB: 212000000
++      FixedGainB: 143000000
 +      FixedCconvEnable: true
-+      FixedCconv: [164670000, -20970000, -43700000, -51330000, 178670000, -27339999, -12490000, -48170000, 160670000]
++      FixedCconv: [150570000, 2440000, -53010000, -37350000, 193760000, -56420000, -11100000, -35490000, 146590000]
 +      AwbEnable: true
-+      ProfileName: ["JudgeII-A", "JudgeII-TL84", "JudgeII-D65", "Free slot", "Free slot"]
++      ProfileName: ["JudgeII-A", "JudgeII-TL84", "JudgeII-DAY", "Free Slot", "Free Slot"]
 +      RefColorTemp: [2810, 4015, 6650, 0, 0]
-+      GainR: [137000000, 182000000, 244000000, 0, 0]
++      GainR: [124000000, 182000000, 244000000, 0, 0]
 +      GainG: [100000000, 100000000, 100000000, 0, 0]
-+      GainB: [287000000, 212000000, 143000000, 0, 0]
-+      Cconv: [159760000, -9780000, -49990000, -45530000, 171540000, -26000000, -3300000, -110120000, 213430000, 164670000, -20970000, -43700000, -51330000, 178670000, -27339999, -12490000, -48170000, 160670000, 150570000, 2440000, -53010000, -37350000, 193760000, -56420000, -11100000, -35490000, 146590000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
++      GainB: [282000000, 212000000, 143000000, 0, 0]
++      Cconv: [82450000, 90560000, -73010000, -65469999, 181020000, -15559999, -30490000, -52940000, 183430000, 164670000, -20970000, -43700000, -51330000, 178670000, -27339999, -12490000, -48170000, 160670000, 150570000, 2440000, -53010000, -37350000, 193760000, -56420000, -11100000, -35490000, 146590000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
++      ReferenceRGB: [61, 65, 30, 46, 68, 37, 38, 68, 49, 0, 0, 0, 0, 0, 0]
 +  - BadPixel:
 +      Enable: false
 +      Strength: 0
@@ -5207,7 +5627,7 @@ index 00000000..6e780d10
 +      Level: [12, 12, 12]
 +  - Contrast:
 +      Enable: false
-+      LuminanceFactor: [100, 100, 100, 100, 100, 100, 100, 100, 100]
++      LuminanceFactor: [0, 0, 0, 0, 0, 0, 0, 0, 0]
 +  - Demosaicing:
 +      Enable: true
 +      Filter: [2, 4, 4, 6]
@@ -5217,68 +5637,6 @@ index 00000000..6e780d10
 +  - GammaCorrection:
 +      Enable: true
 +# NOTE : parameters of 'statRemoval' are not handled in libcamera
-+# NOTE : parameters of 'decimation' are not handled in libcamera
-+# NOTE : parameter 'demosaicing.type' is not handled in libcamera
-diff --git a/src/ipa/dcmipp/data/imx335_mini_light_box.yaml b/src/ipa/dcmipp/data/imx335_mini_light_box.yaml
-new file mode 100644
-index 00000000..3303cab9
---- /dev/null
-+++ b/src/ipa/dcmipp/data/imx335_mini_light_box.yaml
-@@ -0,0 +1,54 @@
-+# Copyright (c) 2025 STMicroelectronics.
-+# All rights reserved.
-+#
-+# This software is licensed under SLA0044 terms that can be found here:
-+# https://www.st.com/resource/en/license_agreement/SLA0044.txt
-+#
-+# imx335 configuration file for the STM32 dcmipp IPA.
-+# Tuned with the Mini Light Box
-+#
-+
-+%YAML 1.1
-+---
-+version: 1
-+algorithms:
-+  - Aec:
-+      AeEnable: true
-+      AntiFlickerFreq: 0
-+      ExposureValue: 0.0
-+      SensorDelay: 3
-+  - Awb:
-+      FixedGainEnable: true
-+      FixedGainR: 177000000
-+      FixedGainG: 100000000
-+      FixedGainB: 235000000
-+      FixedCconvEnable: true
-+      FixedCconv: [155134500, -69370000, 13106000, -38671000, 167689800, -33936000, 5546200, -66769999, 159944200]
-+      AwbEnable: true
-+      ProfileName: ["MiniLBox A", "MiniLBox TL84", "MiniLBox D65", "Free slot", "Free slot"]
-+      RefColorTemp: [2665, 3750, 6140, 0, 0]
-+      GainR: [126000000, 157000000, 210000000, 0, 0]
-+      GainG: [100000000, 100000000, 100000000, 0, 0]
-+      GainB: [279000000, 199000000, 155000000, 0, 0]
-+      Cconv: [277500000, -75420000, -46310000, -91640000, 272360000, -29450000, -1060000, -126200000, 334070000, 178510000, -54460000, -19030000, -46390000, 162010000, -21660000, 1520000, -56399999, 168130000, 176680000, -60550000, -15590000, -33130000, 138950000, -21970000, -1080000, -40140000, 135020000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-+  - BadPixel:
-+      Enable: false
-+      Strength: 0
-+      Threhsold: 0
-+  - BlackLevelCorrection:
-+      Enable: true
-+      Level: [12, 12, 12]
-+  - Contrast:
-+      Enable: false
-+      LuminanceFactor: [100, 100, 100, 100, 100, 100, 100, 100, 100]
-+  - Demosaicing:
-+      Enable: true
-+      Filter: [2, 4, 4, 6]
-+  - Statistic:
-+      Area: [648, 486, 1296, 972]
-+      Profile: 2
-+  - GammaCorrection:
-+      Enable: true
-+# NOTE : parameters of 'statRemoval' are not handled in libcamera
-+# NOTE : parameters of 'decimation' are not handled in libcamera
-+# NOTE : parameter 'demosaicing.type' is not handled in libcamera
 diff --git a/src/ipa/dcmipp/data/meson.build b/src/ipa/dcmipp/data/meson.build
 new file mode 100644
 index 00000000..d2dde358
@@ -5326,19 +5684,19 @@ index 00000000..d15cbc6f
 +  - GammaCorrection:
 diff --git a/src/ipa/dcmipp/data/vd56g3.yaml b/src/ipa/dcmipp/data/vd56g3.yaml
 new file mode 100644
-index 00000000..62c43323
+index 00000000..e9d532e4
 --- /dev/null
 +++ b/src/ipa/dcmipp/data/vd56g3.yaml
-@@ -0,0 +1,54 @@
-+# Copyright (c) 2024 STMicroelectronics.
+@@ -0,0 +1,61 @@
++# Copyright (c) 2026 STMicroelectronics.
 +# All rights reserved.
 +#
 +# This software is licensed under SLA0044 terms that can be found here:
 +# https://www.st.com/resource/en/license_agreement/SLA0044.txt
 +#
-+# vd56g3 configuration file for the STM32 dcmipp IPA.
++# VD66GY configuration file for the STM32 dcmipp IPA.
 +#
-+# THIS FILE WAS GENERATED BY THE STM32 ISP IQTune ON 2025-05-19 09:42:55
++# THIS FILE WAS GENERATED BY THE STM32 ISP IQTune ON 2026-04-20 09:56:14
 +#
 +
 +%YAML 1.1
@@ -5346,12 +5704,17 @@ index 00000000..62c43323
 +version: 1
 +algorithms:
 +  - Aec:
-+      AnalogueGain_dB: 0.0
-+      ExposureTime: 9308
++      AnalogueGain_dB: 0
++      SensorDelay: 4
++      ExposureTime: 5000
 +      AeEnable: true
 +      ExposureValue: 0.0
 +      AntiFlickerFreq: 0
-+      SensorDelay: 4
++      LuxRef:
++        Lux: [1400, 300]
++        Expo: [2000, 20000, 5000, 29827]
++        Lum: [42, 200, 20, 111]
++        CalibFactor: 0.738
 +  - Awb:
 +      FixedGainEnable: true
 +      FixedGainR: 156000000
@@ -5366,6 +5729,7 @@ index 00000000..62c43323
 +      GainG: [100000000, 100000000, 100000000, 0, 0]
 +      GainB: [238000000, 189000000, 150000000, 0, 0]
 +      Cconv: [133939999, -20660000, -31280000, -37890000, 149680000, -26179999, 2040000, -89240000, 221830000, 147680000, -38330000, -29360000, -40320000, 146010000, -31400000, 1100000, -61240000, 174790000, 146010000, -39280000, -14060000, -26750000, 152490000, -42520000, 1160000, -55410000, 143910000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
++      ReferenceRGB: [80, 65, 30, 69, 70, 38, 54, 70, 45, 0, 0, 0, 0, 0, 0]
 +  - BadPixel:
 +      Enable: false
 +      Strength: 0
@@ -5384,21 +5748,22 @@ index 00000000..62c43323
 +      Profile: 2
 +  - GammaCorrection:
 +      Enable: true
++# NOTE : parameters of 'statRemoval' are not handled in libcamera
 diff --git a/src/ipa/dcmipp/data/vd56g3_mono.yaml b/src/ipa/dcmipp/data/vd56g3_mono.yaml
 new file mode 100644
-index 00000000..927715d7
+index 00000000..7966ada7
 --- /dev/null
 +++ b/src/ipa/dcmipp/data/vd56g3_mono.yaml
-@@ -0,0 +1,54 @@
-+# Copyright (c) 2024 STMicroelectronics.
+@@ -0,0 +1,61 @@
++# Copyright (c) 2026 STMicroelectronics.
 +# All rights reserved.
 +#
 +# This software is licensed under SLA0044 terms that can be found here:
 +# https://www.st.com/resource/en/license_agreement/SLA0044.txt
 +#
-+# vd56g3 configuration file for the STM32 dcmipp IPA.
++# VD56G3 configuration file for the STM32 dcmipp IPA.
 +#
-+# THIS FILE WAS GENERATED BY THE STM32 ISP IQTune ON 2025-05-19 09:42:55
++# THIS FILE WAS GENERATED BY THE STM32 ISP IQTune ON 2026-04-20 09:56:35
 +#
 +
 +%YAML 1.1
@@ -5406,12 +5771,17 @@ index 00000000..927715d7
 +version: 1
 +algorithms:
 +  - Aec:
-+      AnalogueGain_dB: 0.0
-+      ExposureTime: 9308
++      AnalogueGain_dB: 0
++      SensorDelay: 4
++      ExposureTime: 5000
 +      AeEnable: true
 +      ExposureValue: 0.0
 +      AntiFlickerFreq: 0
-+      SensorDelay: 4
++      LuxRef:
++        Lux: [1090, 234]
++        Expo: [425, 2025, 2057, 5257]
++        Lum: [23, 110, 27, 70]
++        CalibFactor: 0.997
 +  - Awb:
 +      FixedGainEnable: false
 +      FixedGainR: 0
@@ -5426,6 +5796,7 @@ index 00000000..927715d7
 +      GainG: [0, 0, 0, 0, 0]
 +      GainB: [0, 0, 0, 0, 0]
 +      Cconv: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
++      ReferenceRGB: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 +  - BadPixel:
 +      Enable: false
 +      Strength: 0
@@ -5438,12 +5809,13 @@ index 00000000..927715d7
 +      LuminanceFactor: [0, 0, 0, 0, 0, 0, 0, 0, 0]
 +  - Demosaicing:
 +      Enable: false
-+      Filter: [2, 4, 4, 6]
++      Filter: [0, 0, 0, 0]
 +  - Statistic:
 +      Area: [140, 341, 840, 682]
 +      Profile: 2
 +  - GammaCorrection:
 +      Enable: true
++# NOTE : parameters of 'statRemoval' are not handled in libcamera
 diff --git a/src/ipa/dcmipp/dcmipp.cpp b/src/ipa/dcmipp/dcmipp.cpp
 new file mode 100644
 index 00000000..eea008f7
@@ -6305,10 +6677,10 @@ index 961209ea..67029fc3 100644
  
  /* Calculate chrominance statistics (R/G and B/G) for each region. */
 diff --git a/src/libcamera/control_ids_draft.yaml b/src/libcamera/control_ids_draft.yaml
-index 9bef5bf1..0fdc5e63 100644
+index 9bef5bf1..de06dd13 100644
 --- a/src/libcamera/control_ids_draft.yaml
 +++ b/src/libcamera/control_ids_draft.yaml
-@@ -227,4 +227,260 @@ controls:
+@@ -227,4 +227,292 @@ controls:
              value. All of the custom test patterns will be static (that is the
              raw image must not vary from frame to frame).
  
@@ -6393,6 +6765,12 @@ index 9bef5bf1..0fdc5e63 100644
 +        Array of ColourCorrection (one entry per profile) used by the AWB
 +        algorithm.
 +      size: [5,3,3]
++
++  - AwbReferenceRGB:
++      type: int32_t
++      description: |
++        Array of ReferenceRGB (one entry per profile) used by the AWB algorithm.
++      size: [5,3]
 +
 +  - AwbCustomColorTemperature:
 +      type: int32_t
@@ -6567,6 +6945,32 @@ index 9bef5bf1..0fdc5e63 100644
 +
 +        The order of rectangles passed into the control must match the order of
 +        streams configured by the application.
++
++  - LuxRef:
++      type: int32_t
++      description: |
++        Lux reference values in lux. First one is HL_LuxRef. Second one is
++        LL_LuxRef.
++      size: [2]
++
++  - LuxRefExpo:
++      type: int32_t
++      description: |
++        Exposure values. Values are in following order: HL_Expo1, HL_Expo2,
++        LL_Expo1 and LL_Expo2.
++      size: [4]
++
++  - LuxRefLum:
++      type: int32_t
++      description: |
++        Luminance values. Values are in following order: HL_Lum1, HL_Lum2,
++        LL_Lum1 and LL_Lum2.
++      size: [4]
++
++  - LuxRefCalibFactor:
++      type: float
++      description: |
++        Calibration factor.
 +
  ...
 diff --git a/src/libcamera/ipc_unixsocket.cpp b/src/libcamera/ipc_unixsocket.cpp

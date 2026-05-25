@@ -8,7 +8,6 @@ S = "${WORKDIR}/git"
 
 DEPENDS = "python3-pyyaml-native python3-jinja2-native python3-ply-native python3-jinja2-native udev gnutls chrpath-native libevent libyaml"
 DEPENDS += "${@bb.utils.contains('DISTRO_FEATURES', 'qt', 'qtbase qtbase-native', '', d)}"
-DEPENDS:append:aarch64 = " evision-libs "
 
 PACKAGES =+ "${PN}-gst"
 
@@ -30,19 +29,10 @@ EXTRA_OEMESON = " \
 EXTRA_OEMESON += " \
     -Dipas=${LIBCAMERA_IPAS} \
 "
-EXTRA_OEMESON:append:aarch64 = " \
-    -Devision_algo=true \
-    -Devision_algo_inc_dir=${RECIPE_SYSROOT}/usr/include/evision \
-"
-
 RDEPENDS:${PN} = "${@bb.utils.contains('DISTRO_FEATURES', 'wayland qt', 'qtwayland', '', d)}"
-RDEPENDS:${PN}:append:aarch64 = " evision-libs "
+RDEPENDS:${PN}-gst:append:aarch64 = " gstreamer1.0-python "
 
 inherit meson pkgconfig python3native python3-dir
-
-do_configure:prepend() {
-    sed -i -e 's|py_compile=True,||' ${S}/utils/ipc/mojo/public/tools/mojom/mojom/generate/template_expander.py
-}
 
 do_install:append() {
     chrpath -d ${D}${libdir}/libcamera.so

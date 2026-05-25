@@ -19,7 +19,7 @@ SRC_URI += " \
     file://0002-options-Replace-use-of-VLAs-in-C.patch \
     file://0001-rpi-Use-alloca-instead-of-variable-length-arrays.patch \
     \
-    file://0001-v0.3.0-stm32mp.patch \
+    file://0001-v0.3.0-stm32mp-6.2.1.patch \
     "
 
-PV = "0.3.0"
+PV = "0.3.0-stm32mp.2"
