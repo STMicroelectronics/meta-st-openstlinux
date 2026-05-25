@@ -5,7 +5,8 @@
 # For changing the password and SSID, please populate the file /etc/default/hostapd
 # cat /etc/default/hostapd
 # HOSTAPD_SSID=STExampleNetwork
-# HOSTAPD_PASSWD=stm32mp1
+# HOSTAPD_PASSWD=stm32mpu_pass
+# HOSTAPD_ADDR=192.168.72.1
 
 
 if [ -f /etc/default/hostapd ];
@@ -13,7 +14,8 @@ then
     source /etc/default/hostapd
 else
     HOSTAPD_SSID=STDemoNetwork
-    HOSTAPD_PASSWD=stm32mp1
+    HOSTAPD_PASSWD=stm32mpu_pass
+    HOSTAPD_ADDR=192.168.72.1
 fi
 
 WLAN_INTERFACE=$(/sbin/ip link show wlan0 | head -n 1 | awk '{print $2}' | tr '\n' ' ' | sed "s/://" | sed "s/ //g")
@@ -25,7 +27,7 @@ cat > /lib/systemd/network/hostapd.network << EOF
 Name=$WLAN_INTERFACE
 
 [Network]
-Address=192.168.72.1/24
+Address=$HOSTAPD_ADDR/24
 DHCPServer=yes
 IPForward=ipv4
 IPMasquerade=ipv4
