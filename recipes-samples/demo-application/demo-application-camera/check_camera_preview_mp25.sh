@@ -2,6 +2,18 @@
 
 is_dcmipp_present() {
     DCMIPP_SENSOR="NOTFOUND"
+    if [ $(find /sys/class/video4linux/ -name v4l-subdev* 2>/dev/null | wc -l) -gt 0 ] ; then
+        # check if dcmipp is present and a camera is present
+        if $(cat /sys/class/video4linux/video*/device/modalias | grep -q dcmi) ; then
+            if ! $(cat /sys/class/video4linux/v4l-subdev*/device/modalias | grep -q camera) ; then
+                # not camera available via dmicpp
+                return
+            fi
+        fi
+    else
+        # not camera available via subdev
+        return
+    fi
     # on disco board ov5640 camera can be present on csi connector
     for video in $(find /sys/class/video4linux -name "video*" -type l);
     do

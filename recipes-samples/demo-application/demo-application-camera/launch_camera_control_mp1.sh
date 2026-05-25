@@ -6,6 +6,19 @@ function print_debug() {
 is_dcmipp_present() {
     DCMIPP_SENSOR="NOTFOUND"
     # on disco board ov5640 camera can be present on csi connector
+    if [ $(find /sys/class/video4linux/ -name v4l-subdev* 2>/dev/null | wc -l) -gt 0 ]; then
+        if $(cat /sys/class/video4linux/v4l-subdev*/device/modalias | grep -q dcmi) ; then
+            if  $(cat /sys/class/video4linux/v4l-subdev*/device/modalias | grep -q gc2145) ; then
+                DCMIPP_SENSOR="FOUND"
+            fi
+            if  $(cat /sys/class/video4linux/v4l-subdev*/device/modalias | grep -q ov5640) ; then
+                DCMIPP_SENSOR="FOUND"
+            fi
+        fi
+    fi
+    if [ "$DCMIPP_SENSOR" = "NOTFOUND" ]; then
+        return
+    fi
     for video in $(find /sys/class/video4linux -name "video*" -type l);
     do
         if [ "$(cat $video/name)" = "dcmipp_dump_capture" ]; then
@@ -117,10 +130,12 @@ else
             ;;
         esac
     else
+        echo "search webcam"
         get_webcam_device
         # suppose we have a webcam
         WIDTH=640
         HEIGHT=480
+        ADDONS="videoconvert ! video/x-raw,format=NV12 ! queue !"
     fi
 
     V4L2_CAPS="video/x-raw, width=$WIDTH, height=$HEIGHT"

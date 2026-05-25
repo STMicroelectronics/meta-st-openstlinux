@@ -17,13 +17,17 @@ function pty_exec() {
     fi
 }
 
-echo "GStreamer graph:"
-GRAPH="$GST_SOURCE ! $GST_CAPS ! queue ! $ADDONS gtkwaylandsink name=gtkwsink"
+if [ -n "$GST_SOURCE" ]; then
+	echo "GStreamer graph:"
+	GRAPH="$GST_SOURCE ! $GST_CAPS ! queue ! $ADDONS gtkwaylandsink name=gtkwsink"
 
-echo "  $GRAPH"
-pty_exec "$GRAPH"
+	echo "  $GRAPH"
+	pty_exec "$GRAPH"
 
-#Kill exposure correction background task
-killall launch_camera_control_mp25.sh
-killall launch_camera_preview_mp25.sh
+	#Kill exposure correction background task
+	killall launch_camera_control_mp25.sh
+	killall launch_camera_preview_mp25.sh
+else
+	echo "WARNING: no camera supported detected by this script"
+fi
 

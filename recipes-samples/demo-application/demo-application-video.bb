@@ -12,6 +12,7 @@ SRC_URI = " \
     file://ST2297_visionv3.webm \
     file://ST19619_ST_Company_Video_16_9_EN_272p.webm \
     file://launch_video.sh \
+    file://launch_play_pause_video.sh \
     file://020-video.yaml \
     \
     file://video_playback.desktop \

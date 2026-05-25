@@ -10,13 +10,30 @@ cmd() {
 DCMIPP_MEDIA="platform:48030000.dcmipp"
 
 get_webcam_device() {
+    V4L_DEVICE=""
+    PIPEWIRE_SRC=""
     for video in $(find /sys/class/video4linux -name "video*" -type l | sort);
     do
-        if [ "$(cat "$video/name")" != "dcmipp_main_capture" ]; then
-            V4L_DEVICE="device=/dev/$(basename "$video")"
-            break;
+        if ! $(cat "$video/name" | grep -q "dcmi") ; then
+            if ! $(cat "$video/name" | grep -q "stm32mp") ; then
+                V4L_DEVICE="device=/dev/$(basename "$video")"
+                PIPEWIRE_SRC=$(gst-device-monitor-1.0 Video/Source:image/jpeg 2>/dev/null | grep gst-launch | tail -n 1 | sed "s|\s*gst-launch-1.0 \(.*\) !.*|\1|" )
+                break;
+            fi
         fi
     done
+}
+
+is_dcmipp_present() {
+    DCMIPP_SENSOR="NOTFOUND"
+    if [ $(find /sys/class/video4linux/ -name v4l-subdev* 2>/dev/null | wc -l) -gt 0 ]; then
+        # check if dcmipp is present and a camera is present
+        if $(cat /sys/class/video4linux/v4l-subdev*/device/modalias | grep -q dcmi) ; then
+            if  $(cat /sys/class/video4linux/v4l-subdev*/device/modalias | grep -q camera) ; then
+                DCMIPP_SENSOR="FOUND"
+            fi
+        fi
+    fi
 }
 
 config_dcmipp_media_ctl() {
@@ -115,26 +132,39 @@ HEIGHT=480
 FPS=30
 FMT=RGB16
 
-# Check if dcmipp is available
-if media-ctl -d $DCMIPP_MEDIA > /dev/null 2>&1; then
-    comp_board=$(tr -d '\0' < /proc/device-tree/compatible | sed "s|^st,|;|" | cut -d';' -f2 | head -n 1 |tr '\n' ' ' | sed "s/ //g")
-    # for the time being, libcamera is only enabled on MP25-EVAL & MP25-DK
-    if $(echo $comp_board | grep -qG "stm32mp2[0-9]*[abcdef]-ev1") || $(echo $comp_board | grep -qG "stm32mp2[0-9]*[abcdef]-dk") ; then
-        GST_SOURCE="libcamerasrc name=cs src::stream-role=view-finder cs.src"
-    else
-        config_dcmipp_media_ctl $WIDTH $HEIGHT $FPS
-        V4L_DEVICE="device=$(media-ctl -d $DCMIPP_MEDIA -e "dcmipp_main_capture")"
-        V4L_OPT=""
-        GST_SOURCE="v4l2src $V4L_DEVICE $V4L_OPT"
+GST_SOURCE=""
+
+is_dcmipp_present
+if [ "$DCMIPP_SENSOR" != "NOTFOUND" ]; then
+    # Check if dcmipp is available
+    if media-ctl -d $DCMIPP_MEDIA > /dev/null 2>&1; then
+        comp_board=$(tr -d '\0' < /proc/device-tree/compatible | sed "s|^st,|;|" | cut -d';' -f2 | head -n 1 |tr '\n' ' ' | sed "s/ //g")
+        # for the time being, libcamera is only enabled on MP25-EVAL & MP25-DK
+        if $(echo $comp_board | grep -qG "stm32mp2[0-9]*[abcdef]-ev1") || $(echo $comp_board | grep -qG "stm32mp2[0-9]*[abcdef]-dk") ; then
+            GST_SOURCE="libcamerasrc name=cs src::stream-role=view-finder cs.src"
+        else
+            config_dcmipp_media_ctl $WIDTH $HEIGHT $FPS
+            V4L_DEVICE="device=$(media-ctl -d $DCMIPP_MEDIA -e "dcmipp_main_capture")"
+            V4L_OPT=""
+            GST_SOURCE="v4l2src $V4L_DEVICE $V4L_OPT"
+        fi
+        GST_CAPS="video/x-raw, format=$FMT, width=$WIDTH, height=$HEIGHT"
     fi
-    GST_CAPS="video/x-raw, format=$FMT, width=$WIDTH, height=$HEIGHT"
 else
+    echo "Search for webcam"
     get_webcam_device
-    # suppose we have a webcam
-    V4L_OPT="io-mode=4"
-    GST_SOURCE="v4l2src $V4L_DEVICE $V4L_OPT"
-    GST_CAPS="video/x-raw, width=$WIDTH, height=$HEIGHT"
-    v4l2-ctl --set-parm=20
+    if [ -n "$V4L_DEVICE" ]; then
+        # suppose we have a webcam
+        V4L_OPT="io-mode=4"
+        #if [ -n "$PIPEWIRE_SRC" ]; then
+        #    GST_SOURCE="$PIPEWIRE_SRC"
+        #else
+            GST_SOURCE="v4l2src $V4L_DEVICE $V4L_OPT"
+        #fi
+        GST_CAPS="video/x-raw, width=$WIDTH, height=$HEIGHT"
+        ADDONS="videoconvert ! video/x-raw,format=RGB16 ! queue !"
+        v4l2-ctl --set-parm=20
+    fi
 fi
 
 # Detect size of screen
