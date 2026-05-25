@@ -6,7 +6,7 @@ SRC_URI = "git://github.com/STMicroelectronics/st-openstlinux-application.git;pr
 
 # Modify these as desired
 PV = "5.0+git-${@d.getVar("SRCREV")[0:8]}"
-SRCREV = "da2899a2cf3922061f02a095662b0016b3a12c2a"
+SRCREV = "31551e7487c2c014248462565383e3912c0f9ad5"
 
 DEPENDS += "wayland wayland-native wayland-protocols libdrm pixman libpng libjpeg-turbo \
 	virtual/egl virtual/libgles2 gstreamer1.0 gstreamer1.0-plugins-base"

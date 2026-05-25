@@ -6,7 +6,7 @@ SRC_URI = "git://github.com/STMicroelectronics/st-openstlinux-application.git;pr
 
 # Modify these as desired
 PV = "5.1+git-${@d.getVar("SRCREV")[0:8]}"
-SRCREV = "f5ca3ac8a4ce2dedf337e69dcaea197f7567bb69"
+SRCREV = "31551e7487c2c014248462565383e3912c0f9ad5"
 
 S = "${WORKDIR}/git"
 

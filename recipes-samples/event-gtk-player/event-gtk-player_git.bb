@@ -6,7 +6,7 @@ SRC_URI = "git://github.com/STMicroelectronics/st-openstlinux-application.git;pr
 
 # Modify these as desired
 PV = "5.0+git-${@d.getVar("SRCREV")[0:8]}"
-SRCREV = "da2899a2cf3922061f02a095662b0016b3a12c2a"
+SRCREV = "e2f4fc8c493f992ff1dbaf6ee2b117107c5aad15"
 
 DEPENDS += "gstreamer1.0 gstreamer1.0-plugins-base gstreamer1.0-plugins-bad gtk+3"
 
@@ -17,6 +17,7 @@ S = "${WORKDIR}/git/touch-event-gtk-player"
 do_install () {
 	install -d ${D}${prefix}/local/demo/bin
 	install -m 0755 ${B}/touch-event-gtk-player ${D}${prefix}/local/demo/bin/
+	install -m 0755 ${B}/play_pause-gtk-player ${D}${prefix}/local/demo/bin/
 }
 FILES:${PN} += "${prefix}/local/demo/bin"
 
