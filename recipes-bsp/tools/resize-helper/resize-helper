@@ -47,6 +47,10 @@ if `grep -q nfsroot /proc/cmdline` ; then
     exit 0;
 fi
 
+if [ -e /etc/.resized ] ; then
+    df -h > /dev/kmsg
+    exit 0;
+fi
 if [ -f /lib/systemd/systemd-growfs ]; then
     echo "RESIZE-HELPER: Using systemd-growfs" > /dev/kmsg
     # force to mount partitions
