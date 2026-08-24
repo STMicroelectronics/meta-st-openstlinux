@@ -80,6 +80,8 @@ SRC_URI:append = " \
     file://0083-Revert-gtkwaylandsink-match-drm-kernel-driver-alignm.patch \
     file://0084-v4l2codecs-h264enc-add-support-of-DCT-8x8.patch \
     file://0085-v4l2codecs-add-support-of-encoding-from-UYVY.patch \
+    file://0086-webrtc-close-ICE-resolver-resources-during-teardown.patch \
+    file://0087-v4l2codecs-release-proposed-H264-encoder-allocation-pool.patch \
 "
 
 PACKAGECONFIG_GL ?= "${@bb.utils.contains('DISTRO_FEATURES', 'opengl', 'gles2 egl', '', d)}"
