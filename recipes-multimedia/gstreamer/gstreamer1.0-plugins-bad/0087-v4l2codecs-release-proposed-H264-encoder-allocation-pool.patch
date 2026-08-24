@@ -1,0 +1,27 @@
+From f151b7edf8919764c8066dd31f37d2464031e2ac Mon Sep 17 00:00:00 2001
+From: Juchi <juchi@juchi.zip>
+Date: Mon, 24 Aug 2026 23:23:16 +0300
+Subject: [PATCH] v4l2codecs: release proposed H264 encoder allocation pool
+
+gst_query_add_allocation_pool() takes its own reference to the pool. Release the original reference returned by gst_v4l2_codec_pool_new() so repeated allocation queries do not retain buffer pools and their poll descriptors.
+
+Upstream-Status: Pending
+---
+ sys/v4l2codecs/gstv4l2codech264enc.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/sys/v4l2codecs/gstv4l2codech264enc.c b/sys/v4l2codecs/gstv4l2codech264enc.c
+index eac5300..5d8bf52 100644
+--- a/sys/v4l2codecs/gstv4l2codech264enc.c
++++ b/sys/v4l2codecs/gstv4l2codech264enc.c
+@@ -271,6 +271,7 @@ gst_v4l2_codec_h264_enc_propose_allocation (GstVideoEncoder * encoder,
+ 
+   gst_query_add_allocation_pool (query, GST_BUFFER_POOL (pool),
+       self->vinfo.size, 2, 0);
++  g_clear_object (&pool);
+   gst_query_add_allocation_meta (query, GST_VIDEO_META_API_TYPE, NULL);
+ 
+   return GST_VIDEO_ENCODER_CLASS (parent_class)->propose_allocation (encoder,
+-- 
+2.47.3
+

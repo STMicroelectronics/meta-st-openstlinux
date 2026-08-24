@@ -1,0 +1,629 @@
+From b12789876558f66cd0992e2ee8852943218ed883 Mon Sep 17 00:00:00 2001
+From: Juchi <juchi@juchi.zip>
+Date: Mon, 24 Aug 2026 23:23:16 +0300
+Subject: [PATCH] webrtc: close ICE resolver resources during teardown
+
+Backport the later upstream ICE teardown lifecycle so pending mDNS and proxy resolver work is cancelled and completed before the NiceAgent thread and main context are destroyed.
+
+Upstream-Status: Backport [https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/8519]
+---
+ gst-libs/gst/webrtc/ice.h       |   5 +-
+ gst-libs/gst/webrtc/nice/nice.c | 405 ++++++++++++++++++++++++--------
+ 2 files changed, 311 insertions(+), 99 deletions(-)
+
+diff --git a/gst-libs/gst/webrtc/ice.h b/gst-libs/gst/webrtc/ice.h
+index f67889b..f6dfcc7 100644
+--- a/gst-libs/gst/webrtc/ice.h
++++ b/gst-libs/gst/webrtc/ice.h
+@@ -148,7 +148,10 @@ struct _GstWebRTCICEClass {
+                                                        GstWebRTCICEStream * stream,
+                                                        GstWebRTCICECandidateStats ** local_stats,
+                                                        GstWebRTCICECandidateStats ** remote_stats);
+-  gpointer _gst_reserved[GST_PADDING];
++  void (*close)                                       (GstWebRTCICE * ice,
++                                                       GstPromise * promise);
++
++  gpointer _gst_reserved[GST_PADDING - 1];
+ };
+ 
+ GST_WEBRTC_API
+diff --git a/gst-libs/gst/webrtc/nice/nice.c b/gst-libs/gst/webrtc/nice/nice.c
+index f62eb91..e8f4530 100644
+--- a/gst-libs/gst/webrtc/nice/nice.c
++++ b/gst-libs/gst/webrtc/nice/nice.c
+@@ -27,6 +27,15 @@
+ #include <agent.h>
+ 
+ #define HTTP_PROXY_PORT_DEFAULT 3128
++#define MAX_CLOSING_TIME_MILLI_SECONDS (2 * 1000)
++
++typedef struct
++{
++  GMutex mutex;
++  GCond cond;
++  guint count;
++  gboolean cancelled;
++} OutstandingResolves;
+ 
+ /* XXX:
+  *
+@@ -70,6 +79,9 @@ struct _GstWebRTCNicePrivate
+   GHashTable *turn_servers;
+ 
+   GstUri *http_proxy;
++
++  GCancellable *resolve_cancellable;
++  OutstandingResolves *outstanding_resolves;
+ };
+ 
+ #define gst_webrtc_nice_parent_class parent_class
+@@ -78,6 +90,61 @@ G_DEFINE_TYPE_WITH_CODE (GstWebRTCNice, gst_webrtc_nice,
+     GST_DEBUG_CATEGORY_INIT (gst_webrtc_nice_debug, "webrtcnice", 0,
+         "webrtcnice"););
+ 
++static OutstandingResolves *
++outstanding_resolves_ref (OutstandingResolves * resolves)
++{
++  return g_atomic_rc_box_acquire (resolves);
++}
++
++static void
++outstanding_resolves_free (OutstandingResolves * resolves)
++{
++  g_cond_clear (&resolves->cond);
++  g_mutex_clear (&resolves->mutex);
++}
++
++static void
++outstanding_resolves_unref (OutstandingResolves * resolves)
++{
++  g_atomic_rc_box_release_full (resolves,
++      (GDestroyNotify) outstanding_resolves_free);
++}
++
++static void
++outstanding_resolves_dec (OutstandingResolves * resolves)
++{
++  g_mutex_lock (&resolves->mutex);
++  resolves->count--;
++  if (resolves->count == 0)
++    g_cond_signal (&resolves->cond);
++  g_mutex_unlock (&resolves->mutex);
++}
++
++static gboolean
++outstanding_resolves_try_inc (OutstandingResolves * resolves)
++{
++  gboolean ret = FALSE;
++
++  g_mutex_lock (&resolves->mutex);
++  if (!resolves->cancelled) {
++    resolves->count++;
++    ret = TRUE;
++  }
++  g_mutex_unlock (&resolves->mutex);
++
++  return ret;
++}
++
++static void
++outstanding_resolves_wait (OutstandingResolves * resolves)
++{
++  g_mutex_lock (&resolves->mutex);
++  resolves->cancelled = TRUE;
++  while (resolves->count != 0)
++    g_cond_wait (&resolves->cond, &resolves->mutex);
++  g_mutex_unlock (&resolves->mutex);
++}
++
+ static gboolean
+ _unlock_pc_thread (GMutex * lock)
+ {
+@@ -96,7 +163,9 @@ _gst_nice_thread (GstWebRTCNice * ice)
+   g_main_context_invoke (ice->priv->main_context,
+       (GSourceFunc) _unlock_pc_thread, &ice->priv->lock);
+ 
++  g_main_context_push_thread_default (ice->priv->main_context);
+   g_main_loop_run (ice->priv->loop);
++  g_main_context_pop_thread_default (ice->priv->main_context);
+ 
+   g_mutex_lock (&ice->priv->lock);
+   g_main_context_unref (ice->priv->main_context);
+@@ -131,6 +200,7 @@ _stop_thread (GstWebRTCNice * ice)
+   g_mutex_unlock (&ice->priv->lock);
+ 
+   g_thread_unref (ice->priv->thread);
++  ice->priv->thread = NULL;
+ }
+ 
+ struct NiceStreamItem
+@@ -271,125 +341,152 @@ _parse_userinfo (const gchar * userinfo, gchar ** user, gchar ** pass)
+   *pass = g_uri_unescape_string (&colon[1], NULL);
+ }
+ 
++typedef void (*GstResolvedCallback) (GstWebRTCNice * nice,
++    GList * addresses, GError * error, gpointer user_data);
++
+ struct resolve_host_data
+ {
+-  GstWebRTCNice *ice;
++  GWeakRef nice_weak;
+   char *host;
+   gboolean main_context_handled;
++  GstResolvedCallback resolved_callback;
+   gpointer user_data;
+   GDestroyNotify notify;
++  OutstandingResolves *outstanding_resolves;
+ };
+ 
+-static void
+-on_resolve_host (GResolver * resolver, GAsyncResult * res, gpointer user_data)
++static struct resolve_host_data *
++resolve_host_data_new (GstWebRTCNice * ice, const char *host)
+ {
+-  GTask *task = user_data;
+-  struct resolve_host_data *rh;
+-  GError *error = NULL;
+-  GList *addresses;
+-
+-  rh = g_task_get_task_data (task);
++  struct resolve_host_data *rh =
++      g_atomic_rc_box_new0 (struct resolve_host_data);
+ 
+-  if (!(addresses = g_resolver_lookup_by_name_finish (resolver, res, &error))) {
+-    GST_ERROR ("failed to resolve: %s", error->message);
+-    g_task_return_error (task, error);
+-    g_object_unref (task);
+-    return;
+-  }
++  g_weak_ref_init (&rh->nice_weak, ice);
++  rh->host = g_strdup (host);
+ 
+-  GST_DEBUG_OBJECT (rh->ice, "Resolved %d addresses for host %s with data %p",
+-      g_list_length (addresses), rh->host, rh);
++  return rh;
++}
+ 
+-  g_task_return_pointer (task, addresses,
+-      (GDestroyNotify) g_resolver_free_addresses);
+-  g_object_unref (task);
++static struct resolve_host_data *
++resolve_host_data_ref (struct resolve_host_data *rh)
++{
++  return (struct resolve_host_data *) g_atomic_rc_box_acquire (rh);
+ }
+ 
+ static void
+-free_resolve_host_data (struct resolve_host_data *rh)
++resolve_host_data_clear (struct resolve_host_data *rh)
+ {
+-  GST_TRACE_OBJECT (rh->ice, "Freeing data %p for resolving host %s", rh,
+-      rh->host);
++  GST_TRACE ("Freeing data %p for resolving host %s", rh, rh->host);
+ 
+   if (rh->notify)
+     rh->notify (rh->user_data);
+ 
++  g_weak_ref_clear (&rh->nice_weak);
+   g_free (rh->host);
+-  g_free (rh);
+ }
+ 
+-static struct resolve_host_data *
+-resolve_host_data_new (GstWebRTCNice * ice, const char *host)
++static void
++resolve_host_data_unref (struct resolve_host_data *rh)
+ {
+-  struct resolve_host_data *rh = g_new0 (struct resolve_host_data, 1);
++  g_atomic_rc_box_release_full (rh, (GDestroyNotify) resolve_host_data_clear);
++}
+ 
+-  rh->ice = ice;
+-  rh->host = g_strdup (host);
++static void
++on_resolve_host (GResolver * resolver, GAsyncResult * res, gpointer user_data)
++{
++  struct resolve_host_data *rh = user_data;
++  GstWebRTCNice *nice = g_weak_ref_get (&rh->nice_weak);
++  GError *error = NULL;
++  GList *addresses;
+ 
+-  return rh;
++  outstanding_resolves_dec (rh->outstanding_resolves);
++  outstanding_resolves_unref (rh->outstanding_resolves);
++
++  if (!nice) {
++    error = g_error_new_literal (G_IO_ERROR, G_IO_ERROR_CANCELLED, "Cancelled");
++    rh->resolved_callback (NULL, NULL, error, rh->user_data);
++    resolve_host_data_unref (rh);
++    g_error_free (error);
++    return;
++  }
++
++  addresses = g_resolver_lookup_by_name_finish (resolver, res, &error);
++  if (!addresses) {
++    GST_DEBUG_OBJECT (nice, "Failed to resolve host %s: %s", rh->host,
++        error->message);
++    rh->resolved_callback (nice, NULL, error, rh->user_data);
++    gst_object_unref (nice);
++    resolve_host_data_unref (rh);
++    g_error_free (error);
++    return;
++  }
++
++  GST_DEBUG_OBJECT (nice, "Resolved %d addresses for host %s with data %p",
++      g_list_length (addresses), rh->host, rh);
++  rh->resolved_callback (nice, addresses, NULL, rh->user_data);
++  gst_object_unref (nice);
++  resolve_host_data_unref (rh);
++  g_resolver_free_addresses (addresses);
+ }
+ 
+ static gboolean
+ resolve_host_main_cb (gpointer user_data)
+ {
+   GResolver *resolver = g_resolver_get_default ();
+-  GTask *task = user_data;
+-  struct resolve_host_data *rh;
+-
+-  rh = g_task_get_task_data (task);
+-  /* no need to error anymore if the main context disappears and this task is
+-   * not run */
+-  rh->main_context_handled = TRUE;
+-
+-  GST_DEBUG_OBJECT (rh->ice, "Resolving host %s", rh->host);
+-  g_resolver_lookup_by_name_async (resolver, rh->host, NULL,
+-      (GAsyncReadyCallback) on_resolve_host, g_object_ref (task));
++  struct resolve_host_data *rh = user_data;
++  GstWebRTCNice *nice = g_weak_ref_get (&rh->nice_weak);
++
++  if (nice && outstanding_resolves_try_inc (rh->outstanding_resolves)) {
++    rh->main_context_handled = TRUE;
++    GST_DEBUG_OBJECT (nice, "Resolving host %s", rh->host);
++    g_resolver_lookup_by_name_async (resolver, rh->host,
++        nice->priv->resolve_cancellable, (GAsyncReadyCallback) on_resolve_host,
++        resolve_host_data_ref (rh));
++    gst_object_unref (nice);
++  } else {
++    if (nice)
++      gst_object_unref (nice);
++    outstanding_resolves_unref (rh->outstanding_resolves);
++  }
+ 
+   return G_SOURCE_REMOVE;
+ }
+ 
+ static void
+-error_task_if_unhandled (GTask * task)
++error_resolve_if_unhandled (struct resolve_host_data *rh)
+ {
+-  struct resolve_host_data *rh;
+-
+-  rh = g_task_get_task_data (task);
++  GstWebRTCNice *nice = g_weak_ref_get (&rh->nice_weak);
+ 
+   if (!rh->main_context_handled) {
+-    GST_DEBUG_OBJECT (rh->ice, "host resolve for %s with data %p was never "
+-        "executed, main context quit?", rh->host, rh);
+-    g_task_return_new_error (task, G_IO_ERROR, G_IO_ERROR_CANCELLED, "%s",
+-        "Cancelled");
++    GError *error =
++        g_error_new_literal (G_IO_ERROR, G_IO_ERROR_CANCELLED, "Cancelled");
++
++    rh->resolved_callback (nice, NULL, error, rh->user_data);
++    g_error_free (error);
+   }
+ 
+-  g_object_unref (task);
++  if (nice)
++    gst_object_unref (nice);
++  resolve_host_data_unref (rh);
+ }
+ 
+ static void
+-resolve_host_async (GstWebRTCNice * ice, const gchar * host,
+-    GAsyncReadyCallback cb, gpointer user_data, GDestroyNotify notify)
++resolve_host_async (GstWebRTCNice * nice, const gchar * host,
++    GstResolvedCallback resolved_callback, gpointer user_data,
++    GDestroyNotify notify)
+ {
+-  struct resolve_host_data *rh = resolve_host_data_new (ice, host);
+-  GTask *task;
++  struct resolve_host_data *rh = resolve_host_data_new (nice, host);
+ 
++  rh->resolved_callback = resolved_callback;
+   rh->user_data = user_data;
+   rh->notify = notify;
+-  task = g_task_new (rh->ice, NULL, cb, user_data);
++  rh->outstanding_resolves =
++      outstanding_resolves_ref (nice->priv->outstanding_resolves);
+ 
+-  g_task_set_task_data (task, rh, (GDestroyNotify) free_resolve_host_data);
+-
+-  GST_TRACE_OBJECT (rh->ice, "invoking main context for resolving host %s "
++  GST_TRACE_OBJECT (nice, "invoking main context for resolving host %s "
+       "with data %p", host, rh);
+-  g_main_context_invoke_full (ice->priv->main_context, G_PRIORITY_DEFAULT,
+-      resolve_host_main_cb, task, (GDestroyNotify) error_task_if_unhandled);
+-}
+-
+-static GList *
+-resolve_host_finish (GstWebRTCNice * ice, GAsyncResult * res, GError ** error)
+-{
+-  g_return_val_if_fail (g_task_is_valid (res, ice), NULL);
+-
+-  return g_task_propagate_pointer (G_TASK (res), error);
++  g_main_context_invoke_full (nice->priv->main_context, G_PRIORITY_DEFAULT,
++      resolve_host_main_cb, rh, (GDestroyNotify) error_resolve_if_unhandled);
+ }
+ 
+ static void
+@@ -731,27 +828,31 @@ add_ice_candidate_to_libnice (GstWebRTCICE * ice, guint nice_stream_id,
+ }
+ 
+ static void
+-on_candidate_resolved (GstWebRTCICE * ice, GAsyncResult * res,
+-    gpointer user_data)
++on_candidate_resolved (GstWebRTCNice * nice, GList * addresses,
++    GError * error, gpointer user_data)
+ {
+   struct resolve_candidate_data *rc = user_data;
+-  GError *error = NULL;
+-  GList *addresses;
+   char *new_candv[4] = { NULL, };
+   char *new_addr, *new_candidate;
+   NiceCandidate *cand;
+-  GstWebRTCNice *nice = GST_WEBRTC_NICE (ice);
++  GstWebRTCICE *ice;
+ 
+-  if (!(addresses = resolve_host_finish (nice, res, &error))) {
+-    GST_WARNING_OBJECT (ice, "Could not resolve candidate address: %s",
+-        error->message);
+-    g_clear_error (&error);
++  if (error) {
++    if (nice)
++      GST_WARNING_OBJECT (nice, "Could not resolve candidate address: %s",
++          error->message);
++    else
++      GST_WARNING ("Could not resolve candidate address: %s", error->message);
+     return;
+   }
+ 
++  if (!nice || !addresses) {
++    GST_WARNING ("Candidate resolution completed without an address");
++    return;
++  }
++
++  ice = GST_WEBRTC_ICE (nice);
+   new_addr = g_inet_address_to_string (addresses->data);
+-  g_resolver_free_addresses (addresses);
+-  addresses = NULL;
+ 
+   new_candv[0] = rc->prefix;
+   new_candv[1] = new_addr;
+@@ -764,14 +865,14 @@ on_candidate_resolved (GstWebRTCICE * ice, GAsyncResult * res,
+   cand =
+       nice_agent_parse_remote_candidate_sdp (nice->priv->nice_agent,
+       rc->nice_stream_id, new_candidate);
+-  g_free (new_candidate);
++  g_free (new_addr);
+   if (!cand) {
+     GST_WARNING_OBJECT (ice, "Could not parse candidate \'%s\'", new_candidate);
++    g_free (new_candidate);
+     return;
+   }
+ 
+-  g_free (new_addr);
+-
++  g_free (new_candidate);
+   add_ice_candidate_to_libnice (ice, rc->nice_stream_id, cand);
+   nice_candidate_free (cand);
+ }
+@@ -818,8 +919,7 @@ gst_webrtc_nice_add_candidate (GstWebRTCICE * ice, GstWebRTCICEStream * stream,
+     rc->nice_stream_id = item->nice_stream_id;
+     rc->prefix = prefix;
+     rc->postfix = postfix;
+-    resolve_host_async (nice, address,
+-        (GAsyncReadyCallback) on_candidate_resolved, rc,
++    resolve_host_async (nice, address, on_candidate_resolved, rc,
+         (GDestroyNotify) free_resolve_candidate_data);
+ 
+     prefix = NULL;
+@@ -1297,34 +1397,37 @@ out:
+ }
+ 
+ static void
+-on_http_proxy_resolved (GstWebRTCICE * ice, GAsyncResult * res,
+-    gpointer user_data)
++on_http_proxy_resolved (GstWebRTCNice * nice, GList * addresses,
++    GError * error, gpointer user_data)
+ {
+-  GstWebRTCNice *nice = GST_WEBRTC_NICE (ice);
+   GstUri *uri = user_data;
+-  GList *addresses;
+-  GError *error = NULL;
++  GstWebRTCICE *ice;
+   const gchar *userinfo;
+   gchar *user = NULL;
+   gchar *pass = NULL;
+   gchar *ip = NULL;
+   guint port = GST_URI_NO_PORT;
+ 
+-  if (!(addresses = resolve_host_finish (nice, res, &error))) {
+-    GST_WARNING_OBJECT (ice, "Failed to resolve http proxy: %s",
+-        error->message);
+-    g_clear_error (&error);
++  if (error) {
++    if (nice)
++      GST_WARNING_OBJECT (nice, "Failed to resolve http proxy: %s",
++          error->message);
++    else
++      GST_WARNING ("Failed to resolve http proxy: %s", error->message);
++    return;
++  }
++
++  if (!nice || !addresses) {
++    GST_WARNING ("HTTP proxy resolution completed without an address");
+     return;
+   }
+ 
++  ice = GST_WEBRTC_ICE (nice);
+   /* XXX: only the first IP is used */
+   ip = g_inet_address_to_string (addresses->data);
+-  g_resolver_free_addresses (addresses);
+-  addresses = NULL;
+ 
+   if (!ip) {
+     GST_ERROR_OBJECT (ice, "failed to resolve host for proxy");
+-    gst_uri_unref (uri);
+     return;
+   }
+ 
+@@ -1388,7 +1491,7 @@ _set_http_proxy (GstWebRTCICE * ice, const gchar * s)
+     goto out;
+   }
+ 
+-  resolve_host_async (nice, host, (GAsyncReadyCallback) on_http_proxy_resolved,
++  resolve_host_async (nice, host, on_http_proxy_resolved,
+       gst_uri_ref (uri), (GDestroyNotify) gst_uri_unref);
+ 
+ out:
+@@ -1475,6 +1578,103 @@ gst_webrtc_nice_get_http_proxy (GstWebRTCICE * ice)
+     return NULL;
+ }
+ 
++struct close_data
++{
++  GstPromise *promise;
++  gboolean agent_closed;
++};
++
++static struct close_data *
++close_data_new (GstPromise * promise)
++{
++  struct close_data *data = g_new0 (struct close_data, 1);
++
++  data->promise = promise ? gst_promise_ref (promise) : NULL;
++  return data;
++}
++
++static void
++close_data_free (struct close_data *data)
++{
++  if (data->promise)
++    gst_promise_unref (data->promise);
++  g_free (data);
++}
++
++static void
++on_agent_closed (GObject * source, GAsyncResult * result, gpointer user_data)
++{
++  struct close_data *data = user_data;
++
++  if (data->promise)
++    gst_promise_reply (data->promise, NULL);
++  data->agent_closed = TRUE;
++}
++
++static gboolean
++on_agent_close_timeout (gpointer user_data)
++{
++  gboolean *timed_out = user_data;
++
++  *timed_out = TRUE;
++  return G_SOURCE_REMOVE;
++}
++
++static void
++close_agent (GstWebRTCNice * ice, GstPromise * promise)
++{
++  GMainContext *context;
++  struct close_data *data;
++  gboolean timed_out = FALSE;
++  GSource *timeout_source;
++
++  if (!ice->priv->thread) {
++    if (promise) {
++      GError *error =
++          g_error_new (GST_WEBRTC_ERROR, GST_WEBRTC_ERROR_INTERNAL_FAILURE,
++          "ICE thread not running");
++      GstStructure *reply = gst_structure_new ("application/x-gst-promise",
++          "error", G_TYPE_ERROR, error, NULL);
++
++      gst_promise_reply (promise, reply);
++      g_clear_error (&error);
++    }
++    return;
++  }
++
++  g_cancellable_cancel (ice->priv->resolve_cancellable);
++
++  context = g_main_context_new ();
++  g_main_context_push_thread_default (context);
++  timeout_source = g_timeout_source_new (MAX_CLOSING_TIME_MILLI_SECONDS);
++  g_source_set_callback (timeout_source, on_agent_close_timeout,
++      &timed_out, NULL);
++  g_source_attach (timeout_source, context);
++
++  data = close_data_new (promise);
++  nice_agent_close_async (ice->priv->nice_agent, on_agent_closed, data);
++  while (!data->agent_closed && !timed_out)
++    g_main_context_iteration (context, TRUE);
++
++  if (timed_out)
++    GST_WARNING_OBJECT (ice, "nice_agent_close_async() did not finish");
++
++  g_source_destroy (timeout_source);
++  g_source_unref (timeout_source);
++  g_main_context_pop_thread_default (context);
++  g_main_context_unref (context);
++  close_data_free (data);
++
++  outstanding_resolves_wait (ice->priv->outstanding_resolves);
++  _stop_thread (ice);
++}
++
++static void
++gst_webrtc_nice_close (GstWebRTCICE * ice, GstPromise * promise)
++{
++  close_agent (GST_WEBRTC_NICE (ice), promise);
++}
++
+ static void
+ gst_webrtc_nice_set_property (GObject * object, guint prop_id,
+     const GValue * value, GParamSpec * pspec)
+@@ -1547,7 +1747,10 @@ gst_webrtc_nice_finalize (GObject * object)
+ 
+   g_signal_handlers_disconnect_by_data (ice->priv->nice_agent, ice);
+ 
+-  _stop_thread (ice);
++  close_agent (ice, NULL);
++
++  g_clear_object (&ice->priv->resolve_cancellable);
++  outstanding_resolves_unref (ice->priv->outstanding_resolves);
+ 
+   if (ice->priv->on_candidate_notify)
+     ice->priv->on_candidate_notify (ice->priv->on_candidate_data);
+@@ -1625,6 +1828,7 @@ gst_webrtc_nice_class_init (GstWebRTCNiceClass * klass)
+   gst_webrtc_ice_class->get_remote_candidates =
+       gst_webrtc_nice_get_remote_candidates;
+   gst_webrtc_ice_class->get_selected_pair = gst_webrtc_nice_get_selected_pair;
++  gst_webrtc_ice_class->close = gst_webrtc_nice_close;
+ 
+   gobject_class->constructed = gst_webrtc_nice_constructed;
+   gobject_class->get_property = gst_webrtc_nice_get_property;
+@@ -1672,6 +1876,11 @@ gst_webrtc_nice_init (GstWebRTCNice * ice)
+       g_array_new (FALSE, TRUE, sizeof (struct NiceStreamItem));
+   g_array_set_clear_func (ice->priv->nice_stream_map,
+       (GDestroyNotify) _clear_ice_stream);
++
++  ice->priv->resolve_cancellable = g_cancellable_new ();
++  ice->priv->outstanding_resolves = g_atomic_rc_box_new0 (OutstandingResolves);
++  g_mutex_init (&ice->priv->outstanding_resolves->mutex);
++  g_cond_init (&ice->priv->outstanding_resolves->cond);
+ }
+ 
+ GstWebRTCNice *
+-- 
+2.47.3
+
