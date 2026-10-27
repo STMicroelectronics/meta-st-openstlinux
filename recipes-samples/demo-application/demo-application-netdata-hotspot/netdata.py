@@ -43,7 +43,7 @@ if SIMULATE > 0:
 # -------------------------------------------------------------------
 ICON_SIZE_1080 = 260
 ICON_SIZE_720 = 160
-ICON_SIZE_480 = 160
+ICON_SIZE_480 = 128
 ICON_SIZE_272 = 48
 
 # return format:
@@ -59,10 +59,10 @@ def get_sizes_from_screen_size(width, height):
         font_size = 25
     elif minsize == 480:
         icon_size = ICON_SIZE_480
-        font_size = 20
+        font_size = 18
     elif minsize == 272:
         icon_size = ICON_SIZE_272
-        font_size = 10
+        font_size = 8
     elif minsize == 600:
         icon_size = ICON_SIZE_720
         font_size = 15
@@ -83,6 +83,21 @@ def get_icon_size_from_screen_size(width, height):
         return ICON_SIZE_1080
     elif minsize >= 1080:
         return ICON_SIZE_1080
+
+def get_screen_size(display):
+    geometry= None
+    for i in range(display.get_n_monitors()):
+        if display.get_monitor(i).get_model().find("pipewire")<0 and display.get_monitor(i).get_model().find("Virtual")<0:
+            geometry = display.get_monitor(i).get_geometry()
+            #print("debug ", display.get_monitor(i).get_geometry().width , display.get_monitor(i).get_geometry().height, display.get_monitor(i).get_model())
+    if geometry is None:
+        return 480, 800
+    x0 = geometry.x
+    y0 = geometry.y
+    x1 = geometry.x + geometry.width
+    y1 = geometry.y + geometry.height
+
+    return x1 - x0, y1 - y0
 
 # -------------------------------------------------------------------
 # -------------------------------------------------------------------
@@ -175,11 +190,7 @@ class NetdataWebserver(Gtk.Dialog):
             self.maximize()
             try:
                 display = Gdk.Display.get_default()
-                monitor = display.get_primary_monitor()
-                geometry = monitor.get_geometry()
-                scale_factor = monitor.get_scale_factor()
-                self.screen_width = scale_factor * geometry.width
-                self.screen_height = scale_factor * geometry.height
+                self.screen_width, self.screen_height = get_screen_size(display)
             except:
                 self.screen_width = self.get_screen().get_width()
                 self.screen_height = self.get_screen().get_height()
@@ -277,8 +288,8 @@ class NetdataWebserver(Gtk.Dialog):
                     i+=1
 
             file.close()
-            if (i==2):
-                self.print_debug(3, "[Wifi: use hostapd configuration: ssid=%s, passwd=%s, addr=%]\n" %(self.wifi_ssid, self.wifi_passwd,self.wifi_addr))
+            if (i==3):
+                self.print_debug(3, "[Wifi: use hostapd configuration: ssid=%s, passwd=%s, addr=%s]\n" % (self.wifi_ssid, self.wifi_passwd,self.wifi_addr))
             else:
                 self.wifi_ssid=WIFI_DEFAULT_SSID
                 self.wifi_passwd=WIFI_DEFAULT_PASSWD
