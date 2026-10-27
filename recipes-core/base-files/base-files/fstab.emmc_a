@@ -1,0 +1,11 @@
+# <file system>	<mount pt>	<type>	<options>	<dump>	<pass>
+
+/dev/root            /                    auto       defaults              1  1
+proc                 /proc                proc       defaults              0  0
+devpts               /dev/pts             devpts     mode=0620,gid=5       0  0
+tmpfs                /run                 tmpfs      mode=0755,nodev,nosuid,strictatime 0  0
+tmpfs                /var/volatile        tmpfs      defaults              0  0
+
+#/dev/disk/by-partuuid/0ef36fac-9ba4-4e39-823a-bbb2336c32be      /boot                 ext4       defaults,sync         0  1
+#/dev/disk/by-partuuid/9fdbbc13-65d3-4419-9395-88c694a4ea79      /vendor               ext4       defaults,sync         0  1
+#/dev/disk/by-partuuid/e873e5be-10d5-4670-b8f1-2905b5e7d992      /usr/local            ext4       defaults,sync         0  1
