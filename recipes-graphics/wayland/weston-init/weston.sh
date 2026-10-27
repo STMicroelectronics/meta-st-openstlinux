@@ -68,7 +68,7 @@ if [ -z $USE_PIXMAN ];
 then
     echo "";
 else
-    CMD_LINE_WESTON="$CMD_LINE_WESTON --use-pixman"
+    CMD_LINE_WESTON="$CMD_LINE_WESTON --renderer=pixman"
 fi
 
 #Addons paramaters

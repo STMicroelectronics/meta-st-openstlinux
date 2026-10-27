@@ -2,6 +2,7 @@
 
 case $1 in
 start)
+   systemctl --user start filter-chain.service
    systemctl --user start pipewire
    systemctl --user start pipewire-pulse
    systemctl --user start wireplumber.service
@@ -14,6 +15,7 @@ stop)
    systemctl --user stop weston.service weston.socket
    systemctl --user stop wireplumber.service
    systemctl --user stop pipewire-pulse.service pipewire-pulse.socket
+   systemctl --user stop filter-chain.service
    systemctl --user stop pipewire.service pipewire.socket
    ;;
 *)

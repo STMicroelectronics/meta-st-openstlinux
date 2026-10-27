@@ -2,14 +2,10 @@
 
 weston_args=$*
 
+[ ! -e /etc/default/weston_addons ] || source /etc/default/weston_addons
+
 if [ -z "$WESTON_USER" ]; then
     WESTON_USER=weston
-fi
-
-# for associated service: pulseaudio
-if [ ! -d "/var/run/pulse" ]; then
-    su  -c "mkdir -p /var/run/pulse"
-    su -c "chown -R weston.weston /var/run/pulse"
 fi
 
 ## Module support
@@ -35,5 +31,7 @@ if [ -f /home/weston/weston.log ]; then
    mv /home/weston/weston.log /home/weston/weston-previous.log
 fi
 
-exec /usr/bin/weston $weston_args
+source /etc/profile.d/pipewire_profile.sh
+
+exec /usr/bin/weston $weston_args $WT_DBG $WT_PIPEWIRE_REMOTING
 
