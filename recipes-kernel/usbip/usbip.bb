@@ -16,7 +16,6 @@ SRC_URI += " \
     "
 
 DEPENDS = " \
-    tcp-wrappers \
     systemd \
     "
 
@@ -26,7 +25,7 @@ do_configure[depends] += "virtual/kernel:do_shared_workdir"
 
 inherit linux-kernel-base kernel-arch manpages
 
-do_populate_lic[depends] += "virtual/kernel:do_patch"
+do_populate_lic[depends] += "virtual/kernel:do_shared_workdir"
 
 inherit kernelsrc
 
@@ -36,8 +35,6 @@ inherit autotools gettext pkgconfig systemd
 
 SYSTEMD_SERVICE:${PN} = "usbip.service"
 SYSTEMD_AUTO_ENABLE:${PN} = "disable"
-
-EXTRA_OECONF += "--with-tcp-wrappers"
 
 do_configure[prefuncs] += "base_do_unpack"
 
