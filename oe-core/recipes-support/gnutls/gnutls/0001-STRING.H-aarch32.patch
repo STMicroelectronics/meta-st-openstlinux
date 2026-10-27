@@ -1,0 +1,53 @@
+From f8c945b38c741b7b92b2985ce01d0a3e56deeb2a Mon Sep 17 00:00:00 2001
+From: Christophe Priouzeau <christophe.priouzeau@foss.st.com>
+Date: Fri, 3 Jul 2026 09:34:13 +0200
+Subject: [PATCH] STRING.H aarch32
+
+Upstream-Status: Inappropriate [embedded specific]
+---
+ gl/string.in.h     | 12 ------------
+ src/gl/string.in.h |  2 +-
+ 2 files changed, 1 insertion(+), 13 deletions(-)
+
+diff --git a/gl/string.in.h b/gl/string.in.h
+index ce48829..2842957 100644
+--- a/gl/string.in.h
++++ b/gl/string.in.h
+@@ -414,21 +414,9 @@ _GL_WARN_ON_USE (memrchr, "memrchr is unportable - "
+ /* Overwrite a block of memory.  The compiler will not optimize
+    effects away, even if the block is dead after the call.  */
+ #if @GNULIB_MEMSET_EXPLICIT@
+-# if @REPLACE_MEMSET_EXPLICIT@
+-#  if !(defined __cplusplus && defined GNULIB_NAMESPACE)
+-#   undef memset_explicit
+-#   define memset_explicit rpl_memset_explicit
+-#  endif
+-_GL_FUNCDECL_RPL (memset_explicit, void *,
+-                  (void *__dest, int __c, size_t __n), _GL_ARG_NONNULL ((1)));
+-_GL_CXXALIAS_RPL (memset_explicit, void *, (void *__dest, int __c, size_t __n));
+-# else
+-#  if !@HAVE_MEMSET_EXPLICIT@
+ _GL_FUNCDECL_SYS (memset_explicit, void *,
+                   (void *__dest, int __c, size_t __n), _GL_ARG_NONNULL ((1)));
+-#  endif
+ _GL_CXXALIAS_SYS (memset_explicit, void *, (void *__dest, int __c, size_t __n));
+-# endif
+ _GL_CXXALIASWARN (memset_explicit);
+ #elif defined GNULIB_POSIXCHECK
+ # undef memset_explicit
+diff --git a/src/gl/string.in.h b/src/gl/string.in.h
+index ce48829..4e5c117 100644
+--- a/src/gl/string.in.h
++++ b/src/gl/string.in.h
+@@ -423,7 +423,7 @@ _GL_FUNCDECL_RPL (memset_explicit, void *,
+                   (void *__dest, int __c, size_t __n), _GL_ARG_NONNULL ((1)));
+ _GL_CXXALIAS_RPL (memset_explicit, void *, (void *__dest, int __c, size_t __n));
+ # else
+-#  if !@HAVE_MEMSET_EXPLICIT@
++#  if !0
+ _GL_FUNCDECL_SYS (memset_explicit, void *,
+                   (void *__dest, int __c, size_t __n), _GL_ARG_NONNULL ((1)));
+ #  endif
+-- 
+2.43.0
+
