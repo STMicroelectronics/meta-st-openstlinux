@@ -12,6 +12,7 @@ MOUNT_BASENAME = "mount-partitions"
 SRC_URI = " \
     file://${MOUNT_BASENAME}.service    \
     file://${MOUNT_BASENAME}.sh         \
+    file://${MOUNT_BASENAME}-via-metadata.sh \
     "
 
 S = "${UNPACKDIR}"
@@ -69,6 +70,10 @@ do_install() {
 
             # Update script
             sed 's:^MOUNT_PARTITIONS_LIST=.*$:MOUNT_PARTITIONS_LIST=\"'"${MOUNT_PARTITIONS_LIST}"'\":' -i ${D}/${base_sbindir}/${MOUNT_BASENAME}.sh
+            if ${@bb.utils.contains('MACHINE_FEATURES','fw-update-ab','true','false',d)}; then
+                install -m 755 ${UNPACKDIR}/${MOUNT_BASENAME}-via-metadata.sh ${D}/${base_sbindir}/
+                sed 's:^MOUNT_PARTITIONS_LIST=.*$:MOUNT_PARTITIONS_LIST=\"'"${MOUNT_PARTITIONS_LIST}"'\":' -i ${D}/${base_sbindir}/${MOUNT_BASENAME}-via-metadata.sh
+            fi
         fi
         install -d ${D}/${INIT_D_DIR}
         install -m 755 ${UNPACKDIR}/${MOUNT_BASENAME}.sh ${D}/${INIT_D_DIR}/
@@ -80,3 +85,4 @@ do_install() {
 }
 
 FILES:${PN} += " ${systemd_unitdir} ${base_sbindir} ${INIT_D_DIR}"
+RDEPENDS:${PN} += "bash"
