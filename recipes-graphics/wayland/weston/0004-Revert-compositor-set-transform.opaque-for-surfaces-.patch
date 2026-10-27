@@ -1,7 +1,7 @@
-From 363deb1145453f443250078f5db7472500593d88 Mon Sep 17 00:00:00 2001
+From 9bc0e1f4dd8a42ec404875502fe7e54f1defce21 Mon Sep 17 00:00:00 2001
 From: Christophe Priouzeau <christophe.priouzeau@foss.st.com>
-Date: Fri, 8 Sep 2023 13:34:00 +0200
-Subject: [PATCH 4/4] Revert "compositor: set transform.opaque for surfaces 
+Date: Fri, 10 Apr 2026 14:07:07 +0200
+Subject: [PATCH 4/9] Revert "compositor: set transform.opaque for surfaces
  without alpha channel"
 
 This reverts commit e2426960d479a84ad66ee865404a925d66d9a55b.
@@ -11,10 +11,10 @@ Upstream-Status: Pending
  1 file changed, 18 insertions(+), 28 deletions(-)
 
 diff --git a/libweston/compositor.c b/libweston/compositor.c
-index ba5ed5d..8575bdd 100644
+index 08a98f9..4234750 100644
 --- a/libweston/compositor.c
 +++ b/libweston/compositor.c
-@@ -1366,20 +1366,15 @@ weston_view_update_transform_disable(struct weston_view *view)
+@@ -1836,20 +1836,15 @@ weston_view_update_transform_disable(struct weston_view *view)
  				  view->geometry.pos_offset.y);
  
  	if (view->alpha == 1.0) {
@@ -44,7 +44,7 @@ index ba5ed5d..8575bdd 100644
  	}
  }
  
-@@ -1426,20 +1421,15 @@ weston_view_update_transform_enable(struct weston_view *view)
+@@ -1896,20 +1891,15 @@ weston_view_update_transform_enable(struct weston_view *view)
  
  	if (view->alpha == 1.0 &&
  	    matrix->type == WESTON_MATRIX_TRANSFORM_TRANSLATE) {
@@ -59,8 +59,8 @@ index ba5ed5d..8575bdd 100644
 -							  &view->transform.opaque,
 -							  &view->geometry.scissor);
 -			pixman_region32_translate(&view->transform.opaque,
--						  matrix->d[12],
--						  matrix->d[13]);
+-						  matrix->M.col[3].x,
+-						  matrix->M.col[3].y);
 -		}
 +		pixman_region32_copy(&view->transform.opaque,
 +				     &view->surface->opaque);
@@ -69,11 +69,11 @@ index ba5ed5d..8575bdd 100644
 +						  &view->transform.opaque,
 +						  &view->geometry.scissor);
 +		pixman_region32_translate(&view->transform.opaque,
-+					  matrix->d[12],
-+					  matrix->d[13]);
++					  matrix->M.col[3].x,
++					  matrix->M.col[3].y);
  	}
  
  	return 0;
 -- 
-2.34.1
+2.43.0
 

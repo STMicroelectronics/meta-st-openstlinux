@@ -1,0 +1,68 @@
+From 4848452cafbc6e036934c15cb400423c90a0424a Mon Sep 17 00:00:00 2001
+From: Derek Foreman <derek.foreman@collabora.com>
+Date: Tue, 17 Mar 2026 09:22:38 -0500
+Subject: [PATCH 7/9] compositor: Fix rotated opaque surfaces
+
+When a paint node is drawing rotated content, it's treated like its axis
+aligned bounding box. Even if it only contains fully opaque content,
+the parts of the axis aligned bounding box outside of that content
+are not opaque.
+
+We need to ensure we don't claim a paint node that isn't axis aligned
+is fully opaque, or we'll improperly update regions outside of the
+really opaque content.
+
+Fixes 485e1796af03e7c181e3527922806d117ea07072
+
+Signed-off-by: Derek Foreman <derek.foreman@collabora.com>
+Upstream-Status: Backport [https://gitlab.freedesktop.org/wayland/weston/-/commit/1f7bdea5c4c40f05845ba0eed604d1264a1f8967]
+---
+ libweston/compositor.c | 12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
+
+diff --git a/libweston/compositor.c b/libweston/compositor.c
+index 4234750..66e56fb 100644
+--- a/libweston/compositor.c
++++ b/libweston/compositor.c
+@@ -231,7 +231,8 @@ paint_node_update_early(struct weston_paint_node *pnode)
+ 	if (buffer->type == WESTON_BUFFER_SOLID) {
+ 		pnode->draw_solid = true;
+ 		pnode->is_fully_opaque = (pnode->view->alpha == 1.0f &&
+-					  buffer->solid.a == 1.0f);
++					  buffer->solid.a == 1.0f &&
++					  pnode->valid_transform);
+ 		pnode->is_fully_blended = !pnode->is_fully_opaque;
+ 		pnode->solid = buffer->solid;
+ 		if (pnode->solid.a == 0.0f)
+@@ -255,14 +256,16 @@ paint_node_update_early(struct weston_paint_node *pnode)
+ 	    (recording_censor || unprotected_censor)) {
+ 		pnode->draw_solid = true;
+ 		pnode->censored = true;
+-		pnode->is_fully_opaque = (pnode->view->alpha == 1.0f);
++		pnode->is_fully_opaque = (pnode->view->alpha == 1.0f) &&
++					 pnode->valid_transform;
+ 		pnode->is_fully_blended = !pnode->is_fully_opaque;
+ 		get_placeholder_color(pnode, &pnode->solid);
+ 	}
+ 
+ 	if (!pnode->draw_solid && (was_solid || view_dirty)) {
+ 		pnode->is_fully_opaque = weston_view_is_opaque(pnode->view,
+-							       &pnode->view->transform.boundingbox);
++							       &pnode->view->transform.boundingbox) &&
++							       pnode->valid_transform;
+ 		pnode->is_fully_blended = weston_view_is_fully_blended(pnode->view,
+ 								       &pnode->view->transform.boundingbox);
+ 	}
+@@ -369,7 +372,8 @@ paint_node_update_late(struct weston_paint_node *pnode)
+ 		               };
+ 	} else if (buffer->direct_display && !pnode->censored) {
+ 		pnode->draw_solid = true;
+-		pnode->is_fully_opaque = (pnode->view->alpha == 1.0f);
++		pnode->is_fully_opaque = (pnode->view->alpha == 1.0f) &&
++					 pnode->valid_transform;
+ 		pnode->is_fully_blended = !pnode->is_fully_opaque;
+ 		get_placeholder_color(pnode, &pnode->solid);
+ 	}
+-- 
+2.43.0
+

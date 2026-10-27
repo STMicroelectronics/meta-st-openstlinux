@@ -1,0 +1,44 @@
+From bd591988bd58b285ce517ef18d03dd6804eac341 Mon Sep 17 00:00:00 2001
+From: Pekka Paalanen <pekka.paalanen@collabora.com>
+Date: Tue, 16 Jun 2026 15:47:15 +0300
+Subject: [PATCH] Revert "gl-renderer: Prefer GL_RGBA8 with swizzles over
+ GL_BGRA8_EXT"
+
+This reverts commit a990e8ceda3ecb45d88f33bf70425fe55fdcbea2.
+
+There was a reported performance regression on NXP i.MX8M Mini, Vivante
+GC NanoUltra which is OpenGL ES 2.0 hardware and where uniform indexed
+vector components are expensive in the fragment shader.
+
+Fixes: https://gitlab.freedesktop.org/wayland/weston/-/work_items/1122
+Signed-off-by: Pekka Paalanen <pekka.paalanen@collabora.com>
+Upstream-Status: Backport [https://gitlab.freedesktop.org/wayland/weston/-/commit/bd591988bd58b285ce517ef18d03dd6804eac341]
+---
+ libweston/pixel-formats.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/libweston/pixel-formats.c b/libweston/pixel-formats.c
+index ebf0e274..e3660662 100644
+--- a/libweston/pixel-formats.c
++++ b/libweston/pixel-formats.c
+@@ -415,7 +415,7 @@ static const struct pixel_format_info pixel_format_table[] = {
+ 		BITS_RGBA_FIXED(8, 8, 8, 0),
+ 		.addfb_legacy_depth = 24,
+ 		.bpp = 32,
+-		GL_FORMAT_INFO(GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE, BGR1),
++		GL_FORMAT_INFO(GL_BGRA8_EXT, GL_BGRA_EXT, GL_UNSIGNED_BYTE, RGB1),
+ 		GL_INTERNALFORMAT(GL_RGB8),
+ 		GL_FORMAT(GL_BGRA_EXT),
+ 		GL_TYPE(GL_UNSIGNED_BYTE),
+@@ -433,7 +433,7 @@ static const struct pixel_format_info pixel_format_table[] = {
+ 		.opaque_substitute = DRM_FORMAT_XRGB8888,
+ 		.addfb_legacy_depth = 32,
+ 		.bpp = 32,
+-		GL_FORMAT_INFO(GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE, BGRA),
++		GL_FORMAT_INFO(GL_BGRA8_EXT, GL_BGRA_EXT, GL_UNSIGNED_BYTE, RGBA),
+ 		GL_INTERNALFORMAT(GL_RGBA8),
+ 		GL_FORMAT(GL_BGRA_EXT),
+ 		GL_TYPE(GL_UNSIGNED_BYTE),
+-- 
+2.25.1
+

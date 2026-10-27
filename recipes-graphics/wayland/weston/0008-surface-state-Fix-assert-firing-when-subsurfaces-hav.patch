@@ -1,0 +1,40 @@
+From e62c2ebc91d9fde102212143fe0b76380d9e5664 Mon Sep 17 00:00:00 2001
+From: Derek Foreman <derek.foreman@collabora.com>
+Date: Wed, 27 May 2026 14:12:36 -0500
+Subject: [PATCH 8/9] surface-state: Fix assert firing when subsurfaces have no
+ views
+
+I've not been able to reproduce this, but have a report that this fires
+when running Chromium on aarch64.
+
+It seems plausible that we can get here when none of the subsurfaces have
+views, and thus the flag won't be set.
+
+Let's make the assert conditional on having views.
+
+Fixes 6a280a8f
+Fixes #1117
+
+Signed-off-by: Derek Foreman <derek.foreman@collabora.com>
+Upstream-Status: Backport [https://gitlab.freedesktop.org/wayland/weston/-/commit/f3e30e4692f02f3d6183a3c88b5ac59c9a8b610a]
+---
+ libweston/surface-state.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/libweston/surface-state.c b/libweston/surface-state.c
+index 3c31a0a..594e5f8 100644
+--- a/libweston/surface-state.c
++++ b/libweston/surface-state.c
+@@ -279,7 +279,8 @@ weston_surface_apply_subsurface_order(struct weston_surface *surface)
+ 		wl_list_for_each(view, &sub->surface->views, surface_link)
+ 			weston_view_geometry_dirty(view);
+ 	}
+-	weston_assert_true(comp, comp->view_list_needs_rebuild);
++	if (!wl_list_empty(&surface->views))
++		weston_assert_true(comp, comp->view_list_needs_rebuild);
+ }
+ 
+ /* Translate pending damage in buffer co-ordinates to surface
+-- 
+2.43.0
+

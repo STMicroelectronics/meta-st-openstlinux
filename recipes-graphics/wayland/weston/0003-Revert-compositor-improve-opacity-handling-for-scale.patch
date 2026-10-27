@@ -1,7 +1,7 @@
-From 3ca655e561099b11c70961c5132bbab8fa3f0c63 Mon Sep 17 00:00:00 2001
-From: Pierre-Yves MORDRET <pierre-yves.mordret@foss.st.com>
-Date: Tue, 9 May 2023 15:06:09 +0200
-Subject: [PATCH 3/4] Revert "compositor: improve opacity handling for scaled
+From 16d64d15427576ec5bc7c98ab66aa3a3053a9865 Mon Sep 17 00:00:00 2001
+From: Christophe Priouzeau <christophe.priouzeau@foss.st.com>
+Date: Fri, 10 Apr 2026 14:05:20 +0200
+Subject: [PATCH 3/9] Revert "compositor: improve opacity handling for scaled
  surfaces"
 
 This reverts commit 81912dc2a69f24c8fbcb43a2bc1f7860f3085c01.
@@ -11,10 +11,10 @@ Upstream-Status: Pending
  1 file changed, 1 insertion(+), 12 deletions(-)
 
 diff --git a/libweston/compositor.c b/libweston/compositor.c
-index 6cfcba2..ff029f7 100644
+index 03e8b37..08a98f9 100644
 --- a/libweston/compositor.c
 +++ b/libweston/compositor.c
-@@ -1581,6 +1581,7 @@ weston_view_update_transform_enable(struct weston_view *view)
+@@ -1892,6 +1892,7 @@ weston_view_update_transform_enable(struct weston_view *view)
  	surfbox = pixman_region32_extents(&surfregion);
  
  	view_compute_bbox(view, surfbox, &view->transform.boundingbox);
@@ -22,9 +22,9 @@ index 6cfcba2..ff029f7 100644
  
  	if (view->alpha == 1.0 &&
  	    matrix->type == WESTON_MATRIX_TRANSFORM_TRANSLATE) {
-@@ -1598,19 +1599,7 @@ weston_view_update_transform_enable(struct weston_view *view)
- 						  matrix->d[12],
- 						  matrix->d[13]);
+@@ -1909,19 +1910,7 @@ weston_view_update_transform_enable(struct weston_view *view)
+ 						  matrix->M.col[3].x,
+ 						  matrix->M.col[3].y);
  		}
 -	} else if (view->alpha == 1.0 &&
 -		 matrix->type < WESTON_MATRIX_TRANSFORM_ROTATE &&
@@ -43,5 +43,5 @@ index 6cfcba2..ff029f7 100644
  	return 0;
  }
 -- 
-2.25.1
+2.43.0
 

@@ -1,0 +1,167 @@
+From 3d8a871d653e13cb6e5b21b8655875f6ce56f4e8 Mon Sep 17 00:00:00 2001
+From: Florian LEPELTIER <florian.lepeltier@st.com>
+Date: Fri, 14 Aug 2026 15:34:38 +0200
+Subject: [PATCH 6/9] gl-renderer: try to avoid shader swizzle on ES 2
+
+Upstream-Status: Backport [https://gitlab.freedesktop.org/wayland/weston/-/commit/ca8ff7acc96e513a20939c66f53081c35d0a3bce]
+
+---
+ libweston/renderer-gl/fragment.glsl          | 11 +++--
+ libweston/renderer-gl/gl-renderer-internal.h |  3 +-
+ libweston/renderer-gl/gl-shaders.c           | 49 ++++++++++++++++++--
+ 3 files changed, 55 insertions(+), 8 deletions(-)
+
+diff --git a/libweston/renderer-gl/fragment.glsl b/libweston/renderer-gl/fragment.glsl
+index 5eb2113..a062c0b 100644
+--- a/libweston/renderer-gl/fragment.glsl
++++ b/libweston/renderer-gl/fragment.glsl
+@@ -85,6 +85,7 @@ compile_const int c_color_mapping = DEF_COLOR_MAPPING;
+ compile_const int c_color_post_curve = DEF_COLOR_POST_CURVE;
+ compile_const int c_color_effect = DEF_COLOR_EFFECT;
+ 
++compile_const bool c_need_swizzle_idx = DEF_NEED_SWIZZLE_IDX;
+ compile_const bool c_input_is_premult = DEF_INPUT_IS_PREMULT;
+ compile_const bool c_tint = DEF_TINT;
+ compile_const bool c_wireframe = DEF_WIREFRAME;
+@@ -174,10 +175,12 @@ texture2D_swizzle(sampler2D sampler, int unit, vec2 coord)
+ 	vec4 color = texture2D(sampler, coord);
+ 
+ 	/* Swizzle components. */
+-	color = vec4(color[swizzle_idx[unit].x],
+-		     color[swizzle_idx[unit].y],
+-		     color[swizzle_idx[unit].z],
+-		     color[swizzle_idx[unit].w]);
++	if (c_need_swizzle_idx) {
++		color = vec4(color[swizzle_idx[unit].x],
++			     color[swizzle_idx[unit].y],
++			     color[swizzle_idx[unit].z],
++			     color[swizzle_idx[unit].w]);
++	}
+ 
+ 	/* Substitute with 0 or 1. */
+ 	return color * swizzle_mask[unit] + swizzle_sub[unit];
+diff --git a/libweston/renderer-gl/gl-renderer-internal.h b/libweston/renderer-gl/gl-renderer-internal.h
+index 1afffbd..a71a4a9 100644
+--- a/libweston/renderer-gl/gl-renderer-internal.h
++++ b/libweston/renderer-gl/gl-renderer-internal.h
+@@ -295,6 +295,7 @@ struct gl_shader_requirements
+ 	bool input_is_premult:1;
+ 	bool tint:1;
+ 	bool wireframe:1;
++	bool swizzle_idx:1;
+ 
+ 	unsigned color_effect:2; /* enum gl_shader_color_effect */
+ 
+@@ -306,7 +307,7 @@ struct gl_shader_requirements
+ 	 * The total size of all bitfields plus pad_bits_ must fill up exactly
+ 	 * how many bytes the compiler allocates for them together.
+ 	 */
+-	unsigned pad_bits_:14;
++	unsigned pad_bits_:6;
+ };
+ static_assert(sizeof(struct gl_shader_requirements) ==
+ 	      4 /* total bitfield size in bytes */,
+diff --git a/libweston/renderer-gl/gl-shaders.c b/libweston/renderer-gl/gl-shaders.c
+index 18eeedf..b13e5b3 100644
+--- a/libweston/renderer-gl/gl-shaders.c
++++ b/libweston/renderer-gl/gl-shaders.c
+@@ -240,13 +240,14 @@ create_shader_description_string(const struct gl_shader_requirements *req)
+ 	int size;
+ 	char *str;
+ 
+-	size = asprintf(&str, "%s %s %s %s %s %s %cinput_is_premult %ctint",
++	size = asprintf(&str, "%s %s %s %s %s %s %cswz %cinput_is_premult %ctint",
+ 			gl_shader_texcoord_input_to_string(req->texcoord_input),
+ 			gl_shader_texture_variant_to_string(req->variant),
+ 			gl_shader_color_effect_to_string(req->color_effect),
+ 			gl_shader_color_curve_to_string(req->color_pre_curve),
+ 			gl_shader_color_mapping_to_string(req->color_mapping),
+ 			gl_shader_color_curve_to_string(req->color_post_curve),
++			req->swizzle_idx ? '+' : '-',
+ 			req->input_is_premult ? '+' : '-',
+ 			req->tint ? '+' : '-');
+ 	if (size < 0)
+@@ -279,6 +280,7 @@ create_fragment_shader_config_string(const struct gl_shader_requirements *req)
+ 
+ 	size = asprintf(&str,
+ 			"#define MAX_CURVE_PARAMS %zu\n"
++			"#define DEF_NEED_SWIZZLE_IDX %s\n"
+ 			"#define DEF_TINT %s\n"
+ 			"#define DEF_INPUT_IS_PREMULT %s\n"
+ 			"#define DEF_WIREFRAME %s\n"
+@@ -288,6 +290,7 @@ create_fragment_shader_config_string(const struct gl_shader_requirements *req)
+ 			"#define DEF_COLOR_EFFECT %s\n"
+ 			"#define DEF_VARIANT %s\n",
+ 			ARRAY_LENGTH(((union weston_color_curve_parametric_chan_data){}).data),
++			req->swizzle_idx ? "true" : "false",
+ 			req->tint ? "true" : "false",
+ 			req->input_is_premult ? "true" : "false",
+ 			req->wireframe ? "true" : "false",
+@@ -860,7 +863,8 @@ gl_shader_load_config(struct gl_renderer *gr,
+ 					swizzle_sub[j] = (float) swizzles[j];
+ 				}
+ 			}
+-			glUniform4iv(shader->swizzle_idx[i], 1, swizzle_idx);
++			if (shader->swizzle_idx[i] != -1)
++				glUniform4iv(shader->swizzle_idx[i], 1, swizzle_idx);
+ 			glUniform4fv(shader->swizzle_mask[i], 1, swizzle_mask);
+ 			glUniform4fv(shader->swizzle_sub[i], 1, swizzle_sub);
+ 		}
+@@ -896,14 +900,53 @@ gl_shader_load_config(struct gl_renderer *gr,
+ 	glActiveTexture(GL_TEXTURE0);
+ }
+ 
++static bool
++is_zero_one_chan(GLint x, GLint chan)
++{
++	return x == GL_ZERO || x == GL_ONE || x == chan;
++}
++
++static bool
++textures_need_swizzle_idx(const struct gl_renderer *gr,
++			  const struct gl_texture_parameters *tp,
++			  int tp_num)
++{
++	int i;
++
++	/* If GL supports swizzling natively, we don't need it in the shader. */
++	if (gr->gl_version >= gl_version(3, 0))
++		return false;
++
++	/* If any swizzle need a texture channel value from a different
++	 * channel, we need it in the shader.
++	 */
++	for (i = 0; i < tp_num; i++) {
++		if (!is_zero_one_chan(tp[i].swizzles.r, GL_RED) ||
++		    !is_zero_one_chan(tp[i].swizzles.g, GL_GREEN) ||
++		    !is_zero_one_chan(tp[i].swizzles.b, GL_BLUE) ||
++		    !is_zero_one_chan(tp[i].swizzles.a, GL_ALPHA))
++			return true;
++	}
++
++	/* Everything can be handled with masking, no need. */
++	return false;
++}
++
+ bool
+ gl_renderer_use_program(struct gl_renderer *gr,
+ 			const struct gl_shader_config *sconf)
+ {
+ 	static const GLfloat fallback_shader_color[4] = { 0.2, 0.1, 0.0, 1.0 };
++	struct gl_shader_requirements req = sconf->req;
+ 	struct gl_shader *shader;
+ 
+-	shader = gl_renderer_get_program(gr, &sconf->req);
++	/*
++	 * In order to avoid a performance penalty on Vivante GC NanoUltra,
++	 * skip the shader swizzle if possible.
++	 */
++	req.swizzle_idx = textures_need_swizzle_idx(gr, sconf->input_param, sconf->input_num);
++
++	shader = gl_renderer_get_program(gr, &req);
+ 	if (!shader) {
+ 		weston_log("Error: failed to generate shader program.\n");
+ 		gr->current_shader = NULL;
+-- 
+2.43.0
+
