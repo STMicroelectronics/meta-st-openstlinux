@@ -38,7 +38,7 @@ ICON_SIZE_272 = 48
 TREELIST_HEIGHT_1080 = 500
 TREELIST_HEIGHT_720 = 360
 TREELIST_HEIGHT_600 = 300
-TREELIST_HEIGHT_480 = 160
+TREELIST_HEIGHT_480 = 100
 TREELIST_HEIGHT_272 = 86
 
 # return format:
@@ -63,7 +63,7 @@ def get_sizes_from_screen_size(width, height):
         button_height = 60
     elif minsize == 480:
         icon_size = ICON_SIZE_480
-        font_size = 20
+        font_size = 16
         font_size_increase = 2
         treelist_height = TREELIST_HEIGHT_480
         button_height = 60
@@ -100,6 +100,21 @@ def get_treelist_height_from_screen_size(width, height):
     elif minsize >= 1080:
         return TREELIST_HEIGHT_1080
 
+def get_screen_size(display):
+    geometry= None
+    for i in range(display.get_n_monitors()):
+        if display.get_monitor(i).get_model().find("pipewire")<0 and display.get_monitor(i).get_model().find("Virtual")<0:
+            geometry = display.get_monitor(i).get_geometry()
+            #print("debug ", display.get_monitor(i).get_geometry().width , display.get_monitor(i).get_geometry().height, display.get_monitor(i).get_model())
+    if geometry is None:
+        return 480, 800
+    x0 = geometry.x
+    y0 = geometry.y
+    x1 = geometry.x + geometry.width
+    y1 = geometry.y + geometry.height
+
+    return x1 - x0, y1 - y0
+
 # -------------------------------------------------------------------
 # -------------------------------------------------------------------
 
@@ -114,7 +129,7 @@ re_connected = re.compile(r"Connected:(?P<Connected>.+)$")
 
 re_paired = re.compile(r"Paired:(?P<Paired>.+)$")
 
-Item_info_dev = ['Headset', 'AudioSink', 'Connected', 'Paired']
+Item_info_dev = ['name', 'Headset', 'AudioSink', 'Connected', 'Paired']
 
 regexps_devinfo = [
    re.compile(r"00001108-(?P<Headset>.+)$"),
@@ -122,104 +137,34 @@ regexps_devinfo = [
    re.compile(r"0000110b-(?P<AudioSink>.+)$"),
    re.compile(r"Connected:(?P<Connected>.+)$"),
    re.compile(r"Paired:(?P<Paired>.+)$"),
+   re.compile(r"Name:(?P<name>.+)$"),
 ]
 ########################################
-#pactl (pulseaudio controller) wrapper
-########################################
-#for parse_sinks
-re_sink = re.compile(r"^Sink #(?P<Ident>.+)$")
-re_prop_sink = [
-   re.compile(r"State:(?P<State>.+)$"),
-   re.compile(r"Description:\s+(?P<Name>.+)$")
-]
-
-#for parse_streams
-re_stream = re.compile(r"^Sink Input #(?P<Ident>.+)$")
-re_prop_stream = [
-   re.compile(r"Sink:\s+(?P<Sink>.+)$"),
-   re.compile(r"media\.name\s=\s(?P<Name>.+)$")
-]
-# id_str : ident of the stream, id_sink : ident of the sink
-def audiosink_set(id_str, id_sink):
-    print("audiosink_set ")
-    #print("id_str : %d", id_str)
-    #print("id_sink : %d", id_sink)
-    cmd = ["/usr/bin/pactl", "move-sink-input",  id_str, id_sink]
-    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    res = proc.stdout.read().decode('utf-8')
-    return res
-
-def scan_streams():
-    cmd = ["/usr/bin/pactl", "list",  "sink-inputs"]
-    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    res = proc.stdout.read().decode('utf-8')
-    return res
-
-def parse_streams(streams):
-    streams_lines = streams.split('\n')
-    l_streams = []
-    for line in streams_lines:
-       line = line.strip()
-       elt = re_stream.search(line)
-       if elt is not None:
-           l_streams.append(elt.groupdict())
-           continue
-       for reg in re_prop_stream:
-           res = reg.search(line)
-           if res is not None:
-              l_streams[-1].update(res.groupdict())
-    return l_streams
-
-
-def scan_sinks():
-    cmd = ["/usr/bin/pactl", "list", "sinks"]
-    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    res = proc.stdout.read().decode('utf-8')
-    return res
-
-def parse_sinks(sinks):
-    sinks_lines=sinks.split('\n')
-    l_sinks =[]
-    for line in sinks_lines:
-       line = line.strip()
-       elt = re_sink.search(line)
-       if elt is not None:
-           l_sinks.append(elt.groupdict())
-           continue
-       for reg in re_prop_sink:
-           res = reg.search(line)
-           if res is not None:
-              l_sinks[-1].update(res.groupdict())
-    return l_sinks
-
-
-
 def status_playback(self):
-    sink_ident = []
-    stream_ident = None
-
-    list_sinks = scan_sinks()
-    sinks = parse_sinks(list_sinks)
-    #print("refresh label_audio\n")
-    #print(sinks)
     mess_bt = ""
-    if sinks != []:
-       for sk in sinks:
-          for bt_dev_conn in self.list_dev_connect:
-              if sk['Name'] == bt_dev_conn['name']:
-                  if mess_bt != "":
-                      mess_bt = mess_bt + "\n"
-                  mess_bt = mess_bt + "The audio BT device " + sk['Name'] + "\n is connected"
-                  sink_ident.append({'name': sk['Name'], 'ident': sk['Ident']})
+    for row in self.bluetooth_liststore:
+        # Print values of all columns
+        if row[2] == ' yes':
+            mess_bt = "The audio BT device " + row[1] + "\n is connected"
+            self.label_audio.set_markup("<span font='%d' color='#000000'>%s</span>" % (self.font_size+self.font_size_increase, mess_bt))
+            self.label_audio.set_justify(Gtk.Justification.LEFT)
+            self.label_audio.set_line_wrap(True)
 
-    if mess_bt == "":
-        mess_bt = "Device not connected"
-
+            # force default audio sink to bluez
+            os.system('/usr/local/demo/application/bluetooth/bin/audio_sink_a2dp.sh')
+            return mess_bt
+    (model, iter) = self.bluetooth_treeview.get_selection().get_selected()
+    if iter is not None:
+        if model[iter][2] == " yes":
+            mess_bt = ""
+        else:
+            mess_bt = "Device not connected"
     self.label_audio.set_markup("<span font='%d' color='#000000'>%s</span>" % (self.font_size+self.font_size_increase, mess_bt))
     self.label_audio.set_justify(Gtk.Justification.LEFT)
     self.label_audio.set_line_wrap(True)
-    return [stream_ident, sink_ident]
+    return mess_bt
 
+########################################
 
 def get_device_info(bl, macadr):
     #print("get_device_info")
@@ -230,10 +175,13 @@ def get_device_info(bl, macadr):
     for reelt in regexps_devinfo:
         for elt in info_dev:
             result = reelt.search(elt)
+            #print("get_device_info search <%s> >%s<" % (reelt, elt))
             if result is not None:
+                #print("get_device_info update >%s<" % result.groupdict())
                 dict_info.update(result.groupdict())
                 break
-    return(dict_info)
+    #print("get_device_info >>>>", dict_info)
+    return dict_info
 
 
 def list_devices(self, paired = False):
@@ -247,13 +195,17 @@ def list_devices(self, paired = False):
           devs = self.bl.blctl_paired_devices()
        else:
           devs = self.bl.blctl_devices()
+          if (len(devs) == 0):
+              devs = self.bl.blctl_devices()
        for elt in devs:
           elt_info = get_device_info(self.bl, elt['mac_address'])
-          #print("name===" , elt['name'].encode('utf-8').strip())
           if elt['name'] == "RSSI is nil":
               continue
           if elt['name'] == "TxPower is nil":
               continue
+          if elt['name'] == "n/a":
+              continue
+
           #do not list device without real name
           if elt['mac_address'].replace(':','') != elt['name'].replace('-',''):
               i=i+1
@@ -261,7 +213,10 @@ def list_devices(self, paired = False):
               #print(elt_info)
               l_elt = []
               l_elt.append(i)
-              l_elt.append(elt['name'])
+              if len(elt['name']) < 1:
+                  l_elt.append(elt_info['name'])
+              else:
+                  l_elt.append(elt['name'])
               l_elt.append(elt_info['Connected'])
               if elt_info['Headset'] != '' or elt_info['AudioSink'] != '':
                   l_elt.append('yes')
@@ -269,6 +224,8 @@ def list_devices(self, paired = False):
                   l_elt.append('no')
               if elt_info['Paired']:
                   l_elt.append(elt_info['Paired'])
+              else:
+                  l_elt.append('no')
 
               if elt_info['Connected'] == " yes":
                   if elt not in self.list_dev_connect:
@@ -293,11 +250,13 @@ def device_connected(bl, macadr):
 
 def device_paired(bl, macadr):
     info_dev=bl.blctl_info(macadr)
+    print("device_paired info:", info_dev)
     if info_dev is not None:
         for elt in info_dev:
             result = re_paired.search(elt)
             if result is not None:
                l_info_dev = result.groupdict()
+               print("device_paired -> ", l_info_dev)
                if l_info_dev["Paired"] == " yes":
                    return True
     return False
@@ -340,21 +299,18 @@ def gtk_style():
 
 class BluetoothWindow(Gtk.Dialog):
     def __init__(self, parent, log=0):
-        Gtk.Dialog.__init__(self, "Wifi", parent, 0)
+        Gtk.Dialog.__init__(self, "bluetooth", parent, 0)
         self.maximize()
         self.set_decorated(False)
 
         gtk_style()
         try:
             display = Gdk.Display.get_default()
-            monitor = display.get_primary_monitor()
-            geometry = monitor.get_geometry()
-            scale_factor = monitor.get_scale_factor()
-            self.screen_width = scale_factor * geometry.width
-            self.screen_height = scale_factor * geometry.height
+            self.screen_width, self.screen_height = get_screen_size(display)
         except:
             self.screen_width = self.get_screen().get_width()
             self.screen_height = self.get_screen().get_height()
+
         self.treelist_height = get_treelist_height_from_screen_size(self.screen_width, self.screen_height)
         sizes = get_sizes_from_screen_size(self.screen_width, self.screen_height)
         self.font_size = sizes[SIZES_ID_FONT_SIZE]
@@ -370,10 +326,11 @@ class BluetoothWindow(Gtk.Dialog):
         self.current_devs = []
         self.locked_devices = False
         self.scan_done = False
+        self.scan_done_data = {}
         self.previous_click_time=0
 
         self.page_bluetooth = Gtk.VBox()
-        self.page_bluetooth.set_border_width(15)
+        self.page_bluetooth.set_border_width(4)
 
         self.title = Gtk.Label()
         self.title.set_markup("<span font='%d' color='#00000000'>Connect bluetooth headset</span>" % (self.font_size+self.font_size_increase))
@@ -437,7 +394,8 @@ class BluetoothWindow(Gtk.Dialog):
 
         # enable bluetooth
         os.system('su -c \"hciconfig hci0 up\"')
-        #self.bluetooth_state = os.system('hciconfig hci0 up')
+        self.bluetooth_state = os.system('su -c \"hciconfig hci0 up\"')
+
         self.bl = Bluetoothctl(log=log)
 
         list_devices(self, paired=True)
@@ -481,7 +439,6 @@ class BluetoothWindow(Gtk.Dialog):
 
     def on_page_press_event(self, widget, event):
         self.click_time = time()
-        #print(self.click_time - self.previous_click_time)
         # TODO : a fake click is observed, workaround hereafter
         if (self.click_time - self.previous_click_time) < 0.01:
             self.previous_click_time = self.click_time
@@ -514,18 +471,14 @@ class BluetoothWindow(Gtk.Dialog):
 
     def on_changed(self, selection):
         (model, iter) = selection.get_selected()
-        #print("on_changed")
+        #print("on_changed", model[iter][4])
         if iter is not None:
             self.audio_bt_sink = status_playback(self)
-            #print(self.audio_bt_sink)
-            self.dev_selected.update({'mac_address':self.current_devs[model[iter][0]-1], 'name':model[iter][1]})
+            self.dev_selected.update({'mac_address':self.current_devs[model[iter][0]-1], 'name':model[iter][1], 'paired':model[iter][4]})
             if model[iter][2] == " yes":
                 self.lb_button_connect.set_markup("<span font='%d'>disconnect</span>" % self.font_size)
             else:
-                if self.label_audio.get_text() == "Device not connected":
-                    self.lb_button_connect.set_markup("<span font='%d'>connect</span>" %  self.font_size)
-                else:
-                    self.lb_button_connect.set_markup("<span font='%d' color='#88888888'>connect</span>" % self.font_size)
+                self.lb_button_connect.set_markup("<span font='%d'>connect</span>" %  self.font_size)
         return True
 
     def connect_process(self, dev):
@@ -548,7 +501,7 @@ class BluetoothWindow(Gtk.Dialog):
             if self.lb_button_connect.get_text() == "connect":
                 if self.label_audio.get_text() == "Device not connected":
                     self.bl.set_prompt(device['name'])
-                    if device_paired(self.bl, device['mac_address']) == False:
+                    if device['paired'] == 'no':
                         pairing_res=self.bl.blctl_pair(device['mac_address'])
                         if pairing_res == 0:
                             self.bl.blctl_session.send("no\n")
@@ -577,11 +530,11 @@ class BluetoothWindow(Gtk.Dialog):
            self.lb_button_scan.set_markup("<span font='%d'>scan progress</span>"% self.font_size)
 
     def update_display(self):
+        self.dev_selected.update({'mac_address':'', 'name':'', 'paired':''})
         if (self.scan_done == True):
             list_devices(self, False)
         else:
             list_devices(self, True)
-        self.dev_selected.update({'mac_address':'', 'name':''})
         self.audio_bt_sink = status_playback(self)
 
 # -------------------------------------------------------------------
@@ -599,7 +552,7 @@ def create_subdialogwindow(parent, log=0):
 class TestUIWindow(Gtk.Window):
     def __init__(self):
         Gtk.Window.__init__(self, title="Test Launcher")
-        create_subdialogwindow(self)
+        create_subdialogwindow(self, 3)
         self.show_all()
 
 if __name__ == "__main__":

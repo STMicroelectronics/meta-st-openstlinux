@@ -15,6 +15,7 @@ SRC_URI = " \
     file://__init__.py \
     file://ST11012_bluetooth_speaker_light_green.png \
     file://check_ble.sh \
+    file://audio_sink_a2dp.sh \
     \
     file://bluetooth_audio.desktop \
     file://bluetooth_audio.png \
