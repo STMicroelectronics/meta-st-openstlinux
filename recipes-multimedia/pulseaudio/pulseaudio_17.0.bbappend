@@ -7,16 +7,6 @@ PACKAGECONFIG ?= "${@bb.utils.contains('DISTRO_FEATURES', 'bluetooth', 'bluez5',
                    dbus gsettings \
                    "
 
-# Pulse audio configuration files
-SRC_URI += "file://pulse_profile.sh \
-            "
-
-# Pulse audio configuration files installation
-do_install:append() {
-    install -d ${D}${sysconfdir}/profile.d
-    install -m 0644 ${WORKDIR}/pulse_profile.sh ${D}${sysconfdir}/profile.d/
-}
-
 PACKAGES =+ "${PN}-profile ${PN}-tools"
 FILES:${PN}-profile += "/etc/profile.d"
 FILES:${PN}-server:remove = "${bindir}/pactl"
