@@ -3,10 +3,10 @@ HOMEPAGE = "www.st.com"
 LICENSE = "BSD-3-Clause"
 LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/BSD-3-Clause;md5=550794465ba0ec5312d6919e203a55f9"
 
-SRC_URI = "git://github.com/STMicroelectronics/optee-stm32mp-addons.git;protocol=https;nobranch=1"
+SRC_URI = "git://github.com/STMicroelectronics/optee-stm32mp-addons;protocol=https;branch=main"
 SRCREV = "b311703deb0377d85a9d4a9fc1c2fa3fe3c0de61"
 
-PV = "4.0.1-${@bb.utils.contains('MACHINE_FEATURES', 'm33td', 'nocalibration', 'calibration', d)}-${SRCPV}"
+PV = "4.8.0.${@bb.utils.contains('MACHINE_FEATURES', 'm33td', 'nocalibration', 'calibration', d)}-${SRCPV}"
 
 DEPENDS = "virtual-optee-os"
 DEPENDS:stm32mp2aarch32common = " ${@oe.utils.ifelse(d.getVar('MULTILIBS'), 'lib64-virtual-optee-os','')} "
