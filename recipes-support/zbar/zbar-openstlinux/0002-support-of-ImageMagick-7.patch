@@ -5,6 +5,8 @@ Subject: [PATCH] support of ImageMagick 7
 
 Signed-off-by: Christophe Priouzeau <christophe.priouzeau@st.com>
 ---
+Upstream-Status: Inappropriate
+
  configure.ac      | 2 +-
  zbarimg/zbarimg.c | 6 +-----
  2 files changed, 2 insertions(+), 6 deletions(-)

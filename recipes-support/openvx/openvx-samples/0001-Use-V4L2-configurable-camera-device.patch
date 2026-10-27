@@ -5,6 +5,8 @@ Subject: [PATCH] Use V4L2 configurable camera device
 
 Change-Id: If748b13da5edae7fcc9bf4337668bd2c01c01a05
 ---
+Upstream-Status: Inappropriate [specific to ST boards]
+
  bubble-pop/source/AMD_app.cpp               | 13 +++++++++----
  canny-edge-detector/src/canny.cpp           |  9 +++++++--
  skin-tone-detector/src/skinToneDetector.cpp |  9 +++++++--
