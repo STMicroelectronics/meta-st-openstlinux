@@ -17,7 +17,7 @@ function pty_exec() {
 
 # Detect if GPU are present or not
 gpu_presence=0
-if [ -f /etc/default/weston ] && $(grep "^OPTARGS" /etc/default/weston | grep -q "use-pixman" ) ;
+if [ -f /etc/default/weston ] && $(grep "^OPTARGS" /etc/default/weston | grep -q "pixman" ) ;
 then
         echo "Without GPU"
         ADDONS="videoconvert ! video/x-raw,format=BGRx ! queue !"
