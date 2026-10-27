@@ -5,11 +5,11 @@ import re
 import sys
 import os
 
-def found_perf():
-    prefix = "/proc/device-tree"
+def found_sdram_channel():
+    prefix = "/sys/firmware/devicetree"
     for root, dirs, files in os.walk(prefix):
         for d in dirs:
-            if 'perf@' in d:
+            if 'sdram-channel' in d:
                 return (os.path.join(root, d))
     return None
 
@@ -66,21 +66,20 @@ with open('/proc/device-tree/compatible', 'r') as compatible:
         divider = 8
         clock_name = 'ck_pll2'
         try:
-            devicetree_path = found_perf()
-            if devicetree_path is None:
-                print("ERROR: Cannot find perf entry on /proc/device-tree/soc* (%s)" % "perf@xxxxxxxx")
-                sys.exit(1)
-            with open("%s/st,dram-type" % devicetree_path, 'rb') as tmp:
-                t = int.from_bytes(list(tmp.read(4)), byteorder='big', signed=False)
-                if t == 0:
-                    ddr_type = 'LPDDR4'
-                    burst_length = 16
-                elif t == 1:
-                    ddr_type = 'LPDDR3'
-                elif t == 2:
-                    ddr_type = 'DDR4'
-                elif t == 3:
-                    ddr_type = 'DDR3'
+            sram_channel_path = found_sdram_channel()
+            if sram_channel_path is not None:
+                if os.path.isfile(sram_channel_path + "/compatible"):
+                    with open("%s/compatible" % sram_channel_path, 'r') as file_compatible:
+                        ddr_type = file_compatible.read()
+                        if 'lpddr4' in ddr_type:
+                            ddr_type = 'LPDDR4'
+                            burst_length = 16
+                        elif 'lpddr3' in ddr_type:
+                            ddr_type = 'LPDDR3'
+                        elif 'ddr4' in ddr_type:
+                            ddr_type = 'LPDDR4'
+                        elif 'ddr3' in ddr_type:
+                            ddr_type = 'DDR3'
         except:
             print("Warning: cannot detect DDR type from devicetree; use defaults")
     else:
