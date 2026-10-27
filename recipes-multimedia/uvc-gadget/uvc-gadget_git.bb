@@ -10,3 +10,6 @@ PV = "0.4.0"
 
 DEPENDS += "libcamera-stm32mp jpeg"
 inherit meson pkgconfig
+
+CXXFLAGS += "-Wno-invalid-offsetof -Wno-unused-result"
+CFLAGS += "-Wno-unused-result"
