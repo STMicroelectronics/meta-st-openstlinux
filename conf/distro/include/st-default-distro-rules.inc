@@ -49,8 +49,10 @@ INITRD_IMAGE ?= "${@bb.utils.contains('COMBINED_FEATURES', 'autoresize', 'st-ima
 BUILDCFG_VARS += "DISTRO_CODENAME"
 BUILDCFG_VARS += "${@'ACCEPT_EULA_' + d.getVar('MACHINE')}"
 BUILDCFG_VARS += "GCCVERSION"
+BUILDCFG_VARS += "GCCPIE"
 BUILDCFG_VARS += "PREFERRED_PROVIDER_virtual/kernel"
 BUILDCFG_VARS += "MACHINE_FEATURES"
+BUILDCFG_VARS += "${@bb.utils.contains('MACHINE_FEATURES', 'm33td', 'TFM_PROFILE', '', d)}"
 
 #--------------------------
 # Configure build info file for rootfs availability
