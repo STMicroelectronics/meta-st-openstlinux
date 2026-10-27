@@ -12,7 +12,7 @@ PV = "2.0"
 
 SUFFIX_FOR_FILE ?= "_mp1"
 SUFFIX_FOR_FILE:stm32mp1common = "_mp1"
-SUFFIX_FOR_FILE:stm32mp2common = "_mp25"
+SUFFIX_FOR_FILE:stm32mp2common = "_mp2"
 
 SRC_URI = " \
     file://launch_camera.sh \
@@ -26,6 +26,9 @@ SRC_URI = " \
     \
     file://camera_preview.desktop \
     file://camera_preview.png \
+    \
+    file://launch_camera_control${SUFFIX_FOR_FILE}_webcam.sh \
+    file://launch_camera_preview${SUFFIX_FOR_FILE}_webcam.sh \
     "
 
 S = "${UNPACKDIR}"

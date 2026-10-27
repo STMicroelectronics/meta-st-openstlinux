@@ -118,7 +118,7 @@ config_dcmipp_media_ctl() {
 # ------------------------------
 
 # graphic backend detection
-if [ -f /etc/default/weston ] && $(grep "^OPTARGS" /etc/default/weston | grep -q "use-pixman" ) ;
+if [ -f /etc/default/weston ] && $(grep "^OPTARGS" /etc/default/weston | grep -q "pixman" ) ;
 then
 	echo "Without GPU"
 	ADDONS="videoconvert ! queue !"

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source $(dirname ${BASH_SOURCE[0]})/launch_camera_control_mp25.sh
+source $(dirname ${BASH_SOURCE[0]})/launch_camera_control_mp2_webcam.sh
 
 function pty_exec() {
     cmd=$1
@@ -25,8 +25,8 @@ if [ -n "$GST_SOURCE" ]; then
 	pty_exec "$GRAPH"
 
 	#Kill exposure correction background task
-	killall launch_camera_control_mp25.sh
-	killall launch_camera_preview_mp25.sh
+	killall launch_camera_control_mp2_webcam.sh
+	killall launch_camera_preview_mp2_webcam.sh
 else
 	echo "WARNING: no camera supported detected by this script"
 fi

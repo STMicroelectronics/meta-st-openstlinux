@@ -7,9 +7,9 @@ Application:
     Type: script
     Script:
         Exist:
-            Command: /usr/local/demo/application/camera/bin/check_camera_preview_mp25.sh
+            Command: /usr/local/demo/application/camera/bin/check_camera_preview_mp2.sh
             Msg_false: Webcam or camera is not connected
-        Start: application/camera/bin/launch_camera_preview_mp25.sh
+        Start: application/camera/bin/launch_camera_preview_mp2.sh
     Action:
         button_release_event: script_management
         button_press_event: highlight_eventBox

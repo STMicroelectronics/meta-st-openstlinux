@@ -79,7 +79,7 @@ get_webcam_device() {
 # ------------------------------
 
 # graphic brackend detection
-if [ -f /etc/default/weston ] && $(grep "^OPTARGS" /etc/default/weston | grep -q "use-pixman" ) ;
+if [ -f /etc/default/weston ] && $(grep "^OPTARGS" /etc/default/weston | grep -q "pixman" ) ;
 then
 	echo "Without GPU"
 	ADDONS="videoconvert ! queue !"
@@ -135,7 +135,7 @@ else
         # suppose we have a webcam
         WIDTH=640
         HEIGHT=480
-        ADDONS="videoconvert ! video/x-raw,format=NV12 ! queue !"
+        ADDONS="videoconvert ! video/x-raw,format=RGB16 ! queue !"
     fi
 
     V4L2_CAPS="video/x-raw, width=$WIDTH, height=$HEIGHT"
