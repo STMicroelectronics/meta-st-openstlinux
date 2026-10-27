@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: BSD-2-Clause
+[Unit]
+Description=TEE Supplicant on %i
+DefaultDependencies=no
+After=dev-%i.device
+Wants=dev-%i.device
+Conflicts=shutdown.target
+Before=tpm2.target sysinit.target shutdown.target
+
+[Service]
+Type=notify
+User=@CFG_TEE_SUPPL_USER@
+Group=@CFG_TEE_SUPPL_GROUP@
+EnvironmentFile=-/etc/default/tee-supplicant
+ExecStartPre=/usr/sbin/create-tee-supplicant-env /tmp/tee-supplicant.env
+EnvironmentFile=-/tmp/tee-supplicant.env
+ExecStart=/usr/sbin/tee-supplicant $RPMB_CID $OPTARGS /dev/%I

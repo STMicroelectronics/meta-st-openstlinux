@@ -1,2 +1,10 @@
-KERNEL=="tee[0-9]*", MODE="0660", OWNER="root", GROUP="teeclnt", TAG+="systemd", ENV{SYSTEMD_WANTS}+="tee.device"
-KERNEL=="teepriv[0-9]*", MODE="0660", OWNER="root", GROUP="tee", TAG+="systemd", ENV{SYSTEMD_WANTS}+="teepriv.device"
+# SPDX-License-Identifier: BSD-2-Clause
+KERNEL=="tee[0-9]*", MODE="0660", OWNER="root", GROUP="tee", TAG+="systemd"
+
+# If a /dev/teepriv[0-9]* device is detected, start an instance of
+# tee-supplicant.service with the device name as parameter
+KERNEL=="teepriv[0-9]*", MODE="0660", OWNER="root", GROUP="teepriv", \
+    TAG+="systemd", ENV{SYSTEMD_WANTS}+="tee-supplicant@%k.service"
+
+ACTION=="add", SUBSYSTEM=="mmc_rpmb", KERNEL=="mmcblk[0-9]rpmb", \
+    GROUP="teepriv"

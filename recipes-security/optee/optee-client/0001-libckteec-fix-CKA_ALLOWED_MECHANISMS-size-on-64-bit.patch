@@ -1,0 +1,64 @@
+From 6f304d32a66959ec83abab084aec05033836d560 Mon Sep 17 00:00:00 2001
+From: Minghao Cheng <m@minhal.me>
+Date: Wed, 13 May 2026 17:40:25 +0800
+Subject: [PATCH] libckteec: fix CKA_ALLOWED_MECHANISMS size on 64-bit
+
+On 64-bit systems, CKA_ALLOWED_MECHANISMS deserialization reports
+the wire format size (count * sizeof(uint32_t)) instead of the
+CK_ULONG-based size (count * sizeof(CK_ULONG)). This causes the
+standard PKCS#11 size-query pattern to allocate a buffer that is
+too small, leading to a heap buffer overflow when the mechanisms
+are written as CK_ULONG values.
+
+Fix the size reporting and buffer guard in deserialize_ck_attribute()
+to use CK_ULONG-based sizes for CKA_ALLOWED_MECHANISMS, and fix the
+buffer advancement in deserialize_ck_attributes() to match the wire
+format size.
+
+Signed-off-by: Minghao Cheng <m@minhal.me>
+Reviewed-by: Jens Wiklander <jens.wiklander@oss.qualcomm.com>
+Acked-by: Jerome Forissier <jerome.forissier@arm.com>
+Upstream-Status: Backport [https://github.com/OP-TEE/optee_client/commit/6f304d32a66959ec83abab084aec05033836d560]
+---
+ libckteec/src/serialize_ck.c | 18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
+
+diff --git a/libckteec/src/serialize_ck.c b/libckteec/src/serialize_ck.c
+index d73ae62..dd242ba 100644
+--- a/libckteec/src/serialize_ck.c
++++ b/libckteec/src/serialize_ck.c
+@@ -288,6 +288,20 @@ static CK_RV deserialize_ck_attribute(struct pkcs11_attribute_head *in,
+ 		return CKR_OK;
+ 	}
+ 
++	if (out->type == CKA_ALLOWED_MECHANISMS) {
++		CK_ULONG ck_size = (in->size / sizeof(uint32_t)) *
++				    sizeof(CK_ULONG);
++
++		if (!out->pValue) {
++			out->ulValueLen = ck_size;
++			return CKR_OK;
++		}
++		if (out->ulValueLen < ck_size) {
++			out->ulValueLen = ck_size;
++			return CKR_OK;
++		}
++	}
++
+ 	if (out->ulValueLen < in->size) {
+ 		out->ulValueLen = in->size;
+ 		return CKR_OK;
+@@ -363,6 +377,10 @@ CK_RV deserialize_ck_attributes(uint8_t *in, CK_ATTRIBUTE_PTR attributes,
+ 		if (cur_attr->pValue) {
+ 			if (ck_attr_is_ulong(cur_attr->type))
+ 				len += sizeof(uint32_t);
++			else if (cur_attr->type == CKA_ALLOWED_MECHANISMS)
++				len += (cur_attr->ulValueLen /
++					sizeof(CK_ULONG)) *
++				       sizeof(uint32_t);
+ 			else
+ 				len += cur_attr->ulValueLen;
+ 		}
+-- 
+2.43.0
+
