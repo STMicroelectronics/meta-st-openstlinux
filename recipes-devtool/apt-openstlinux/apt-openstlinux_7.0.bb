@@ -14,7 +14,7 @@ SRC_URI = "file://packages.openstlinux.st.com.list \
            file://disclaimer \
           "
 
-S = "${WORKDIR}"
+S = "${UNPACKDIR}"
 
 inherit deploy
 
