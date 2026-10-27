@@ -54,6 +54,7 @@ RDEPENDS:packagegroup-framework-tools-core = "\
     rt-tests        \
     stm32-ddr-tools \
     u-boot-tools-stm32mp-mkfwumdata \
+    ${@bb.utils.contains('MACHINE_FEATURES', 'fw-update-ab', 'u-boot-tools-stm32mp-fwumdata', '', d)} \
     "
 
 SUMMARY:packagegroup-framework-tools-kernel = "Framework tools components for kernel"
