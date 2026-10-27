@@ -10,16 +10,12 @@ LIC_FILES_CHKSUM = "\
 
 include libcamera-stm32mp.inc
 
-# 0.3.0
+# 0.7.0
 SRC_URI = "git://git.libcamera.org/libcamera/libcamera.git;protocol=https;branch=master"
-SRCREV = "aee16c06913422a0ac84ee3217f87a9795e3c2d9"
+SRCREV = "b7854fd07d42168f099b5ce30d1702e0e0875bf5"
 
 SRC_URI += " \
-    file://0001-media_device-Add-bool-return-type-to-unlock.patch \
-    file://0002-options-Replace-use-of-VLAs-in-C.patch \
-    file://0001-rpi-Use-alloca-instead-of-variable-length-arrays.patch \
-    \
-    file://0001-v0.3.0-stm32mp-6.2.1.patch \
+    file://0001-0.7.0-stm32mp-r1.patch \
     "
 
-PV = "0.3.0-stm32mp.2"
+PV = "0.7.0-stm32mp-r1"

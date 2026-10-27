@@ -1,30 +1,25 @@
-From afcc3d544da385bf00c007fe110f7b9d88968e97 Mon Sep 17 00:00:00 2001
+From 436d90616ffa7ad7bf1e36ef44b4d569a5057e74 Mon Sep 17 00:00:00 2001
 From: Christophe Priouzeau <christophe.priouzeau@foss.st.com>
-Date: Wed, 4 Feb 2026 11:45:17 +0100
-Subject: [PATCH] v0.3.0-stm32mp-6.2.1
+Date: Mon, 21 Sep 2026 13:33:47 +0200
+Subject: [PATCH] 0.7.0-stm32mp-r1
 
----
 Upstream-Status: Pending
-
- README.rst                                    |   16 +
- include/libcamera/internal/media_device.h     |    2 +-
+---
  include/libcamera/ipa/dcmipp.mojom            |   36 +
  include/libcamera/ipa/meson.build             |    1 +
  include/linux/stm32-dcmipp-config.h           |  196 +++
  include/linux/v4l2-controls.h                 |   41 +
  include/linux/videodev2.h                     |    5 +
  meson.build                                   |    1 +
- meson_options.txt                             |   15 +-
+ meson_options.txt                             |   17 +-
  src/apps/cam/camera_session.cpp               |   11 +-
- src/apps/common/options.cpp                   |   12 +-
- src/gstreamer/gstlibcamera-utils.cpp          |   21 +-
  src/gstreamer/gstlibcamerapad.cpp             |    4 +
- src/gstreamer/gstlibcamerasrc.cpp             | 1363 +++++++++++++++-
- src/ipa/dcmipp/algorithms/aec.cpp             | 1070 ++++++++++++
- src/ipa/dcmipp/algorithms/aec.h               |   94 ++
+ src/gstreamer/gstlibcamerasrc.cpp             | 1399 +++++++++++++++-
+ src/ipa/dcmipp/algorithms/aec.cpp             | 1244 ++++++++++++++
+ src/ipa/dcmipp/algorithms/aec.h               |  111 ++
  src/ipa/dcmipp/algorithms/algorithm.h         |   35 +
- src/ipa/dcmipp/algorithms/awb.cpp             |  797 +++++++++
- src/ipa/dcmipp/algorithms/awb.h               |   71 +
+ src/ipa/dcmipp/algorithms/awb.cpp             |  844 ++++++++++
+ src/ipa/dcmipp/algorithms/awb.h               |   74 +
  src/ipa/dcmipp/algorithms/badpixel.cpp        |  185 +++
  src/ipa/dcmipp/algorithms/badpixel.h          |   50 +
  src/ipa/dcmipp/algorithms/blc.cpp             |  144 ++
@@ -33,34 +28,29 @@ Upstream-Status: Pending
  src/ipa/dcmipp/algorithms/contrast.h          |   44 +
  src/ipa/dcmipp/algorithms/demosaicing.cpp     |  152 ++
  src/ipa/dcmipp/algorithms/demosaicing.h       |   44 +
- src/ipa/dcmipp/algorithms/gamma.cpp           |   91 ++
+ src/ipa/dcmipp/algorithms/gamma.cpp           |   91 +
  src/ipa/dcmipp/algorithms/gamma.h             |   44 +
  src/ipa/dcmipp/algorithms/luminance_utils.cpp |   26 +
  src/ipa/dcmipp/algorithms/luminance_utils.h   |   21 +
  src/ipa/dcmipp/algorithms/meson.build         |   13 +
  src/ipa/dcmipp/algorithms/statistic.cpp       |  216 +++
  src/ipa/dcmipp/algorithms/statistic.h         |   45 +
- src/ipa/dcmipp/data/imx335.yaml               |   61 +
+ src/ipa/dcmipp/data/imx335.yaml               |   64 +
  src/ipa/dcmipp/data/meson.build               |   12 +
  src/ipa/dcmipp/data/uncalibrated.yaml         |   21 +
- src/ipa/dcmipp/data/vd56g3.yaml               |   61 +
- src/ipa/dcmipp/data/vd56g3_mono.yaml          |   61 +
+ src/ipa/dcmipp/data/vd56g3.yaml               |   64 +
+ src/ipa/dcmipp/data/vd56g3_mono.yaml          |   64 +
  src/ipa/dcmipp/dcmipp.cpp                     |  578 +++++++
  src/ipa/dcmipp/ipa_context.h                  |  133 ++
  src/ipa/dcmipp/meson.build                    |   51 +
  src/ipa/dcmipp/module.h                       |   27 +
- src/ipa/libipa/camera_sensor_helper.cpp       |   11 +
- src/ipa/rpi/controller/rpi/alsc.cpp           |    7 +-
- src/libcamera/control_ids_draft.yaml          |  288 ++++
- src/libcamera/ipc_unixsocket.cpp              |   13 +-
- src/libcamera/media_device.cpp                |    6 +-
- src/libcamera/pipeline/dcmipp/dcmipp.cpp      | 1436 +++++++++++++++++
+ src/libcamera/control_ids_draft.yaml          |  374 +++++
+ src/libcamera/pipeline/dcmipp/dcmipp.cpp      | 1467 +++++++++++++++++
  src/libcamera/pipeline/dcmipp/dcmipp.h        |  128 ++
  src/libcamera/pipeline/dcmipp/dcmipp_path.cpp |  488 ++++++
  src/libcamera/pipeline/dcmipp/meson.build     |    5 +
- .../sensor/camera_sensor_properties.cpp       |    4 +
  src/libcamera/v4l2_device.cpp                 |   20 +-
- 54 files changed, 8421 insertions(+), 41 deletions(-)
+ 45 files changed, 8763 insertions(+), 12 deletions(-)
  create mode 100644 include/libcamera/ipa/dcmipp.mojom
  create mode 100644 include/linux/stm32-dcmipp-config.h
  create mode 100644 src/ipa/dcmipp/algorithms/aec.cpp
@@ -97,49 +87,9 @@ Upstream-Status: Pending
  create mode 100644 src/libcamera/pipeline/dcmipp/dcmipp_path.cpp
  create mode 100644 src/libcamera/pipeline/dcmipp/meson.build
 
-diff --git a/README.rst b/README.rst
-index 1da7a3d6..d605182b 100644
---- a/README.rst
-+++ b/README.rst
-@@ -178,6 +178,22 @@ Which can be received on another device over the network with:
-    gst-launch-1.0 tcpclientsrc host=$DEVICE_IP port=5000 ! \
-         multipartdemux ! jpegdec ! autovideosink
- 
-+The GStreamer element also supports multiple streams. This is achieved by
-+requesting additionnal source pads. Downstream caps filteris can be used
-+to choose specific parameters like resolution and pixel format. The pad
-+property ``stream-role`` can be used to select a role.
-+
-+The following example displayis a 640x480 view finder while streamiing JPEG
-+encoded 800x600 video. You can use the receiver pipleine above to view the
-+remote stream from another device.
-+
-+.. code::
-+
-+   gst-launch-1.0 libcamerasrc name=cs src::stream-role=view-finder src_0::stream-role=video-recording \
-+       cs.src ! queue ! video/x-raw,width=640,height=480 ! videoconvert ! autovideosink \
-+       cs.src_0 ! queue ! video/x-raw,width=800,height=600 ! videoconvert ! \
-+       jpegenc ! multipartmux ! tcpserversink host=0.0.0.0 port=5000
-+
- .. section-end-getting-started
- 
- Troubleshooting
-diff --git a/include/libcamera/internal/media_device.h b/include/libcamera/internal/media_device.h
-index 3b624e00..bf2e475d 100644
---- a/include/libcamera/internal/media_device.h
-+++ b/include/libcamera/internal/media_device.h
-@@ -33,7 +33,7 @@ public:
- 	bool busy() const { return acquired_; }
- 
- 	bool lock();
--	bool unlock();
-+	void unlock();
- 
- 	int populate();
- 	bool isValid() const { return valid_; }
 diff --git a/include/libcamera/ipa/dcmipp.mojom b/include/libcamera/ipa/dcmipp.mojom
 new file mode 100644
-index 00000000..810c0f6c
+index 000000000..810c0f6c7
 --- /dev/null
 +++ b/include/libcamera/ipa/dcmipp.mojom
 @@ -0,0 +1,36 @@
@@ -180,20 +130,20 @@ index 00000000..810c0f6c
 +	setPostprocControls(uint32 frame, libcamera.ControlList postprocControls);
 +};
 diff --git a/include/libcamera/ipa/meson.build b/include/libcamera/ipa/meson.build
-index 3352d08f..925aad2b 100644
+index 3ee3ada30..ce7296423 100644
 --- a/include/libcamera/ipa/meson.build
 +++ b/include/libcamera/ipa/meson.build
-@@ -62,6 +62,7 @@ libcamera_generated_ipa_headers += custom_target('core_ipa_serializer_h',
+@@ -63,6 +63,7 @@ libcamera_ipa_headers += custom_target('core_ipa_serializer_h',
  
  # Mapping from pipeline handler name to mojom file
  pipeline_ipa_mojom_mapping = {
 +    'dcmipp': 'dcmipp.mojom',
      'ipu3': 'ipu3.mojom',
+     'mali-c55': 'mali-c55.mojom',
      'rkisp1': 'rkisp1.mojom',
-     'rpi/vc4': 'raspberrypi.mojom',
 diff --git a/include/linux/stm32-dcmipp-config.h b/include/linux/stm32-dcmipp-config.h
 new file mode 100644
-index 00000000..85b4cf73
+index 000000000..85b4cf731
 --- /dev/null
 +++ b/include/linux/stm32-dcmipp-config.h
 @@ -0,0 +1,196 @@
@@ -394,10 +344,10 @@ index 00000000..85b4cf73
 +
 +#endif
 diff --git a/include/linux/v4l2-controls.h b/include/linux/v4l2-controls.h
-index b9f64810..23772e04 100644
+index 25914de2c..7097bd194 100644
 --- a/include/linux/v4l2-controls.h
 +++ b/include/linux/v4l2-controls.h
-@@ -1218,6 +1218,47 @@ enum v4l2_jpeg_chroma_subsampling {
+@@ -1239,6 +1239,47 @@ enum v4l2_jpeg_chroma_subsampling {
  #define V4L2_CID_DEINTERLACING_MODE		(V4L2_CID_IMAGE_PROC_CLASS_BASE + 4)
  #define V4L2_CID_DIGITAL_GAIN			(V4L2_CID_IMAGE_PROC_CLASS_BASE + 5)
  
@@ -446,21 +396,21 @@ index b9f64810..23772e04 100644
  #define V4L2_CID_DV_CLASS_BASE			(V4L2_CTRL_CLASS_DV | 0x900)
  #define V4L2_CID_DV_CLASS			(V4L2_CTRL_CLASS_DV | 1)
 diff --git a/include/linux/videodev2.h b/include/linux/videodev2.h
-index 0b5482a0..acc17e57 100644
+index b40b43d72..7e6d114f9 100644
 --- a/include/linux/videodev2.h
 +++ b/include/linux/videodev2.h
-@@ -837,6 +837,10 @@ struct v4l2_pix_format {
- /* The metadata format identifier for FE stats buffers. */
- #define V4L2_META_FMT_RPI_FE_STATS v4l2_fourcc('R', 'P', 'F', 'S')
+@@ -863,6 +863,10 @@ struct v4l2_pix_format {
+ #define V4L2_META_FMT_MALI_C55_PARAMS	v4l2_fourcc('C', '5', '5', 'P') /* ARM Mali-C55 Parameters */
+ #define V4L2_META_FMT_MALI_C55_3A_STATS        v4l2_fourcc('C', '5', '5', 'S') /* ARM Mali-C55 3A Statistics */
  
 +/* Vendor specific - used for STM32_DCMIPP camera sub-system */
 +#define V4L2_META_FMT_ST_DCMIPP_ISP_PARAMS	v4l2_fourcc('S', 'T', 'I', 'P') /* STM32 DCMIPP ISP Parameters */
 +#define V4L2_META_FMT_ST_DCMIPP_ISP_STAT	v4l2_fourcc('S', 'T', 'I', 'S') /* STM32 DCMIPP ISP Statistics */
 +
- /* priv field value to indicates that subsequent fields are valid. */
- #define V4L2_PIX_FMT_PRIV_MAGIC		0xfeedcafe
- 
-@@ -1880,6 +1884,7 @@ enum v4l2_ctrl_type {
+ /*
+  * Line-based metadata formats. Remember to update v4l_fill_fmtdesc() when
+  * adding new ones!
+@@ -1930,6 +1934,7 @@ enum v4l2_ctrl_type {
  	V4L2_CTRL_TYPE_HEVC_SCALING_MATRIX	= 0x0273,
  	V4L2_CTRL_TYPE_HEVC_DECODE_PARAMS	= 0x0274,
  
@@ -469,44 +419,46 @@ index 0b5482a0..acc17e57 100644
  	V4L2_CTRL_TYPE_AV1_TILE_GROUP_ENTRY = 0x281,
  	V4L2_CTRL_TYPE_AV1_FRAME	    = 0x282,
 diff --git a/meson.build b/meson.build
-index 1902ea2f..c0f49810 100644
+index 82867f82b..b70a7949e 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -206,6 +206,7 @@ pipelines_support = {
+@@ -221,6 +221,7 @@ pipelines_support = {
      'rkisp1':       arch_arm,
+     'rpi/pisp':     arch_arm,
      'rpi/vc4':      arch_arm,
-     'simple':       arch_arm,
 +    'dcmipp':       arch_arm,
+     'simple':       ['any'],
      'uvcvideo':     ['any'],
      'vimc':         ['test'],
- }
 diff --git a/meson_options.txt b/meson_options.txt
-index 7aa41249..d13ddbb4 100644
+index 078472940..9c905471d 100644
 --- a/meson_options.txt
 +++ b/meson_options.txt
-@@ -32,7 +32,7 @@ option('gstreamer',
+@@ -33,8 +33,8 @@ option('gstreamer',
  
  option('ipas',
          type : 'array',
--        choices : ['ipu3', 'rkisp1', 'rpi/vc4', 'simple', 'vimc'],
-+        choices : ['dcmipp', 'ipu3', 'rkisp1', 'rpi/vc4', 'simple', 'vimc'],
+-        choices : ['ipu3', 'mali-c55', 'rkisp1', 'rpi/pisp', 'rpi/vc4', 'simple',
+-                   'vimc'],
++        choices : ['dcmipp', 'ipu3', 'mali-c55', 'rkisp1', 'rpi/pisp', 'rpi/vc4',
++                   'simple', 'vimc'],
          description : 'Select which IPA modules to build')
  
  option('lc-compliance',
-@@ -53,7 +53,8 @@ option('pipelines',
-             'rpi/vc4',
+@@ -62,7 +62,8 @@ option('pipelines',
              'simple',
              'uvcvideo',
--            'vimc'
-+            'vimc',
+             'vimc',
+-            'virtual'
++            'virtual',
 +            'dcmipp'
          ],
          description : 'Select which pipeline handlers to build. If this is set to "auto", all the pipelines applicable to the target architecture will be built. If this is set to "all", all the pipelines will be built. If both are selected then "all" will take precedence.')
  
-@@ -86,3 +87,13 @@ option('v4l2',
-         type : 'boolean',
-         value : false,
-         description : 'Compile the V4L2 compatibility layer')
+@@ -101,3 +102,13 @@ option('v4l2',
+         value : 'auto',
+         description : 'Compile the V4L2 compatibility layer',
+         deprecated : {'true': 'enabled', 'false': 'disabled'})
 +
 +option('evision_algo',
 +        type : 'boolean',
@@ -518,15 +470,15 @@ index 7aa41249..d13ddbb4 100644
 +        value: '',
 +        description: 'Path to the evision algorithms header files')
 diff --git a/src/apps/cam/camera_session.cpp b/src/apps/cam/camera_session.cpp
-index f13355ba..35e2451a 100644
+index 17444a217..e40cb4991 100644
 --- a/src/apps/cam/camera_session.cpp
 +++ b/src/apps/cam/camera_session.cpp
-@@ -360,8 +360,15 @@ int CameraSession::queueRequest(Request *request)
+@@ -446,9 +446,16 @@ int CameraSession::queueRequest(Request *request)
  	if (captureLimit_ && queueCount_ >= captureLimit_)
  		return 0;
  
 -	if (script_)
--		request->controls() = script_->frameControls(queueCount_);
+-		request->controls().merge(script_->frameControls(queueCount_),
 +	if (script_) {
 +		const ControlList &controls = script_->frameControls(queueCount_);
 +		for (auto const &ctrl : controls)
@@ -534,104 +486,17 @@ index f13355ba..35e2451a 100644
 +				  << controls::controls.at(ctrl.first)->name()
 +				  << " = " << ctrl.second.toString()
 +				  << std::endl;
-+		request->controls() = controls;
++		request->controls().merge(controls,
+ 					  ControlList::MergePolicy::OverwriteExisting);
 +	}
  
  	queueCount_++;
  
-diff --git a/src/apps/common/options.cpp b/src/apps/common/options.cpp
-index f6d4f006..ab19aa3d 100644
---- a/src/apps/common/options.cpp
-+++ b/src/apps/common/options.cpp
-@@ -879,8 +879,8 @@ OptionsParser::Options OptionsParser::parse(int argc, char **argv)
- 	 * Allocate short and long options arrays large enough to contain all
- 	 * options.
- 	 */
--	char *shortOptions = (char*)malloc(optionsMap_.size() * 3 + 2);
--	struct option *longOptions = (struct option*)malloc(sizeof(struct option) * (optionsMap_.size() + 1));
-+	char shortOptions[optionsMap_.size() * 3 + 2];
-+	struct option longOptions[optionsMap_.size() + 1];
- 	unsigned int ids = 0;
- 	unsigned int idl = 0;
- 
-@@ -935,16 +935,12 @@ OptionsParser::Options OptionsParser::parse(int argc, char **argv)
- 			std::cerr << argv[optind - 1] << std::endl;
- 
- 			usage();
--			free(shortOptions);
--			free(longOptions);
- 			return options;
- 		}
- 
- 		const Option &option = *optionsMap_[c];
- 		if (!parseValue(option, optarg, &options)) {
- 			usage();
--			free(shortOptions);
--			free(longOptions);
- 			return options;
- 		}
- 	}
-@@ -953,14 +949,10 @@ OptionsParser::Options OptionsParser::parse(int argc, char **argv)
- 		std::cerr << "Invalid non-option argument '" << argv[optind]
- 			  << "'" << std::endl;
- 		usage();
--		free(shortOptions);
--		free(longOptions);
- 		return options;
- 	}
- 
- 	options.valid_ = true;
--	free(shortOptions);
--	free(longOptions);
- 	return options;
- }
- 
-diff --git a/src/gstreamer/gstlibcamera-utils.cpp b/src/gstreamer/gstlibcamera-utils.cpp
-index ec4da435..3cf29343 100644
---- a/src/gstreamer/gstlibcamera-utils.cpp
-+++ b/src/gstreamer/gstlibcamera-utils.cpp
-@@ -322,6 +322,22 @@ bare_structure_from_format(const PixelFormat &format)
- 	case formats::SGBRG8:
- 	case formats::SGRBG8:
- 	case formats::SRGGB8:
-+	case formats::SBGGR10:
-+	case formats::SGBRG10:
-+	case formats::SGRBG10:
-+	case formats::SRGGB10:
-+	case formats::SBGGR12:
-+	case formats::SGBRG12:
-+	case formats::SGRBG12:
-+	case formats::SRGGB12:
-+	case formats::SBGGR14:
-+	case formats::SGBRG14:
-+	case formats::SGRBG14:
-+	case formats::SRGGB14:
-+	case formats::SBGGR16:
-+	case formats::SGBRG16:
-+	case formats::SGRBG16:
-+	case formats::SRGGB16:
- 		return gst_structure_new("video/x-bayer", "format", G_TYPE_STRING,
- 					 bayer_format_to_string(format), nullptr);
- 
-@@ -480,9 +496,12 @@ gst_libcamera_configure_stream_from_caps(StreamConfiguration &stream_cfg,
- 
- 	/* Configure colorimetry */
- 	if (gst_structure_has_field(s, "colorimetry")) {
--		const gchar *colorimetry_str = gst_structure_get_string(s, "colorimetry");
-+		const gchar *colorimetry_str;
- 		GstVideoColorimetry colorimetry;
- 
-+		gst_structure_fixate_field(s, "colorimetry");
-+		colorimetry_str = gst_structure_get_string(s, "colorimetry");
-+
- 		if (!gst_video_colorimetry_from_string(&colorimetry, colorimetry_str))
- 			g_critical("Invalid colorimetry %s", colorimetry_str);
- 
 diff --git a/src/gstreamer/gstlibcamerapad.cpp b/src/gstreamer/gstlibcamerapad.cpp
-index 7b22aebe..af0fe477 100644
+index c1f7f16e8..cb334c399 100644
 --- a/src/gstreamer/gstlibcamerapad.cpp
 +++ b/src/gstreamer/gstlibcamerapad.cpp
-@@ -99,6 +99,10 @@ gst_libcamera_stream_role_get_type()
+@@ -110,6 +110,10 @@ gst_libcamera_stream_role_get_type()
  			static_cast<gint>(StreamRole::Viewfinder),
  			"libcamera::Viewfinder",
  			"view-finder",
@@ -640,23 +505,23 @@ index 7b22aebe..af0fe477 100644
 +			"libcamera::Raw",
 +			"raw",
  		},
- 		{ 0, NULL, NULL }
+ 		{ 0, nullptr, nullptr }
  	};
 diff --git a/src/gstreamer/gstlibcamerasrc.cpp b/src/gstreamer/gstlibcamerasrc.cpp
-index 6a95b6af..5ca9b204 100644
+index a7241e9b7..8f73d4376 100644
 --- a/src/gstreamer/gstlibcamerasrc.cpp
 +++ b/src/gstreamer/gstlibcamerasrc.cpp
-@@ -30,6 +30,7 @@
- #include <atomic>
- #include <queue>
+@@ -26,6 +26,7 @@
+ #include <tuple>
+ #include <utility>
  #include <vector>
 +#include <sstream>
  
  #include <libcamera/camera.h>
  #include <libcamera/camera_manager.h>
-@@ -129,6 +130,9 @@ struct GstLibcameraSrcState {
- 	ControlList initControls_;
+@@ -128,6 +129,9 @@ struct GstLibcameraSrcState {
  	guint group_id_;
+ 	GstCameraControls controls_;
  
 +	GMutex controlsLock_; /* Protects pendingControls_ */
 +	ControlList pendingControls_;
@@ -664,9 +529,9 @@ index 6a95b6af..5ca9b204 100644
  	int queueRequest();
  	void requestCompleted(Request *request);
  	int processRequest();
-@@ -144,6 +148,55 @@ struct _GstLibcameraSrc {
+@@ -142,6 +146,57 @@ struct _GstLibcameraSrc {
+ 
  	gchar *camera_name;
- 	controls::AfModeEnum auto_focus_mode = controls::AfModeManual;
  
 +	struct LibCameraControls {
 +		/* Add all ISP controls */
@@ -701,6 +566,7 @@ index 6a95b6af..5ca9b204 100644
 +		std::array<int, 5 * 3> awb_algo_profile_ref_rgb;
 +		std::string awb_current_profile_name;
 +		int awb_current_profile_color_temp;
++		int awb_convergence_speed;
 +		bool demosaicing_enable;
 +		std::array<int, 4> demosaicing_filters;
 +		int statistic_profile;
@@ -714,16 +580,18 @@ index 6a95b6af..5ca9b204 100644
 +		std::array<int, 4> lux_ref_lum;
 +		float lux_ref_calib_factor;
 +		float lux_estimate;
-+
++		int aec_convergence_speed;
++		uint aec_gain_max_limit;
 +	} ctrl;
 +
  	std::atomic<GstEvent *> pending_eos;
  
  	GstLibcameraSrcState *state;
-@@ -155,9 +208,60 @@ enum {
+@@ -152,7 +207,56 @@ struct _GstLibcameraSrc {
+ enum {
  	PROP_0,
  	PROP_CAMERA_NAME,
- 	PROP_AUTO_FOCUS_MODE,
+-	PROP_LAST
 +	PROP_HW_REVISION,
 +	PROP_DECIMATION,
 +	PROP_BLACK_LEVEL_ENABLE,
@@ -756,6 +624,7 @@ index 6a95b6af..5ca9b204 100644
 +	PROP_AWB_ALGO_PROFILE_REF_RGB,
 +	PROP_AWB_CURRENT_PROFILE_NAME,
 +	PROP_AWB_CURRENT_PROFILE_COLOR_TEMP,
++	PROP_AWB_ALGO_CONVERGENCE_SPEED,
 +	PROP_DEMOSAICING_ENABLE,
 +	PROP_DEMOSAICING_FILTERS,
 +	PROP_STATISTIC_PROFILE,
@@ -770,25 +639,16 @@ index 6a95b6af..5ca9b204 100644
 +	PROP_LUX_REF_LUM,
 +	PROP_LUX_REF_CALIB_FACTOR,
 +	PROP_LUX_ESTIMATE,
++	PROP_AEC_ALGO_CONVERGENCE_SPEED,
++	PROP_AEC_ALGO_GAIN_MAX_LIMIT,
++	PROP_LAST,
  };
  
-+static void gst_libcamera_src_child_proxy_init(gpointer g_iface,
-+					       gpointer iface_data);
-+
- G_DEFINE_TYPE_WITH_CODE(GstLibcameraSrc, gst_libcamera_src, GST_TYPE_ELEMENT,
-+			G_IMPLEMENT_INTERFACE(GST_TYPE_CHILD_PROXY,
-+					      gst_libcamera_src_child_proxy_init)
- 			GST_DEBUG_CATEGORY_INIT(source_debug, "libcamerasrc", 0,
- 						"libcamera Source"))
- 
-@@ -203,7 +307,19 @@ int GstLibcameraSrcState::queueRequest()
- 	}
+ static void gst_libcamera_src_child_proxy_init(gpointer g_iface,
+@@ -209,9 +313,20 @@ int GstLibcameraSrcState::queueRequest()
  
  	GST_TRACE_OBJECT(src_, "Requesting buffers");
--	cam_->queueRequest(wrap->request_.get());
-+
-+	Request *req = wrap->request_.get();
-+
+ 
 +	/* Add then clear pending controls to the request */
 +	ControlList controls;
 +	{
@@ -796,13 +656,18 @@ index 6a95b6af..5ca9b204 100644
 +		controls = src_->state->pendingControls_;
 +		src_->state->pendingControls_.clear();
 +	}
-+	req->controls() = controls;
 +
-+	cam_->queueRequest(req);
- 
  	{
  		GLibLocker locker(&lock_);
-@@ -234,6 +350,203 @@ GstLibcameraSrcState::requestCompleted(Request *request)
+-		cam_->queueRequest(wrap->request_.get());
++
++		Request *req = wrap->request_.get();
++		req->controls().merge(controls);
++		cam_->queueRequest(req);
+ 		queuedRequests_.push(std::move(wrap));
+ 	}
+ 
+@@ -242,6 +357,215 @@ GstLibcameraSrcState::requestCompleted(Request *request)
  		return;
  	}
  
@@ -919,7 +784,7 @@ index 6a95b6af..5ca9b204 100644
 +		src_->ctrl.awb_algo_profile_names.fill("X");
 +		/* The Controls class does not support array of string. So, split the concatenated string */
 +		std::string token;
-+		std::stringstream ss(*AwbAlgoProfileNames);
++		std::stringstream ss{std::string(*AwbAlgoProfileNames)};
 +		for (int i = 0; i < (int)src_->ctrl.awb_algo_profile_names.size(); i++) {
 +			if (!getline(ss, token, '$'))
 +				token = "";
@@ -949,6 +814,10 @@ index 6a95b6af..5ca9b204 100644
 +	const auto AwbCurProfileColorTemp = request->metadata().get(controls::ColourTemperature);
 +	if (AwbCurProfileColorTemp) {
 +		src_->ctrl.awb_current_profile_color_temp = *AwbCurProfileColorTemp;
++	}
++	const auto AwbConvergenceSpeed = request->metadata().get(controls::draft::AwbConvergenceSpeed);
++	if (AwbConvergenceSpeed) {
++		src_->ctrl.awb_convergence_speed = *AwbConvergenceSpeed;
 +	}
 +	const auto DemosaicingEnable = request->metadata().get(controls::draft::DemosaicingEnable);
 +	if (DemosaicingEnable) {
@@ -1002,39 +871,29 @@ index 6a95b6af..5ca9b204 100644
 +	if (LuxEstimate) {
 +		src_->ctrl.lux_estimate = *LuxEstimate;
 +	}
++	const auto AecConvergenceSpeed = request->metadata().get(controls::draft::AeConvergenceSpeed);
++	if (AecConvergenceSpeed) {
++		src_->ctrl.aec_convergence_speed = *AecConvergenceSpeed;
++	}
++	const auto AecGainMaxLimit = request->metadata().get(controls::draft::AeGainMaxLimit);
++	if (AecGainMaxLimit) {
++		src_->ctrl.aec_gain_max_limit = *AecGainMaxLimit;
++	}
 +
  	if (GST_ELEMENT_CLOCK(src_)) {
  		int64_t timestamp = request->metadata().get(controls::SensorTimestamp).value_or(0);
  
-@@ -531,7 +844,8 @@ gst_libcamera_src_task_run(gpointer user_data)
- 		if (gst_pad_check_reconfigure(srcpad)) {
- 			/* Check if the caps even need changing. */
- 			g_autoptr(GstCaps) caps = gst_pad_get_current_caps(srcpad);
--			if (!gst_pad_peer_query_accept_caps(srcpad, caps)) {
-+			g_autoptr(GstCaps) peercaps = gst_pad_peer_query_caps(srcpad, caps);
-+			if (gst_caps_is_empty(peercaps)) {
- 				reconfigure = true;
- 				break;
- 			}
-@@ -669,6 +983,7 @@ gst_libcamera_src_task_enter(GstTask *task, [[maybe_unused]] GThread *thread,
- 		}
+@@ -863,6 +1187,7 @@ gst_libcamera_src_task_enter(GstTask *task, [[maybe_unused]] GThread *thread,
+ 		gst_pad_push_event(srcpad, gst_event_new_segment(&segment));
  	}
  
 +	/* Note: controls provided at start() are dropped by IPA */
  	ret = state->cam_->start(&state->initControls_);
  	if (ret) {
  		GST_ELEMENT_ERROR(self, RESOURCE, SETTINGS,
-@@ -730,6 +1045,7 @@ gst_libcamera_src_set_property(GObject *object, guint prop_id,
- {
- 	GLibLocker lock(GST_OBJECT(object));
- 	GstLibcameraSrc *self = GST_LIBCAMERA_SRC(object);
-+	GstLibcameraSrcState *state = self->state;
- 
- 	switch (prop_id) {
- 	case PROP_CAMERA_NAME:
-@@ -739,6 +1055,337 @@ gst_libcamera_src_set_property(GObject *object, guint prop_id,
- 	case PROP_AUTO_FOCUS_MODE:
- 		self->auto_focus_mode = static_cast<controls::AfModeEnum>(g_value_get_enum(value));
+@@ -934,6 +1259,361 @@ gst_libcamera_src_set_property(GObject *object, guint prop_id,
+ 		g_free(self->camera_name);
+ 		self->camera_name = g_value_dup_string(value);
  		break;
 +	case PROP_BLACK_LEVEL_ENABLE:
 +	{
@@ -1260,6 +1119,14 @@ index 6a95b6af..5ca9b204 100644
 +		state->pendingControls_.set(controls::draft::AwbReferenceRGB, RefRGB);
 +		break;
 +	}
++	case PROP_AWB_ALGO_CONVERGENCE_SPEED:
++	{
++		int convergence_speed;
++		convergence_speed = g_value_get_int(value);
++		GLibLocker locker(&state->controlsLock_);
++		state->pendingControls_.set(controls::draft::AwbConvergenceSpeed, convergence_speed);
++		break;
++	}
 +	case PROP_DEMOSAICING_ENABLE:
 +	{
 +		bool enable = g_value_get_boolean(value);
@@ -1366,13 +1233,29 @@ index 6a95b6af..5ca9b204 100644
 +		state->pendingControls_.set(controls::draft::LuxRefCalibFactor, factor);
 +		break;
 +	}
++	case PROP_AEC_ALGO_CONVERGENCE_SPEED:
++	{
++		int convergence_speed;
++		convergence_speed = g_value_get_int(value);
++		GLibLocker locker(&state->controlsLock_);
++		state->pendingControls_.set(controls::draft::AeConvergenceSpeed, convergence_speed);
++		break;
++	}
++	case PROP_AEC_ALGO_GAIN_MAX_LIMIT:
++	{
++		int gain_max_limit;
++		gain_max_limit = g_value_get_uint(value);
++		GLibLocker locker(&state->controlsLock_);
++		state->pendingControls_.set(controls::draft::AeGainMaxLimit, gain_max_limit);
++		break;
++	}
 +
  	default:
- 		G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
- 		break;
-@@ -759,6 +1406,317 @@ gst_libcamera_src_get_property(GObject *object, guint prop_id, GValue *value,
- 	case PROP_AUTO_FOCUS_MODE:
- 		g_value_set_enum(value, static_cast<gint>(self->auto_focus_mode));
+ 		if (!state->controls_.setProperty(prop_id - PROP_LAST, value, pspec))
+ 			G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
+@@ -953,6 +1633,326 @@ gst_libcamera_src_get_property(GObject *object, guint prop_id, GValue *value,
+ 	case PROP_CAMERA_NAME:
+ 		g_value_set_string(value, self->camera_name);
  		break;
 +	case PROP_HW_REVISION:
 +	{
@@ -1573,6 +1456,9 @@ index 6a95b6af..5ca9b204 100644
 +	case PROP_AWB_CURRENT_PROFILE_COLOR_TEMP:
 +		g_value_set_int(value, self->ctrl.awb_current_profile_color_temp);
 +		break;
++	case PROP_AWB_ALGO_CONVERGENCE_SPEED:
++		g_value_set_int(value, self->ctrl.awb_convergence_speed);
++		break;
 +	case PROP_DEMOSAICING_ENABLE:
 +		g_value_set_boolean(value, self->ctrl.demosaicing_enable);
 +		break;
@@ -1684,11 +1570,17 @@ index 6a95b6af..5ca9b204 100644
 +	case PROP_LUX_ESTIMATE:
 +		g_value_set_float(value, self->ctrl.lux_estimate);
 +		break;
++	case PROP_AEC_ALGO_CONVERGENCE_SPEED:
++		g_value_set_int(value, self->ctrl.aec_convergence_speed);
++		break;
++	case PROP_AEC_ALGO_GAIN_MAX_LIMIT:
++		g_value_set_uint(value, self->ctrl.aec_gain_max_limit);
++		break;
 +
  	default:
- 		G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
- 		break;
-@@ -844,6 +1802,7 @@ gst_libcamera_src_finalize(GObject *object)
+ 		if (!state->controls_.getProperty(prop_id - PROP_LAST, value, pspec))
+ 			G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
+@@ -1039,6 +2039,7 @@ gst_libcamera_src_finalize(GObject *object)
  	g_rec_mutex_clear(&self->stream_lock);
  	g_clear_object(&self->task);
  	g_mutex_clear(&self->state->lock_);
@@ -1696,44 +1588,18 @@ index 6a95b6af..5ca9b204 100644
  	g_free(self->camera_name);
  	delete self->state;
  
-@@ -863,9 +1822,12 @@ gst_libcamera_src_init(GstLibcameraSrc *self)
+@@ -1058,6 +2059,7 @@ gst_libcamera_src_init(GstLibcameraSrc *self)
  	gst_task_set_lock(self->task, &self->stream_lock);
  
  	g_mutex_init(&state->lock_);
 +	g_mutex_init(&state->controlsLock_);
  
--	state->srcpads_.push_back(gst_pad_new_from_template(templ, "src"));
--	gst_element_add_pad(GST_ELEMENT(self), state->srcpads_.back());
-+	GstPad *pad = gst_pad_new_from_template(templ, "src");
-+	state->srcpads_.push_back(pad);
-+	gst_element_add_pad(GST_ELEMENT(self), pad);
-+	gst_child_proxy_child_added(GST_CHILD_PROXY(self), G_OBJECT(pad), GST_OBJECT_NAME(pad));
+ 	GstPad *pad = gst_pad_new_from_template(templ, "src");
+ 	state->srcpads_.push_back(pad);
+@@ -1162,6 +2164,398 @@ gst_libcamera_src_class_init(GstLibcameraSrcClass *klass)
+ 							     | G_PARAM_STATIC_STRINGS));
+ 	g_object_class_install_property(object_class, PROP_CAMERA_NAME, spec);
  
- 	GST_OBJECT_FLAG_SET(self, GST_ELEMENT_FLAG_SOURCE);
- 
-@@ -896,6 +1858,8 @@ gst_libcamera_src_request_new_pad(GstElement *element, GstPadTemplate *templ,
- 		return NULL;
- 	}
- 
-+	gst_child_proxy_child_added(GST_CHILD_PROXY(self), G_OBJECT(pad), GST_OBJECT_NAME(pad));
-+
- 	return reinterpret_cast<GstPad *>(g_steal_pointer(&pad));
- }
- 
-@@ -904,6 +1868,8 @@ gst_libcamera_src_release_pad(GstElement *element, GstPad *pad)
- {
- 	GstLibcameraSrc *self = GST_LIBCAMERA_SRC(element);
- 
-+	gst_child_proxy_child_removed(GST_CHILD_PROXY(self), G_OBJECT(pad), GST_OBJECT_NAME(pad));
-+
- 	GST_DEBUG_OBJECT(self, "Pad %" GST_PTR_FORMAT " being released", pad);
- 
- 	{
-@@ -963,4 +1929,393 @@ gst_libcamera_src_class_init(GstLibcameraSrcClass *klass)
- 				 static_cast<gint>(controls::AfModeManual),
- 				 G_PARAM_WRITABLE);
- 	g_object_class_install_property(object_class, PROP_AUTO_FOCUS_MODE, spec);
-+
 +	/* Add ISP properties */
 +	/* HW Revision values read property */
 +	spec = gst_param_spec_array("hw-revision",
@@ -1767,6 +1633,7 @@ index 6a95b6af..5ca9b204 100644
 +						      G_PARAM_READWRITE),
 +				    G_PARAM_READWRITE);
 +	g_object_class_install_property(object_class, PROP_BLACK_LEVEL_VALUES, spec);
++
 +	/* Satistic area property */
 +	spec = gst_param_spec_array("statistic-area",
 +				    "Statistic Area",
@@ -1792,6 +1659,7 @@ index 6a95b6af..5ca9b204 100644
 +						      G_PARAM_READWRITE),
 +				    G_PARAM_READWRITE);
 +	g_object_class_install_property(object_class, PROP_CONTRAST_VALUES, spec);
++
 +	/* AEC algo enable property */
 +	spec = g_param_spec_boolean("aec-algo-enable",
 +				    "AEC algo enable",
@@ -1813,6 +1681,7 @@ index 6a95b6af..5ca9b204 100644
 +					0, 255, 56,
 +					G_PARAM_READABLE);
 +	g_object_class_install_property(object_class, PROP_AEC_ALGO_EXPOSURE_TARGET, spec);
++
 +	/* AEC anti-flicker frequency */
 +	spec = g_param_spec_int("aec-algo-antiflicker-frequency",
 +					"AEC anti-flicker frequency",
@@ -1834,6 +1703,7 @@ index 6a95b6af..5ca9b204 100644
 +				    0, 100000, 0,
 +				    G_PARAM_READWRITE);
 +	g_object_class_install_property(object_class, PROP_SENSOR_EXPOSURE, spec);
++
 +	/* Sensor delay property */
 +	spec = g_param_spec_int("sensor-delay",
 +				"Sensor delay",
@@ -1883,6 +1753,7 @@ index 6a95b6af..5ca9b204 100644
 +				    0, 4095, 0,
 +				    G_PARAM_READWRITE);
 +	g_object_class_install_property(object_class, PROP_BADPIX_ALGO_THRESHOLD, spec);
++
 +	/* ISP gain enable property */
 +	spec = g_param_spec_boolean("isp-gain-enable",
 +				    "ISP gain enable",
@@ -1915,6 +1786,7 @@ index 6a95b6af..5ca9b204 100644
 +						      G_PARAM_READWRITE),
 +				    G_PARAM_READWRITE);
 +	g_object_class_install_property(object_class, PROP_CCM_VALUES, spec);
++
 +	/* AWB algo enable property */
 +	spec = g_param_spec_boolean("awb-algo-enable",
 +				    "AWB algo enable",
@@ -1967,6 +1839,13 @@ index 6a95b6af..5ca9b204 100644
 +						      G_PARAM_READWRITE),
 +				    G_PARAM_READWRITE);
 +	g_object_class_install_property(object_class, PROP_AWB_ALGO_PROFILE_REF_RGB, spec);
++	/* AWB algo convergence speed property */
++	spec = g_param_spec_int("awb-algo-convergence-speed",
++				"AWB convergence speed",
++				"AWB convergence speed (0 = slowest, 3 = fastest)",
++				0, 3, 3,
++				G_PARAM_READWRITE);
++	g_object_class_install_property(object_class, PROP_AWB_ALGO_CONVERGENCE_SPEED, spec);
 +	/* AWB current profile name */
 +	spec = g_param_spec_string("awb-current-profile-name",
 +					"AWB current profile name",
@@ -1980,6 +1859,7 @@ index 6a95b6af..5ca9b204 100644
 +					0, 12000, 0,
 +					G_PARAM_READABLE),
 +	g_object_class_install_property(object_class, PROP_AWB_CURRENT_PROFILE_COLOR_TEMP, spec);
++
 +	/* Demosaicing enable property */
 +	spec = g_param_spec_boolean("demosaicing-enable",
 +				    "Demosaicing enable",
@@ -1996,6 +1876,7 @@ index 6a95b6af..5ca9b204 100644
 +						      G_PARAM_READWRITE),
 +				    G_PARAM_READWRITE);
 +	g_object_class_install_property(object_class, PROP_DEMOSAICING_FILTERS, spec);
++
 +	/* Statistic profile property */
 +	spec = g_param_spec_int("statistic-profile",
 +				    "Statistic profile",
@@ -2039,6 +1920,7 @@ index 6a95b6af..5ca9b204 100644
 +						      G_PARAM_READABLE),
 +				    G_PARAM_READABLE);
 +	g_object_class_install_property(object_class, PROP_STATISTIC_GET_HISTOGRAM_DOWN, spec);
++
 +	/* Gamma enable property */
 +	spec = g_param_spec_boolean("gamma-enable",
 +				    "Gamma correction enable",
@@ -2085,6 +1967,7 @@ index 6a95b6af..5ca9b204 100644
 +				   "Array of crop rectangles x1,y1,w1,h1;x2,y2,w2,h2;x3,y3,w3,h3", NULL,
 +				   G_PARAM_WRITABLE);
 +	g_object_class_install_property(object_class, PROP_SCALER_CROPS, spec);
++
 +	/* Lux estimate */
 +	spec = g_param_spec_float("lux-estimate",
 +				  "Lux estimate",
@@ -2092,43 +1975,40 @@ index 6a95b6af..5ca9b204 100644
 +				  0, 16777215, 0,
 +				  G_PARAM_READABLE);
 +	g_object_class_install_property(object_class, PROP_LUX_ESTIMATE, spec);
-+}
 +
-+/* GstChildProxy implementation */
-+static GObject *
-+gst_libcamera_src_child_proxy_get_child_by_index(GstChildProxy * child_proxy,
-+						 guint index)
-+{
-+	GLibLocker lock(GST_OBJECT(child_proxy));
-+	GObject *obj = nullptr;
++	/* AE algo convergence speed property */
++	spec = g_param_spec_int("aec-algo-convergence-speed",
++				"AE convergence speed",
++				"AE convergence speed (0 = slowest, 3 = fastest)",
++				0, 3, 3,
++				G_PARAM_READWRITE);
++	g_object_class_install_property(object_class, PROP_AEC_ALGO_CONVERGENCE_SPEED, spec);
 +
-+	obj = reinterpret_cast<GObject*>(g_list_nth_data(GST_ELEMENT(child_proxy)->srcpads, index));
-+	if (obj)
-+		gst_object_ref(obj);
++	/* AE algo gain max limit property */
++	spec = g_param_spec_uint("aec-algo-gain-max-limit",
++				"AE gain max limit",
++				"AE gain max limit",
++				0U, 0xFFFFFFFFU, 0xFFFFFFFFU,
++				G_PARAM_READWRITE);
++	g_object_class_install_property(object_class, PROP_AEC_ALGO_GAIN_MAX_LIMIT, spec);
 +
-+	return obj;
-+}
-+
-+static guint
-+gst_libcamera_src_child_proxy_get_children_count(GstChildProxy * child_proxy)
-+{
-+	GLibLocker lock(GST_OBJECT(child_proxy));
-+	return GST_ELEMENT_CAST(child_proxy)->numsrcpads;
-+}
-+
-+static void
-+gst_libcamera_src_child_proxy_init(gpointer g_iface, [[maybe_unused]] gpointer iface_data)
-+{
-+  GstChildProxyInterface *iface = reinterpret_cast<GstChildProxyInterface *>(g_iface);
-+  iface->get_child_by_index = gst_libcamera_src_child_proxy_get_child_by_index;
-+  iface->get_children_count = gst_libcamera_src_child_proxy_get_children_count;
+ 	GstCameraControls::installProperties(object_class, PROP_LAST);
  }
+ 
+@@ -1186,7 +2580,6 @@ gst_libcamera_src_child_proxy_get_children_count(GstChildProxy *child_proxy)
+ 	GLibLocker lock(GST_OBJECT(child_proxy));
+ 	return GST_ELEMENT_CAST(child_proxy)->numsrcpads;
+ }
+-
+ static void
+ gst_libcamera_src_child_proxy_init(gpointer g_iface, [[maybe_unused]] gpointer iface_data)
+ {
 diff --git a/src/ipa/dcmipp/algorithms/aec.cpp b/src/ipa/dcmipp/algorithms/aec.cpp
 new file mode 100644
-index 00000000..53014b1a
+index 000000000..7b0d6bb91
 --- /dev/null
 +++ b/src/ipa/dcmipp/algorithms/aec.cpp
-@@ -0,0 +1,1070 @@
+@@ -0,0 +1,1244 @@
 +/* SPDX-License-Identifier: LGPL-2.1-or-later */
 +/*
 + * Copyright (C) 2024 ST Microelectronics
@@ -2153,19 +2033,19 @@ index 00000000..53014b1a
 +
 +LOG_DEFINE_CATEGORY(DcmippAec)
 +
++static constexpr double kRatioExpBySpeed[] = {
++	0.5, /* AeConvergenceSpeedSlow */
++	0.7, /* AeConvergenceSpeedMedium */
++	0.9, /* AeConvergenceSpeedFast */
++};
 +static constexpr uint32_t kAlgoFineTolerance = 5;
 +static constexpr uint32_t kAlgoCoarseTolerance = 10;
 +static constexpr float kAlgoTolerance = 0.10f;             /* % */
 +static constexpr float kAlgoToleranceLowLux = 0.15f;       /* % */
 +static constexpr uint32_t kAlgoLowLuxLimit = 50;           /* lux */
 +static constexpr uint32_t kAlgoExpoCoarseIncrement = 500 ; /* us */
-+static constexpr uint32_t kAlgoExpoCoarseDecrement = 300 ; /* us */
 +static constexpr uint32_t kAlgoExpoFineIncrement = 150 ;   /* us */
-+static constexpr uint32_t kAlgoExpoFineDecrement = 100 ;   /* us */
 +static constexpr uint32_t kAlgoGainCoarseIncrement = 2000; /* mdB */
-+static constexpr uint32_t kAlgoGainCoarseDecrement = 1500; /* mdB */
-+static constexpr uint32_t kAlgoGainFineIncrement = 500;    /* mdB */
-+static constexpr uint32_t kAlgoGainFineDecrement = 300;    /* mdB */
 +static constexpr uint32_t kAlgoMaxGainIncrement = 10000;   /* mdB */
 +static constexpr uint8_t kAlgoIdealExposureTarget = 56;
 +
@@ -2191,8 +2071,24 @@ index 00000000..53014b1a
 +static constexpr float kFactorMax = 1.0f;
 +static constexpr float kFactorDef = 0.95f;
 +static constexpr int32_t kAecSensorDelayMax = 10;
-+static constexpr int32_t kAecSensorDelayLMargin = 2;
++static constexpr int32_t kAecSensorDelayLMargin = 3;
 +static constexpr int32_t kAecSensorStartupFrames = 30;
++static constexpr int kConvSpeedMin = 0;
++static constexpr int kConvSpeedMax = 3;
++static constexpr int kConvSpeedDef = 3;
++static constexpr uint32_t kConvGainMaxLimitMin = 0U;
++static constexpr uint32_t kConvGainMaxLimitMax = 0xFFFFFFFFU;
++static constexpr uint32_t kConvGainMaxLimitDef = 0xFFFFFFFFU;
++
++static bool isConvergenceSpeedValid(int32_t convergenceSpeed)
++{
++	return convergenceSpeed >= kConvSpeedMin && convergenceSpeed <= kConvSpeedMax;
++}
++
++static inline double mdbToLinear(uint32_t gain)
++{
++	return pow(10, (double)(gain) / 20000);
++}
 +
 +static inline uint32_t algoCoarseToleranceLowLux(uint32_t target)
 +{
@@ -2297,6 +2193,18 @@ index 00000000..53014b1a
 +	return factor >= kFactorMin && factor <= kFactorMax;
 +}
 +
++static uint32_t clampGainMaxLimit(IPAContext &context, uint32_t gainMaxLimit)
++{
++	uint32_t gainMin = context.info.sensorGainMin * 1000;
++
++	if (gainMaxLimit < gainMin) {
++		LOG(DcmippAec, Warning) << "GainMaxLimit lower than gain_min, clamp it to " << gainMin;
++		return gainMin;
++	}
++
++	return gainMaxLimit;
++}
++
 +int Aec::init([[maybe_unused]] IPAContext &context, const YamlObject &tuningData)
 +{
 +	internal_.lux_estimate = -1;
@@ -2307,6 +2215,15 @@ index 00000000..53014b1a
 +		LOG(DcmippAec, Error) << "Invalid Exposure value: " << params_.algoExposureValue;
 +		return -EINVAL;
 +	}
++
++	params_.convergenceSpeed = tuningData["ConvergenceSpeed"].get<int32_t>(0);
++	if (!isConvergenceSpeedValid(params_.convergenceSpeed)) {
++		LOG(DcmippAec, Error) << "Invalid ConvergenceSpeed";
++		return -EINVAL;
++	}
++
++	/* always valid but clamp it to gain_min */
++	params_.gainMaxLimit = clampGainMaxLimit(context, tuningData["GainMaxLimit"].get<uint32_t>(kConvGainMaxLimitDef));
 +
 +	params_.algoTarget = kAlgoIdealExposureTarget * pow(2, params_.algoExposureValue);
 +
@@ -2424,6 +2341,8 @@ index 00000000..53014b1a
 +	context.dcmippControls[&controls::draft::LuxRefExpo] = ControlInfo(kExpoMin, kExpoMax, kExpoDef);
 +	context.dcmippControls[&controls::draft::LuxRefLum] = ControlInfo(kLumMin, kLumMax, kLumDef);
 +	context.dcmippControls[&controls::draft::LuxRefCalibFactor] = ControlInfo(kFactorMin, kFactorMax, kFactorDef);
++	context.dcmippControls[&controls::draft::AeConvergenceSpeed] = ControlInfo(kConvSpeedMin, kConvSpeedMax, kConvSpeedDef);
++	context.dcmippControls[&controls::draft::AeGainMaxLimit] = ControlInfo(kConvGainMaxLimitMin, kConvGainMaxLimitMax, kConvGainMaxLimitDef);
 +
 +	return 0;
 +}
@@ -2436,7 +2355,6 @@ index 00000000..53014b1a
 +		/* Start with gain and exposure = min */
 +		config_.sensor.gain = context.info.sensorGainMin;
 +		config_.sensor.exposure = context.info.sensorExposureMin;
-+		internal_.previous_lux = 0;
 +	} else {
 +		/* Static config */
 +		config_.sensor = params_.sensorStatic;
@@ -2482,6 +2400,8 @@ index 00000000..53014b1a
 +	const auto &luxExpo = controls.get(controls::draft::LuxRefExpo);
 +	const auto &luxLum = controls.get(controls::draft::LuxRefLum);
 +	const auto &luxCalibFactor = controls.get(controls::draft::LuxRefCalibFactor);
++	const auto &convergenceSpeed = controls.get(controls::draft::AeConvergenceSpeed);
++	const auto &gainMaxLimit = controls.get(controls::draft::AeGainMaxLimit);
 +
 +	if (algoEnable) {
 +		params_.algoEnable = *algoEnable;
@@ -2573,6 +2493,20 @@ index 00000000..53014b1a
 +			return ;
 +		}
 +		params_.calibFactor = *luxCalibFactor;
++	}
++
++	if (convergenceSpeed) {
++		if (!isConvergenceSpeedValid(*convergenceSpeed)) {
++			LOG(DcmippAec, Error) << "Invalid ConvergenceSpeed";
++			return;
++		}
++		params_.convergenceSpeed = *convergenceSpeed;
++		LOG(DcmippAec, Debug) << "Updating AeConvergenceSpeed to " << *convergenceSpeed;
++	}
++
++	if (gainMaxLimit) {
++		params_.gainMaxLimit = clampGainMaxLimit(context, *gainMaxLimit);
++		LOG(DcmippAec, Debug) << "Updating gainMaxLimit to " << params_.gainMaxLimit;
 +	}
 +
 +	/* Static config: update params_ and if applicable force config_ update now */
@@ -2697,38 +2631,61 @@ index 00000000..53014b1a
 +		internal_.invalidStats = 1;
 +	} else {
 +		/* All the configurations have been tested, finalize the test procedure */
-+		int32_t delay, min, max, sum = 0, n_valid = 0;
-+		min = kAecSensorDelayMax;
-+		max = 0;
-+		/* Find the average delay among the valid (!= kAecSensorDelayMax) values and also exclude the min and max value */
++		/* Find the max valid delay (kAecSensorDelayMax being considered as invalid) */
++		int32_t sensorDelay = 0;
++
 +		for (int i = 0; i < kAecNbTestConfig - 1; i++) {
-+			delay = internal_.measure.delays[i];
-+			if (delay != kAecSensorDelayMax) {
-+				sum += delay;
-+				n_valid++;
-+				max = (delay > max) ? delay : max;
-+				min = (delay < min) ? delay : min;
-+			}
++			if (internal_.measure.delays[i] == kAecSensorDelayMax)
++				continue;
++			sensorDelay = std::max(sensorDelay, internal_.measure.delays[i]);
 +		}
-+		if (n_valid) {
-+			if (n_valid >= 4) {
-+				/* Exclude min and max */
-+				sum -= min;
-+				sum -= max;
-+				n_valid -= 2;
-+			}
-+			internal_.measure.sensorDelayMeasure = round((float)sum / n_valid);
-+			/* Apply the measure internally */
-+			params_.sensorDelay = internal_.measure.sensorDelayMeasure;
-+		} else {
-+			internal_.measure.sensorDelayMeasure = 0;
-+		}
++
++		/* setup measured value */
++		internal_.measure.sensorDelayMeasure = sensorDelay;
++		/* Apply the measure internally if valid */
++		if (sensorDelay)
++			params_.sensorDelay = sensorDelay;
 +
 +		/* Restore initial sensor config and stop measure */
 +		config_.sensor = internal_.measure.initialConfig;
 +		config_.pending = true;
 +		internal_.measure.doSensorDelayMeasure = false;
 +	}
++}
++
++void Aec::updateLuxEstimate(IPAContext &context, const stm32_dcmipp_stat_buf *stats)
++{
++	int32_t avgL;
++
++	/* Update invalidStats counter */
++	if (internal_.invalidStats)
++		internal_.invalidStats--;
++	/* and exit if stats are still invalid */
++	if (internal_.invalidStats) {
++		return ;
++	}
++
++	avgL = (config_.monoSensor || !context.isp.demosaicing.enable) ? luminanceFromRgbMono(stats->post.average_RGB) :
++									 luminanceFromRgb(stats->post.average_RGB);
++	internal_.lux_estimate = getEstimatedLux(context, avgL);
++}
++
++bool Aec::isLuxRefTuned()
++{
++	if (params_.HL_LuxRef == 0 ||
++	    params_.HL_Expo1 == 0 ||
++	    params_.HL_Lum1 == 0 ||
++	    params_.HL_Expo2 == 0 ||
++	    params_.HL_Lum2 == 0 ||
++	    params_.LL_LuxRef == 0 ||
++	    params_.LL_Expo1 == 0 ||
++	    params_.LL_Lum1 == 0 ||
++	    params_.LL_Expo2 == 0 ||
++	    params_.LL_Lum2 == 0 ||
++	    params_.calibFactor <= 0)
++		return false;
++
++	return true;
 +}
 +
 +int32_t Aec::getEstimatedLux(IPAContext &context, int32_t averageL)
@@ -2786,6 +2743,7 @@ index 00000000..53014b1a
 +	uint32_t gain_max = context.info.sensorGainMax * 1000;
 +	uint32_t antiFlickerFreq = params_.antiFlickerFreq;
 +	uint32_t compensation_gain_mdb;
++	uint32_t effective_gain_max;
 +	uint32_t up_equiv_exposure;
 +	uint32_t compat_period_us;
 +	float compensation_gain;
@@ -2807,8 +2765,9 @@ index 00000000..53014b1a
 +		compensation_gain = (float)exposure / (float)(*adjusted_exposure + 1);
 +		compensation_gain_mdb = (uint32_t)(20 * 1000 * log10(compensation_gain));
 +		*adjusted_gain = gain + compensation_gain_mdb;
-+		if (*adjusted_gain > gain_max)
-+			*adjusted_gain = gain_max;
++		effective_gain_max = std::min(gain_max, params_.gainMaxLimit);
++		if (*adjusted_gain > effective_gain_max)
++			*adjusted_gain = effective_gain_max;
 +	} else {
 +		/* Keep the initial values in case:
 +		 * - We cannot update the exposure because the values are under the flickering period (will flicker)
@@ -2855,16 +2814,124 @@ index 00000000..53014b1a
 +	}
 +}
 +
-+void Aec::getNewExpoParameters(IPAContext &context, uint32_t lux, uint32_t averageL, uint32_t *pExposure,
-+			       uint32_t *pGain, uint32_t exposure, uint32_t gain)
++bool Aec::isp_ae_handle_start_conditions(IPAContext &context, uint32_t averageL, uint32_t exposure, uint32_t gain,
++					 uint32_t *pExposure, uint32_t *pGain)
 +{
++	uint32_t again_max = config_.isImx335 ? 30 * 1000 : context.info.sensorGainMax * 1000;
 +	uint32_t exposure_max = context.info.sensorExposureMax;
 +	uint32_t exposure_min = context.info.sensorExposureMin;
 +	uint32_t gain_min = context.info.sensorGainMin * 1000;
++	double new_global_exposure;
++
++	if (averageL <= 5 && exposure == exposure_min && gain == gain_min) {
++		new_global_exposure = gain ? exposure * pow(10, ((double)gain + 3000) / 20000) : exposure + 2000;
++		if (new_global_exposure <= exposure_max) {
++			*pGain = 0;
++			*pExposure = (new_global_exposure < exposure_min) ? exposure_min : (uint32_t)new_global_exposure;
++		} else {
++			*pExposure = exposure_max;
++			*pGain = (uint32_t)(20 * 1000 * log10((float)new_global_exposure / (float)(*pExposure)));
++			*pGain = (*pGain < gain_min) ? gain_min : (*pGain > again_max) ? again_max : *pGain;
++		}
++		return true;
++	}
++
++	return false;
++}
++
++void Aec::isp_ae_split_global_exposure(IPAContext &context, double new_global_exposure, uint32_t *pExposure,
++				       uint32_t *pGain, uint8_t limit_gain, uint32_t curGain)
++{
++	uint32_t again_max = config_.isImx335 ? 30 * 1000 : context.info.sensorGainMax * 1000;
++	uint32_t exposure_max = context.info.sensorExposureMax;
++	uint32_t exposure_min = context.info.sensorExposureMin;
 +	uint32_t gain_max = context.info.sensorGainMax * 1000;
-+	uint32_t again_max = config_.isImx335 ? 30 * 1000 :
-+						context.info.sensorGainMax * 1000;
-+	uint32_t previous_lux = internal_.previous_lux;
++	uint32_t gain_min = context.info.sensorGainMin * 1000;
++	uint32_t effective_gain_max;
++
++	if (new_global_exposure <= exposure_max) {
++		*pGain = 0;
++		*pExposure = std::max((uint32_t)new_global_exposure, exposure_min);
++	} else {
++		*pExposure = exposure_max;
++		*pGain = (uint32_t)(20 * 1000 * log10(new_global_exposure / exposure_max));
++
++		/* Limit digital gain (lux value is very low and the gain is already very high and we need to avoid oscillations) */
++		if (limit_gain && (*pGain > again_max) && (abs((int32_t)*pGain - (int32_t)curGain) > kAlgoMaxGainIncrement)) {
++			*pGain = *pGain < curGain ? (curGain < kAlgoMaxGainIncrement ? 0 : curGain - kAlgoMaxGainIncrement) : curGain + kAlgoMaxGainIncrement;
++		}
++		effective_gain_max = std::min(params_.gainMaxLimit, gain_max);
++		*pGain = std::clamp(*pGain, gain_min, effective_gain_max);
++	}
++}
++
++double Aec::isp_ae_apply_luminance_ratio(double cur_global_exposure, uint32_t averageL, double speed)
++{
++	uint32_t exposureTarget = params_.algoTarget;
++	double ratio;
++
++	if (averageL == 0)
++		return cur_global_exposure;
++
++	speed = std::clamp(speed, 0.0, 1.0);
++	ratio = (double)exposureTarget / averageL;
++
++	return cur_global_exposure * pow(ratio, speed);
++}
++
++void Aec::getNewExpoParametersRatio(IPAContext &context, double speed, uint32_t averageL, uint32_t *pExposure,
++			       uint32_t *pGain, uint32_t exposure, uint32_t gain)
++{
++	double cur_global_exposure = exposure * mdbToLinear(gain);
++	uint32_t exposure_max = context.info.sensorExposureMax;
++	uint32_t gain_max = context.info.sensorGainMax * 1000;
++	uint32_t exposureTarget = params_.algoTarget;
++	uint32_t effective_gain_max;
++	double new_global_exposure;
++	uint32_t adjExposure;
++	uint32_t adjGain;
++
++	effective_gain_max = std::min(params_.gainMaxLimit, gain_max);
++
++	if (isp_ae_handle_start_conditions(context, averageL, exposure, gain, pExposure, pGain)) {
++		isp_ae_compute_antiflicker(context, *pGain, *pExposure, &adjGain, &adjExposure);
++		*pExposure = adjExposure;
++		*pGain = adjGain;
++
++		return ;
++	}
++
++	if (averageL == 0) {
++		if (exposure >= exposure_max) {
++			*pExposure = exposure_max;
++			*pGain = gain + kAlgoGainCoarseIncrement;
++			 if (*pGain > effective_gain_max)
++				*pGain = effective_gain_max;
++		} else {
++			*pExposure = exposure + kAlgoExpoCoarseIncrement;
++			if (*pExposure > exposure_max)
++				*pExposure = exposure_max;
++			*pGain = gain;
++		}
++	} else if (abs((int32_t)averageL - (int32_t)exposureTarget) <= kAlgoFineTolerance) {
++		/* Fine convergence reached: luminance is already within tolerance of the target.
++		Keep the current exposure/gain to avoid a useless ratio reassessment that would
++		otherwise apply a tiny correction each frame and make the image oscillate. */
++		*pExposure = exposure;
++		*pGain = gain;
++	} else {
++		new_global_exposure = isp_ae_apply_luminance_ratio(cur_global_exposure, averageL, speed);
++		isp_ae_split_global_exposure(context, new_global_exposure, pExposure, pGain, 0, 0);
++	}
++
++	/* Keep anti-flicker behavior aligned with standard AE flow. */
++	isp_ae_compute_antiflicker(context, *pGain, *pExposure, &adjGain, &adjExposure);
++	*pExposure = adjExposure;
++	*pGain = adjGain;
++}
++
++void Aec::isp_ae_compute_lux_limits(uint32_t *pLowLimit, uint32_t *pHighLimit)
++{
 +	uint32_t exposureTarget = params_.algoTarget;
 +	float calibFactor = params_.calibFactor;
 +	uint32_t HL_LuxRef = params_.HL_LuxRef;
@@ -2877,223 +2944,220 @@ index 00000000..53014b1a
 +	uint8_t LL_Lum1 = params_.LL_Lum1;
 +	uint32_t LL_Expo2 = params_.LL_Expo2;
 +	uint8_t LL_Lum2 = params_.LL_Lum2;
++
++	*pLowLimit = ((uint32_t)(((double)exposureTarget * calibFactor *(LL_LuxRef *
++					   ((double)LL_Expo1 / LL_Lum1 -
++					    (double)LL_Expo2 / LL_Lum2) /
++					   ((double)LL_Expo1 - LL_Expo2))) / kAlgoLowLuxLimit) + 1) * kAlgoLowLuxLimit;
++	*pHighLimit = ((uint32_t)(((double)exposureTarget * calibFactor * (HL_LuxRef *
++					   ((double)HL_Expo1 / HL_Lum1 -
++					    (double)HL_Expo2 / HL_Lum2) /
++					   ((double)HL_Expo1 - HL_Expo2))) / kAlgoLowLuxLimit) + 1) * kAlgoLowLuxLimit;
++}
++
++int Aec::isp_ae_is_coarse_convergence_not_reached(uint32_t lux, uint32_t averageL)
++{
++	uint32_t exposureTarget = params_.algoTarget;
++	uint32_t delta;
++
++	delta = abs((int32_t)averageL - (int32_t)exposureTarget);
++	if (lux > kAlgoLowLuxLimit)
++		return delta > std::max((float)exposureTarget * kAlgoTolerance, (float)kAlgoCoarseTolerance);
++	else
++		return delta > std::max((float)exposureTarget * kAlgoToleranceLowLux, (float)algoCoarseToleranceLowLux(exposureTarget));
++}
++
++void Aec::isp_ae_compute_model_coefficients(uint32_t lux, uint32_t custom_high_lux_limit, double *pa, double *pb)
++{
++	uint32_t HL_LuxRef = params_.HL_LuxRef;
++	uint32_t HL_Expo1 = params_.HL_Expo1;
++	uint8_t HL_Lum1 = params_.HL_Lum1;
++	uint32_t HL_Expo2 = params_.HL_Expo2;
++	uint8_t HL_Lum2 = params_.HL_Lum2;
++	uint32_t LL_LuxRef = params_.LL_LuxRef;
++	uint32_t LL_Expo1 = params_.LL_Expo1;
++	uint8_t LL_Lum1 = params_.LL_Lum1;
++	uint32_t LL_Expo2 = params_.LL_Expo2;
++	uint8_t LL_Lum2 = params_.LL_Lum2;
++
++	if ((lux <= HL_LuxRef) || (lux <= custom_high_lux_limit)) {
++		/* ESTIMATION 2: use low lux references for improved precision */
++		*pa = (LL_LuxRef * ((double)LL_Expo1 / LL_Lum1 - (double)LL_Expo2 / LL_Lum2)) /
++		      ((double)LL_Expo1 - LL_Expo2);
++
++		*pb = (LL_LuxRef * (double)LL_Expo1 / LL_Lum1) - (*pa * LL_Expo1);
++	} else {
++		/* ESTIMATION 1: use high lux references for higher lux conditions */
++		*pa = (HL_LuxRef * ((double)HL_Expo1 / HL_Lum1 - (double)HL_Expo2 / HL_Lum2)) /
++		      ((double)HL_Expo1 - HL_Expo2);
++
++		*pb = (HL_LuxRef * (double)HL_Expo1 / HL_Lum1) - (*pa * HL_Expo1);
++	}
++}
++
++double Aec::isp_ae_compute_coarse_exposure(IPAContext &context, uint32_t lux, double a, double b,
++					   uint32_t custom_low_lux_limit)
++{
++	uint32_t again_max = config_.isImx335 ? 30 * 1000 : context.info.sensorGainMax * 1000;
++	uint32_t exposure_max = context.info.sensorExposureMax;
++	uint32_t exposureTarget = params_.algoTarget;
++	float calibFactor = params_.calibFactor;
++	double new_global_exposure;
++	double c, d;
++
++	if (lux <= custom_low_lux_limit) {
++		/* ESTIMATION 3: very low lux linear model */
++		d = exposure_max * mdbToLinear(again_max);
++		c = ((b / (((double)custom_low_lux_limit / ((double)exposureTarget * calibFactor)) - (double)a)) - d) / custom_low_lux_limit;
++
++		new_global_exposure = (c * (double)lux) + d;
++	} else {
++		/* ESTIMATION 1 or 2: use a and b coefficients */
++		new_global_exposure = b / (((double)lux / ((double)exposureTarget * calibFactor)) - (double)a);
++	}
++
++	return new_global_exposure;
++}
++
++void Aec::isp_ae_validate_exposure_increase(IPAContext &context, double *new_global_exposure,
++					    double cur_global_exposure, uint32_t averageL)
++{
++	uint32_t exposure_min = context.info.sensorExposureMin;
++	uint32_t exposureTarget = params_.algoTarget;
++
++	/* Check if estimation is valid (exposure should increase) */
++	if (*new_global_exposure <= cur_global_exposure) {
++		/* Wrong estimation, to be corrected */
++		if (averageL != 0) {
++			*new_global_exposure = isp_ae_apply_luminance_ratio(cur_global_exposure, averageL, 1.0);
++		} else {
++			/* averageL == 0, low lux or sensor exposure is set at its mininmal value */
++			*new_global_exposure = (cur_global_exposure > exposure_min) ? cur_global_exposure * 1.1 : 2000;
++		}
++	}
++
++	/* Additional safeguards: check ratios are consistent */
++	if (cur_global_exposure != 0 && averageL != 0) {
++		double expo_ratio = *new_global_exposure / cur_global_exposure;
++		double lum_ratio = (double)exposureTarget / averageL;
++
++		if (((expo_ratio < 1.10) && (lum_ratio > 1.40)) ||
++		    ((expo_ratio < 1.50) && (lum_ratio > 1.80)) ||
++		    ((expo_ratio > 1.65) && (lum_ratio < 1.30)) ||
++		    ((expo_ratio > 1.35) && (lum_ratio < 1.10)) ||
++		    (expo_ratio < 1.02)) {
++			*new_global_exposure = cur_global_exposure * lum_ratio;
++		}
++	}
++}
++
++void Aec::isp_ae_validate_exposure_decrease(double *new_global_exposure, double cur_global_exposure, uint32_t averageL)
++{
++	uint32_t exposureTarget = params_.algoTarget;
++
++	/* Check if estimation is valid (exposure should decrease) */
++	if (*new_global_exposure >= cur_global_exposure)
++	{
++		/* Wrong estimation, to be corrected */
++		if (averageL != 0) {
++			*new_global_exposure = isp_ae_apply_luminance_ratio(cur_global_exposure, averageL, 1.0);
++		} else {
++			/* averageL == 0 (should be filtered earlier): bump exposure to avoid div-by-zero */
++			*new_global_exposure = cur_global_exposure * 0.9;
++		}
++	}
++
++	/* Additional safeguards: check ratios are consistent */
++	if (cur_global_exposure != 0 && averageL != 0)
++	{
++		double expo_ratio = *new_global_exposure / cur_global_exposure;
++		double lum_ratio = (double)exposureTarget / averageL;
++
++		if (((expo_ratio > 0.60) && (lum_ratio < 0.40)) ||
++		    ((expo_ratio < 0.45) && (lum_ratio > 0.65)) ||
++		    ((expo_ratio < 0.15) && (lum_ratio > 0.50)) ||
++		    ((expo_ratio < 0.60) && (lum_ratio > 0.85)) ||
++		    (expo_ratio > 0.98))
++		{
++			*new_global_exposure = cur_global_exposure * lum_ratio;
++		}
++	}
++}
++
++void Aec::isp_ae_process_fine_convergence(IPAContext &context, uint32_t lux, uint32_t averageL,
++					  double cur_global_exposure, uint32_t curGain, uint32_t curExposure,
++					  uint32_t *pExposure, uint32_t *pGain)
++{
++	uint32_t exposureTarget = params_.algoTarget;
++	double new_global_exposure = cur_global_exposure;
++
++	/* Check if fine convergence processing is required */
++	if (((lux > kAlgoLowLuxLimit) && (abs((int32_t)averageL - (int32_t)exposureTarget) > kAlgoFineTolerance)) ||
++	    ((lux <= kAlgoLowLuxLimit) && (abs((int32_t)averageL - (int32_t)exposureTarget) > algoFineToleranceLowLux(exposureTarget)))) {
++		/* FINE CONVERGENCE not reached: apply small adjustments */
++		if (averageL > 0) {
++			/* Compute new global exposure based on the ratio of target to current average luminance */
++			new_global_exposure = isp_ae_apply_luminance_ratio(cur_global_exposure, averageL, 1.0);
++		} else {
++			/* averageL == 0 (should be filtered earlier): bump exposure to avoid div-by-zero
++			   In this case, we have a dark frame and in any case, an increment should be added */
++			new_global_exposure += kAlgoExpoFineIncrement;
++		}
++
++		/* Clamp and split exposure into exposure value and gain */
++		isp_ae_split_global_exposure(context, new_global_exposure, pExposure, pGain, 0, 0);
++	} else {
++		/* FINE CONVERGENCE is reached - converged */
++		*pExposure = curExposure;
++		*pGain = curGain;
++	}
++}
++
++void Aec::getNewExpoParameters(IPAContext &context, uint32_t lux, uint32_t averageL, uint32_t *pExposure,
++			       uint32_t *pGain, uint32_t exposure, uint32_t gain)
++{
++	uint32_t exposureTarget = params_.algoTarget;
 +	uint32_t custom_high_lux_limit;
 +	uint32_t custom_low_lux_limit;
 +	double cur_global_exposure;
 +	double new_global_exposure;
 +	uint32_t curExposure;
 +	uint32_t curGain;
-+	double a, b, c, d;
++	double a, b;
 +
-+	cur_global_exposure = exposure * pow(10, (double)gain / 20000);
-+	custom_low_lux_limit = ((uint32_t)(((double)exposureTarget * calibFactor *(LL_LuxRef *
-+					   ((double)LL_Expo1 / LL_Lum1 -
-+					    (double)LL_Expo2 / LL_Lum2) /
-+					   ((double)LL_Expo1 - LL_Expo2))) / kAlgoLowLuxLimit) + 1) * kAlgoLowLuxLimit;
-+	custom_high_lux_limit = ((uint32_t)(((double)exposureTarget * calibFactor * (HL_LuxRef *
-+					   ((double)HL_Expo1 / HL_Lum1 -
-+					    (double)HL_Expo2 / HL_Lum2) /
-+					   ((double)HL_Expo1 - HL_Expo2))) / kAlgoLowLuxLimit) + 1) * kAlgoLowLuxLimit;
++	cur_global_exposure = exposure * mdbToLinear(gain);
++
++	/* Compute lux thresholds for model selection */
++	isp_ae_compute_lux_limits(&custom_low_lux_limit, &custom_high_lux_limit);
 +
 +	/**** Handle start conditions ****/
-+	/* This code aims to slightly deviate from the camera's minimum exposure settings
-+	 * in order to capture enough light and make a first non-zero estimate of lux
-+	 */
-+	if (averageL <= 5 && exposure == exposure_min && gain == gain_min) {
-+		new_global_exposure = gain ? exposure * pow(10, ((double)gain + 3000) / 20000) : exposure + 2000;
-+		if (new_global_exposure <= exposure_max) {
-+			*pGain = 0;
-+			*pExposure = (new_global_exposure < exposure_min) ? exposure_min : (uint32_t)new_global_exposure;
-+		} else {
-+			*pExposure = exposure_max;
-+			*pGain = (uint32_t)(20 * 1000 * log10((float)new_global_exposure / (float)(*pExposure)));
-+			*pGain = (*pGain < gain_min) ? gain_min : (*pGain > again_max) ? again_max : *pGain;
-+		}
-+		return;
-+	}
++	if (isp_ae_handle_start_conditions(context, averageL, exposure, gain, pExposure, pGain))
++		return ;
 +
 +	/**** Get equivalent sensor gain/exposure where exposure is at its max possible value ****/
-+	/* ONLY USEFUL WHEN WHEN ANTI-FLICKER IS ACTIVATED
-+	 * In case, sensor exposure time has been compensated by sensor gain for anti-flicker,
-+	 * calculate the value that would be applied without anti-flicker activated
-+	 */
 +	isp_ae_reverse_antiflicker(context, gain, exposure, &curGain, &curExposure);
 +
 +	/**** Check if coarse convergence is reached ****/
 +	/* Tolerance for coarse convergence is different in case we are in very low lux conditions (slightly increased) */
-+	if (((lux > kAlgoLowLuxLimit) && (abs((int32_t)averageL - (int32_t)exposureTarget) > std::max((float)exposureTarget * kAlgoTolerance, (float)kAlgoCoarseTolerance))) ||
-+	    ((lux <= kAlgoLowLuxLimit) && (abs((int32_t)averageL - (int32_t)exposureTarget) > std::max((float)exposureTarget * kAlgoToleranceLowLux, (float)algoCoarseToleranceLowLux(exposureTarget))))) {
++	if (isp_ae_is_coarse_convergence_not_reached(lux, averageL)) {
 +		/**** COARSE CONVERGENCE not reached ****/
-+		/* The AE algorithm process intends to calculate the sensor exposure needed to approach the luminance target */
 +
-+		/**** Select the estimation model to apply according to the lux value ****/
-+		if ((lux <= HL_LuxRef) || (lux <= custom_high_lux_limit)) {
-+			/**** Apply ESTIMATION 2 model below 𝐿𝑢𝑥𝑅𝑒𝑓_𝐻𝐿 ****/
-+			/* Calculate a and b with the low lux references to improve precision when lux is under HL_LuxRef */
-+			a = (LL_LuxRef * ((double)LL_Expo1 / LL_Lum1 - (double)LL_Expo2 / LL_Lum2)) /
-+			    ((double)LL_Expo1 - LL_Expo2);
++		/* Select and compute model coefficients */
++		isp_ae_compute_model_coefficients(lux, custom_high_lux_limit, &a, &b);
 +
-+			b = (LL_LuxRef * (double)LL_Expo1 / LL_Lum1) - (a * LL_Expo1);
-+		} else {
-+			/**** Apply ESTIMATION 1 model above 𝐿𝑢𝑥𝑅𝑒𝑓_𝐻𝐿 ****/
-+			/* Calculate a and b with the high lux references for higher lux conditions*/
-+			a = (HL_LuxRef * ((double)HL_Expo1 / HL_Lum1 - (double)HL_Expo2 / HL_Lum2)) /
-+			    ((double)HL_Expo1 - HL_Expo2);
++		/* Compute new global exposure from the estimation model */
++		new_global_exposure = isp_ae_compute_coarse_exposure(context, lux, a, b, custom_low_lux_limit);
 +
-+			b = (HL_LuxRef * (double)HL_Expo1 / HL_Lum1) - (a * HL_Expo1);
-+		}
++		/* Validate and correct the estimation */
++		if (averageL < exposureTarget)
++			isp_ae_validate_exposure_increase(context, &new_global_exposure, cur_global_exposure, averageL);
++		else
++			isp_ae_validate_exposure_decrease(&new_global_exposure, cur_global_exposure, averageL);
 +
-+		if (lux <= custom_low_lux_limit) {
-+			/**** Switch to ESTIMATION 3 model below 𝑐𝑢𝑠𝑡𝑜𝑚_𝑙𝑜𝑤_𝑙𝑢𝑥_𝑙𝑖𝑚𝑖𝑡 ****/
-+			/* Calculate coefficient for very low lux model as we reach the limit of the previous one */
-+			d = exposure_max * pow(10, (double)again_max / 20000);
-+			c = ((b / (((double)custom_low_lux_limit / ((double)exposureTarget * calibFactor)) - (double)a)) - d) / custom_low_lux_limit;
-+
-+			/* Compute new global exposure to apply in ESTIMATION 3 model*/
-+			new_global_exposure = (c * (double)lux) + d;
-+		} else {
-+			/**** Process ESTIMATION 1 or 2 model ****/
-+			/* Compute new global exposure to apply in ESTIMATION 1 or 2 model*/
-+			/* Else apply previous estimation model with a and b coefficients */
-+			new_global_exposure = b / (((double)lux / ((double)exposureTarget * calibFactor)) - (double)a);
-+		}
-+
-+		/**** Check validity of new global exposure ****/
-+		/* Check the different cases:
-+		 * - CASE 1: when averageL is under the target, the exposure is supposed to be increased
-+		 * - CASE 2: when averageL is above the target, the exposure is supposed to be decreased
-+		 * If the new exposure is not valid, then we switch to a standard incremental method,
-+		 * using the averageL statistic as a parameter to calculate the new exposure.
-+		 * This will ensure that the target will be reach in any case.
-+		 */
-+		if (averageL < exposureTarget) {
-+			/**** CASE 1 ****/
-+			/* Exposure should be increased */
-+			if (new_global_exposure <= cur_global_exposure) {
-+				/* Wrong estimation, to be corrected */
-+				new_global_exposure = -1; // reset to -1
-+
-+				/* Same lux estimation but previous setting did not allow convergence, so we need to change it */
-+				if ((abs((int32_t)lux - (int32_t)previous_lux) <= (float)lux * 0.05) && (lux != 0)) {
-+					/* Use the luminance information for readjustment */
-+					new_global_exposure = cur_global_exposure * ((double)exposureTarget / averageL);
-+				}
-+
-+				if (new_global_exposure <= 0) {
-+					/* Increase exposure with small increment to get closer to target */
-+					if (cur_global_exposure <= exposure_max) {
-+						new_global_exposure = averageL ? cur_global_exposure * (double)exposureTarget / averageL : cur_global_exposure + kAlgoExpoCoarseIncrement;
-+					} else {
-+						new_global_exposure = exposure_max * pow(10, ((double)curGain + kAlgoGainCoarseIncrement) / 20000);
-+					}
-+				}
-+			}
-+
-+			/**** Additional safeguards to ensure the proper behavior of the algorithm ****/
-+			/* Check ratios are consistent when big or small changes are requested */
-+			if (cur_global_exposure != 0 && averageL != 0) {
-+				/* Compare exposure ratio and luminance ratio, to check the consistency of the results */
-+				if ((((new_global_exposure / cur_global_exposure) < 1.10) && (((double)exposureTarget / averageL) > 1.40)) || /* new global exposure is very close to previous exposure while luminance is at least 40% higher */
-+				    (((new_global_exposure / cur_global_exposure) < 1.50) && (((double)exposureTarget / averageL) > 1.80)) || /* new global exposure is less than 50% higher while luminance is more than 80% higher */
-+				    (((new_global_exposure / cur_global_exposure) > 1.65) && (((double)exposureTarget / averageL) < 1.30)) || /* new global exposure is very high while luminance is less than 30% higher */
-+				    (((new_global_exposure / cur_global_exposure) > 1.35) && (((double)exposureTarget / averageL) < 1.10)) || /* new global exposure is too high when luminance is very close to the target */
-+				      (new_global_exposure / cur_global_exposure) < 1.02) /* Or same exposure estimation but we are not within tolerance margin */ {
-+					/* Apply the same ratio */
-+					new_global_exposure = cur_global_exposure * ((double)exposureTarget / averageL);
-+				}
-+			}
-+		} else {
-+			/**** CASE 2 ****/
-+			/* Exposure should be decreased */
-+			if (new_global_exposure >= cur_global_exposure) {
-+				/* Wrong estimation, to be corrected */
-+				new_global_exposure = -1;
-+
-+				/* Same lux estimation but previous setting did not allow convergence, so we need to change it */
-+				if ((abs((int32_t)lux - (int32_t)previous_lux) <= (float)lux * 0.05) && (lux != 0)) {
-+					/* Use the luminance information for readjustment */
-+					new_global_exposure = cur_global_exposure * ((double)exposureTarget / averageL);
-+				}
-+
-+				if (new_global_exposure <= 0) /*small step to get closer to target */ {
-+					/* Decrease exposure with small decrement to get closer to target */
-+					if (cur_global_exposure <= exposure_max) {
-+						new_global_exposure = averageL ? cur_global_exposure * (double)exposureTarget / averageL : cur_global_exposure - kAlgoExpoCoarseDecrement;
-+					} else {
-+						new_global_exposure = exposure_max * pow(10, ((double)curGain - kAlgoGainCoarseDecrement) / 20000);
-+					}
-+				}
-+			}
-+
-+			/**** Additional safeguards to ensure the proper behavior of the algorithm ****/
-+			/* Check ratios are consistent when big or small changes are requested */
-+			if (cur_global_exposure != 0 && averageL != 0) {
-+				/* Compare exposure ratio and luminance ratio, to check the consistency of the results */
-+				if ((((new_global_exposure / cur_global_exposure) > 0.60) && (((double)exposureTarget / averageL) < 0.40)) || /* new global exposure is at least 60% of the current exposure while luminance is less than 40% of the target */
-+				    (((new_global_exposure / cur_global_exposure) < 0.45) && (((double)exposureTarget / averageL) > 0.65)) || /* new global exposure is less than 45% of the current exposure while luminance is more than 65% of the target */
-+				    (((new_global_exposure / cur_global_exposure) < 0.15) && (((double)exposureTarget / averageL) > 0.50)) || /* new global exposure is very low while luminance is more than 50% of the target */
-+				    (((new_global_exposure / cur_global_exposure) < 0.60) && (((double)exposureTarget / averageL) > 0.85)) || /* new global exposure is less than 60% of the current exposure while luminance is very close to the target */
-+				      (new_global_exposure / cur_global_exposure) > 0.98) /* Or same exposure estimation but we are not within tolerance margin */ {
-+					/* Apply the same ratio */
-+					new_global_exposure = cur_global_exposure * ((double)exposureTarget / averageL);
-+				}
-+			}
-+		}
-+
-+		/**** Clamp and split exposure into exposure value and gain ****/
-+		if (new_global_exposure <= exposure_max) {
-+			*pGain = 0;
-+			*pExposure = (new_global_exposure < exposure_min) ? exposure_min : (uint32_t)new_global_exposure;
-+		} else {
-+			*pExposure = exposure_max;
-+			*pGain = (uint32_t)(20 * 1000 * log10(new_global_exposure / (float)(*pExposure)));
-+
-+			/* Limit digital gain (lux value is very low and the gain is already very high and we need to avoid oscillations) */
-+			if ((*pGain > again_max) && (abs((int32_t)*pGain - (int32_t)curGain) > kAlgoMaxGainIncrement)) {
-+				*pGain = *pGain < curGain ? (curGain < kAlgoMaxGainIncrement ? 0 : curGain - kAlgoMaxGainIncrement) : curGain + kAlgoMaxGainIncrement;
-+			}
-+			*pGain = (*pGain < gain_min) ? gain_min : (*pGain > gain_max) ? gain_max : *pGain;
-+		}
++		/* Clamp and split exposure into exposure value and gain (with digital gain limiting) */
++		isp_ae_split_global_exposure(context, new_global_exposure, pExposure, pGain, 1, gain);
 +	} else {
-+		/**** COARSE CONVERGENCE is reached ****/
-+		/* Check if fine convergence processing is required to reach high accuracy */
-+
-+		/* Coarse convergence reached, refine convergence */
-+		if (((lux > kAlgoLowLuxLimit) && (abs((int32_t)averageL - (int32_t)exposureTarget) > kAlgoFineTolerance)) ||
-+		    ((lux <= kAlgoLowLuxLimit) && (abs((int32_t)averageL - (int32_t)exposureTarget) > algoFineToleranceLowLux(exposureTarget)))) {
-+			/**** FINE CONVERGENCE not reached ****/
-+			if (averageL < exposureTarget) {
-+				/* Slightly increase exposure */
-+				if (cur_global_exposure <= exposure_max) {
-+					new_global_exposure = averageL ? cur_global_exposure * (double)exposureTarget / averageL : cur_global_exposure + kAlgoExpoFineIncrement;
-+				} else {
-+					new_global_exposure = exposure_max * pow(10, ((double)curGain + kAlgoGainFineIncrement) / 20000);
-+				}
-+			} else {
-+				/* Slightly decrease exposure */
-+				if (cur_global_exposure <= exposure_max) {
-+					new_global_exposure = averageL ? cur_global_exposure * (double)exposureTarget / averageL : cur_global_exposure - kAlgoExpoFineDecrement;
-+				} else {
-+					new_global_exposure = exposure_max * pow(10, ((double)curGain - kAlgoGainFineDecrement) / 20000);
-+				}
-+			}
-+
-+			/* Clamp and split exposure into exposure value and gain */
-+			if (new_global_exposure <= exposure_max) {
-+				*pGain = 0;
-+				*pExposure = (new_global_exposure < exposure_min) ? exposure_min : (uint32_t)new_global_exposure;
-+			} else {
-+				*pExposure = exposure_max;
-+				*pGain = (uint32_t)(20 * 1000 * log10((float)new_global_exposure / (float)(*pExposure)));
-+
-+				*pGain = (*pGain < gain_min) ? gain_min : (*pGain > gain_max) ? gain_max : *pGain;
-+			}
-+		} else {
-+			/**** FINE CONVERGENCE is reached ****/
-+			/* Converged */
-+			*pExposure = curExposure;
-+			*pGain = curGain;
-+		}
++		isp_ae_process_fine_convergence(context, lux, averageL, cur_global_exposure, gain, exposure, pExposure, pGain);
 +	}
 +
 +	/**** Consider flickering period constraint ****/
@@ -3103,35 +3167,15 @@ index 00000000..53014b1a
 +	/* Return final value of sensor exposure time and gain */
 +	*pExposure = curExposure;
 +	*pGain = curGain;
-+
-+	/* Store lux value to avoid making the same exposure estimation if it did not allow to reach convergence */
-+	previous_lux = lux;
-+
-+	internal_.previous_lux = previous_lux;
-+}
-+
-+void Aec::updateLuxEstimate(IPAContext &context, const stm32_dcmipp_stat_buf *stats)
-+{
-+	int32_t avgL;
-+
-+	/* Update invalidStats counter */
-+	if (internal_.invalidStats)
-+		internal_.invalidStats--;
-+	/* and exit if stats are still invalid */
-+	if (internal_.invalidStats) {
-+		return ;
-+	}
-+
-+	avgL = (config_.monoSensor || !context.isp.demosaicing.enable) ? luminanceFromRgbMono(stats->post.average_RGB) :
-+									 luminanceFromRgb(stats->post.average_RGB);
-+	internal_.lux_estimate = getEstimatedLux(context, avgL);
 +}
 +
 +void Aec::processAec(IPAContext &context, const stm32_dcmipp_stat_buf *stats)
 +{
++	bool use_lux_model = (params_.convergenceSpeed == controls::draft::AeConvergenceSpeedVeryFast) && isLuxRefTuned();
 +	int32_t estimated_lux = internal_.lux_estimate;
 +	uint32_t newGain_mdb;
 +	uint32_t newExpo;
++	double speed;
 +	int32_t avgL;
 +
 +	/* exit if stats are still invalid */
@@ -3139,16 +3183,24 @@ index 00000000..53014b1a
 +		LOG(DcmippAec, Debug) << "Can't update now";
 +		return ;
 +	}
-+	/* or we can't estimate lux */
-+	if (estimated_lux < 0) {
-+		return ;
-+	}
 +
 +	avgL = (config_.monoSensor || !context.isp.demosaicing.enable) ? luminanceFromRgbMono(stats->post.average_RGB) :
 +									 luminanceFromRgb(stats->post.average_RGB);
-+	/* Compute new sensors params */
-+	getNewExpoParameters(context, (uint32_t)estimated_lux, (uint32_t)avgL, &newExpo, &newGain_mdb,
-+			     config_.sensor.exposure, config_.sensor.gain * 1000);
++
++	if (use_lux_model) {
++		if (estimated_lux < 0)
++			return;
++		getNewExpoParameters(context, (uint32_t)estimated_lux, (uint32_t)avgL, &newExpo, &newGain_mdb,
++				     config_.sensor.exposure, config_.sensor.gain * 1000);
++	} else {
++		params_.convergenceSpeed = params_.convergenceSpeed == controls::draft::AeConvergenceSpeedVeryFast ?
++					   controls::draft::AeConvergenceSpeedFast :
++					   params_.convergenceSpeed;
++		speed = kRatioExpBySpeed[params_.convergenceSpeed];
++		getNewExpoParametersRatio(context, speed, (uint32_t)avgL, &newExpo, &newGain_mdb,
++					  config_.sensor.exposure, config_.sensor.gain * 1000);
++	}
++
 +	if (config_.sensor.exposure == (int32_t)newExpo && config_.sensor.gain == (double)newGain_mdb / 1000)
 +		return ;
 +
@@ -3192,6 +3244,8 @@ index 00000000..53014b1a
 +									params_.LL_Lum1, params_.LL_Lum2});
 +	metadata.set(controls::draft::LuxRefCalibFactor, params_.calibFactor);
 +	metadata.set(controls::Lux, internal_.lux_estimate < 0 ? 0.0f : (float)internal_.lux_estimate);
++	metadata.set(controls::draft::AeConvergenceSpeed, params_.convergenceSpeed);
++	metadata.set(controls::draft::AeGainMaxLimit, params_.gainMaxLimit);
 +}
 +
 +REGISTER_IPA_ALGORITHM(Aec, "Aec")
@@ -3201,10 +3255,10 @@ index 00000000..53014b1a
 +} /* namespace libcamera */
 diff --git a/src/ipa/dcmipp/algorithms/aec.h b/src/ipa/dcmipp/algorithms/aec.h
 new file mode 100644
-index 00000000..c4678f76
+index 000000000..7d8bfb252
 --- /dev/null
 +++ b/src/ipa/dcmipp/algorithms/aec.h
-@@ -0,0 +1,94 @@
+@@ -0,0 +1,111 @@
 +/* SPDX-License-Identifier: LGPL-2.1-or-later */
 +/*
 + * Copyright (C) 2024 ST Microelectronics
@@ -3258,6 +3312,8 @@ index 00000000..c4678f76
 +		int32_t LL_Expo2;
 +		int32_t LL_Lum2;
 +		float calibFactor;
++		int32_t convergenceSpeed;
++		uint32_t gainMaxLimit;
 +	} params_;
 +
 +	struct algoInternal {
@@ -3273,7 +3329,6 @@ index 00000000..c4678f76
 +			int32_t refL;
 +		} measure;
 +		int32_t lux_estimate;
-+		uint32_t previous_lux;
 +	} internal_;
 +
 +	struct algoConfig {
@@ -3283,17 +3338,33 @@ index 00000000..c4678f76
 +		bool isImx335;
 +	} config_;
 +
++	void isp_ae_compute_antiflicker(IPAContext &context, uint32_t gain, uint32_t exposure, uint32_t *adjusted_gain, uint32_t *adjusted_exposure);
++	void isp_ae_reverse_antiflicker(IPAContext &context, uint32_t gain, uint32_t exposure, uint32_t *original_gain,
++					uint32_t *original_exposure);
++	bool isp_ae_handle_start_conditions(IPAContext &context, uint32_t averageL, uint32_t exposure, uint32_t gain,
++					    uint32_t *pExposure, uint32_t *pGain);
++	double isp_ae_apply_luminance_ratio(double cur_global_exposure, uint32_t averageL, double speed);
++	void isp_ae_split_global_exposure(IPAContext &context, double new_global_exposure, uint32_t *pExposure,
++					 uint32_t *pGain, uint8_t limit_gain, uint32_t curGain);
++	void isp_ae_compute_lux_limits(uint32_t *pLowLimit, uint32_t *pHighLimit);
++	int isp_ae_is_coarse_convergence_not_reached(uint32_t lux, uint32_t averageL);
++	void isp_ae_compute_model_coefficients(uint32_t lux, uint32_t custom_high_lux_limit, double *pa, double *pb);
++	double isp_ae_compute_coarse_exposure(IPAContext &context, uint32_t lux, double a, double b, uint32_t custom_low_lux_limit);
++	void isp_ae_validate_exposure_increase(IPAContext &context, double *new_global_exposure, double cur_global_exposure, uint32_t averageL);
++	void isp_ae_validate_exposure_decrease(double *new_global_exposure, double cur_global_exposure, uint32_t averageL);
++	void isp_ae_process_fine_convergence(IPAContext &context, uint32_t lux, uint32_t averageL,
++					     double cur_global_exposure, uint32_t curGain, uint32_t curExposure,
++					     uint32_t *pExposure, uint32_t *pGain);
++
 +	void processSensorDelayMeasure(const stm32_dcmipp_stat_buf *stats, IPAContext &context);
 +	void updateLuxEstimate(IPAContext &context, const stm32_dcmipp_stat_buf *stats);
 +	void processAec(IPAContext &context, const stm32_dcmipp_stat_buf *stats);
 +	int32_t getEstimatedLux(IPAContext &context, int32_t avgL);
 +	void getNewExpoParameters(IPAContext &context, uint32_t lux, uint32_t averageL, uint32_t *pExposure,
 +				  uint32_t *pGain, uint32_t exposure, uint32_t gain);
-+	void isp_ae_compute_antiflicker(IPAContext &context, uint32_t gain, uint32_t exposure, uint32_t *adjusted_gain, uint32_t *adjusted_exposure);
-+	void isp_ae_reverse_antiflicker(IPAContext &context, uint32_t gain, uint32_t exposure, uint32_t *original_gain,
-+					uint32_t *original_exposure);
-+	void getNewExpoParametersTest(IPAContext &context, uint32_t lux, uint32_t averageL, uint32_t *pExposure,
-+				  uint32_t *pGain, uint32_t exposure, uint32_t gain);
++	void getNewExpoParametersRatio(IPAContext &context, double speed, uint32_t averageL, uint32_t *pExposure,
++				       uint32_t *pGain, uint32_t exposure, uint32_t gain);
++	bool isLuxRefTuned();
 +};
 +
 +} /* namespace ipa::dcmipp::algorithms */
@@ -3301,7 +3372,7 @@ index 00000000..c4678f76
 +} /* namespace libcamera */
 diff --git a/src/ipa/dcmipp/algorithms/algorithm.h b/src/ipa/dcmipp/algorithms/algorithm.h
 new file mode 100644
-index 00000000..8c59ceb0
+index 000000000..8c59ceb0f
 --- /dev/null
 +++ b/src/ipa/dcmipp/algorithms/algorithm.h
 @@ -0,0 +1,35 @@
@@ -3342,10 +3413,10 @@ index 00000000..8c59ceb0
 +} /* namespace libcamera */
 diff --git a/src/ipa/dcmipp/algorithms/awb.cpp b/src/ipa/dcmipp/algorithms/awb.cpp
 new file mode 100644
-index 00000000..9643071c
+index 000000000..33b855b52
 --- /dev/null
 +++ b/src/ipa/dcmipp/algorithms/awb.cpp
-@@ -0,0 +1,797 @@
+@@ -0,0 +1,844 @@
 +/* SPDX-License-Identifier: LGPL-2.1-or-later */
 +/*
 + * Copyright (C) 2024 ST Microelectronics
@@ -3368,11 +3439,18 @@ index 00000000..9643071c
 +
 +LOG_DEFINE_CATEGORY(DcmippAwb)
 +
++static constexpr int32_t kLowPassGainBySpeed[] = {
++	12, /* AwbConvergenceSpeedSlow */
++	8, /* AwbConvergenceSpeedMedium */
++	4, /* AwbConvergenceSpeedFast */
++	1, /* AwbConvergenceSpeedVeryFast */
++};
 +static constexpr uint32_t kPrecisionFactor = 100000000;
 +static constexpr uint32_t kIdle = 128;
 +static constexpr char kDelimiter = '$';
 +static constexpr float kStickyThreshold = 0.05f;
-+static constexpr int kStatNoChangeThreshold = 1;
++static constexpr int kRatioScale = 1000;
++static constexpr int kRatioNoChangeTreshold = 100;
 +static constexpr int kColGainMin = 0;
 +static constexpr int kColGainMax = 1600000000;
 +static constexpr int kColGainDef = 100000000;
@@ -3388,6 +3466,14 @@ index 00000000..9643071c
 +static constexpr int kRefRGBMin = 0;
 +static constexpr int kRefRGBMax = 255;
 +static constexpr int kRefRGBDef = 128;
++static constexpr int kConvSpeedMin = 0;
++static constexpr int kConvSpeedMax = 3;
++static constexpr int kConvSpeedDef = 3;
++
++static bool isConvergenceSpeedValid(int32_t convergenceSpeed)
++{
++	return convergenceSpeed >= kConvSpeedMin && convergenceSpeed <= kConvSpeedMax;
++}
 +
 +static bool isColourGainValid(int32_t gain)
 +{
@@ -3500,26 +3586,26 @@ index 00000000..9643071c
 +	uint64_t R, G, B;
 +	int i;
 +
++	avgUpRGB[0] = (int32_t)average_RGB[0];
++	avgUpRGB[1] = (int32_t)average_RGB[1];
++	avgUpRGB[2] = (int32_t)average_RGB[2];
++
 +	/* Read the current ISP gain */
 +	if (context.isp.gain.enable == 1) {
-+		R = ((uint64_t)average_RGB[0] * kPrecisionFactor) / context.isp.gain.gainR;
++		R = ((uint64_t)avgUpRGB[0] * kPrecisionFactor) / context.isp.gain.gainR;
 +		avgUpRGB[0] = (int32_t)R;
 +
-+		G = ((uint64_t)average_RGB[1] * kPrecisionFactor) / context.isp.gain.gainG;
++		G = ((uint64_t)avgUpRGB[1] * kPrecisionFactor) / context.isp.gain.gainG;
 +		avgUpRGB[1] = (int32_t)G;
 +
-+		B = ((uint64_t)average_RGB[2] * kPrecisionFactor) / context.isp.gain.gainB;
++		B = ((uint64_t)avgUpRGB[2] * kPrecisionFactor) / context.isp.gain.gainB;
 +		avgUpRGB[2] = (int32_t)B;
++	}
 +
-+		if (context.isp.blackLevel.enable == 1) {
-+			avgUpRGB[0] += context.isp.blackLevel.blcR;
-+			avgUpRGB[1] += context.isp.blackLevel.blcG;
-+			avgUpRGB[2] += context.isp.blackLevel.blcB;
-+		}
-+	} else {
-+		avgUpRGB[0] = (int32_t)average_RGB[0];
-+		avgUpRGB[1] = (int32_t)average_RGB[1];
-+		avgUpRGB[2] = (int32_t)average_RGB[2];
++	if (context.isp.blackLevel.enable == 1) {
++		avgUpRGB[0] += context.isp.blackLevel.blcR;
++		avgUpRGB[1] += context.isp.blackLevel.blcG;
++		avgUpRGB[2] += context.isp.blackLevel.blcB;
 +	}
 +
 +	for (i = 0; i < 3; i++) {
@@ -3598,8 +3684,8 @@ index 00000000..9643071c
 +	if (!params_.algoEnable)
 +		return true;
 +
-+	internal_.currentAverageRGB.fill(0);
 +	internal_.profileRBRatio.fill(0);
++	internal_.rbRatioPrevious = 0;
 +	/* Compute red / blue ratio for profiles. Checking refRGB are not zero */
 +	for (profId = 0; profId < kAwbNbRef; profId++) {
 +		colorTemp = params_.referenceColorTemp[profId];
@@ -3610,7 +3696,7 @@ index 00000000..9643071c
 +		    !(params_.refRGB[profId * 3 +2]))
 +			return false;
 +
-+		internal_.profileRBRatio[profId] = (1000U * params_.refRGB[profId * 3]) / params_.refRGB[profId * 3 + 2];
++		internal_.profileRBRatio[profId] = (kRatioScale * params_.refRGB[profId * 3]) / params_.refRGB[profId * 3 + 2];
 +	}
 +	internal_.profileNb = profId;
 +
@@ -3623,15 +3709,51 @@ index 00000000..9643071c
 +	return true;
 +}
 +
++void Awb::selectProfiles(uint32_t rbRatio, int *exactProfId, int *upProfId, int *downProfId, double *interpolRatio)
++{
++	uint32_t profId;
++
++	/* Find the two (up and down) profiles where R/B enclose the reported R/B */
++	for (profId = 0; profId < internal_.profileNb; profId++) {
++		if (rbRatio > internal_.profileRBRatio[profId])
++			break;
++	}
++
++	if (profId == 0) {
++		*exactProfId = 0;
++		return ;
++	}
++
++	if (profId == internal_.profileNb) {
++		*exactProfId = profId - 1;
++		return ;
++	}
++
++	*exactProfId = -1;
++	*upProfId = profId;
++	*downProfId = profId - 1;
++	*interpolRatio = (double)(internal_.profileRBRatio[*downProfId] - rbRatio) /
++				 (internal_.profileRBRatio[*downProfId] - internal_.profileRBRatio[*upProfId]);
++
++	/* Check if we are close to a profile, in which case we select it instead of interpolating */
++	if (*interpolRatio <= kStickyThreshold) {
++		/* Select the 'down' profile */
++		*exactProfId = *downProfId;
++	} else if (*interpolRatio >= 1.0f - kStickyThreshold) {
++		*exactProfId = *upProfId;
++	}
++}
++
 +void Awb::processAwb(IPAContext &context, const stm32_dcmipp_stat_buf *stats)
 +{
++	uint32_t rbRatioTarget;
 +	double interpolRatio;
 +	int32_t avgUpGain[3];
-+	uint32_t rb_ratio;
++	uint32_t rbRatio;
 +	int exactProfId;
-+	uint32_t profId;
 +	int downProfId;
 +	int upProfId;
++	int error;
 +
 +	/* Update invalidStats counter */
 +	if (internal_.invalidStats)
@@ -3643,45 +3765,22 @@ index 00000000..9643071c
 +	/* convert stats as if they were computed before gain and black level stage */
 +	getStatUp(context, stats->post.average_RGB, avgUpGain);
 +
-+	/* Anti oscillation : if the statistics did not 'really' change, continue with current parameters */
-+	if ((abs(avgUpGain[0] - internal_.currentAverageRGB[0]) <= kStatNoChangeThreshold) &&
-+	    (abs(avgUpGain[1] - internal_.currentAverageRGB[1]) <= kStatNoChangeThreshold) &&
-+	    (abs(avgUpGain[2] - internal_.currentAverageRGB[2]) <= kStatNoChangeThreshold))
-+		return ;
-+	internal_.currentAverageRGB = {avgUpGain[0] , avgUpGain[1], avgUpGain[2]};
-+
 +	/* compute red / blue ratio */
-+	rb_ratio = avgUpGain[2] != 0 ? (uint32_t)(avgUpGain[0] * 1000 / avgUpGain[2]) : internal_.profileRBRatio[0];
++	rbRatioTarget = avgUpGain[2] != 0 ? (uint32_t)(avgUpGain[0] * kRatioScale / avgUpGain[2]) : internal_.profileRBRatio[0];
 +
-+	/* Find the two (up and down) profiles where R/B enclose the reported R/B */
-+	for (profId = 0; profId < internal_.profileNb; profId++) {
-+		if (rb_ratio > internal_.profileRBRatio[profId])
-+			break;
-+	}
++	/* If the R/B ratio did not change much and the stats did not change much, we consider that the config does not need to be updated */
++	if (abs((int32_t)(internal_.rbRatioPrevious - rbRatioTarget)) < kRatioNoChangeTreshold)
++		return ;
 +
-+	/* find exactProfId else compute interpolRatio */
-+	if (profId == 0) {
-+		/* R/B ratio is greater than the largest reference. Select the first profile (lowest color temp) */
-+		exactProfId = 0;
-+	} else if (profId == internal_.profileNb) {
-+		/* R/B ratio is lower than the lowest reference. Select the last defined profile (highest color temp) */
-+		exactProfId = profId - 1;
-+	} else {
-+		/* Between two profiles. Evaluate the interpolation ratio between these profiles */
-+		exactProfId = -1;
-+		upProfId = profId;
-+		downProfId = profId - 1;
-+		interpolRatio = (double)(internal_.profileRBRatio[downProfId] - rb_ratio) /
-+					(internal_.profileRBRatio[downProfId] - internal_.profileRBRatio[upProfId]);
++	/* update rb_ratio */
++	error = (int)(rbRatioTarget - internal_.rbRatioPrevious);
++	rbRatio = internal_.rbRatioPrevious + error / internal_.convSpeedGain;
++	if (abs((int32_t)(rbRatioTarget - rbRatio)) < kRatioNoChangeTreshold)
++		rbRatio = rbRatioTarget;
++	internal_.rbRatioPrevious = rbRatio;
 +
-+		/* Check if we are close to a profile, in which case we select it instead of interpolating */
-+		if (interpolRatio <= kStickyThreshold) {
-+			/* Select the 'down' profile */
-+			exactProfId = downProfId;
-+		} else if (interpolRatio >= 1.0f - kStickyThreshold) {
-+			exactProfId = upProfId;
-+		}
-+	}
++	/* select profile */
++	selectProfiles(rbRatio, &exactProfId, &upProfId, &downProfId, &interpolRatio);
 +
 +	/* Either apply an exact profile or interpolate between two using interpolRatio */
 +	if (exactProfId != -1)
@@ -3694,6 +3793,13 @@ index 00000000..9643071c
 +{
 +	/* Check for AWB algo config  */
 +	params_.algoEnable = tuningData["AwbEnable"].get<bool>(0);
++
++	params_.convergenceSpeed = tuningData["ConvergenceSpeed"].get<int32_t>(0);
++	if (!isConvergenceSpeedValid(params_.convergenceSpeed)) {
++		LOG(DcmippAwb, Error) << "Invalid ConvergenceSpeed";
++		return -EINVAL;
++	}
++	internal_.convSpeedGain = kLowPassGainBySpeed[params_.convergenceSpeed];
 +
 +	std::vector<std::string> name = tuningData["ProfileName"].getList<std::string>().value_or(std::vector<std::string>{});
 +	if (name.size() == kAwbNbRef) {
@@ -3826,6 +3932,7 @@ index 00000000..9643071c
 +	context.dcmippControls[&controls::draft::AwbColourCorrection] = ControlInfo(kColCorrectionMin, kColCorrectionMax, kColCorrectionDef);
 +	context.dcmippControls[&controls::draft::AwbReferenceRGB] = ControlInfo(kRefRGBMin, kRefRGBMax, kRefRGBDef);
 +	context.dcmippControls[&controls::draft::AwbCustomColorTemperature] = ControlInfo(kColTemperatureMin, kColTemperatureMax, kColTemperatureDef);
++	context.dcmippControls[&controls::draft::AwbConvergenceSpeed] = ControlInfo(kConvSpeedMin, kConvSpeedMax, kConvSpeedDef);
 +
 +	return 0;
 +}
@@ -3882,6 +3989,7 @@ index 00000000..9643071c
 +	const auto &gainRGB = controls.get(controls::draft::AwbColourGains3);
 +	const auto &cconv = controls.get(controls::draft::AwbColourCorrection);
 +	const auto &refRGB = controls.get(controls::draft::AwbReferenceRGB);
++	const auto &convergenceSpeed = controls.get(controls::draft::AwbConvergenceSpeed);
 +
 +	if (algoEnable) {
 +		params_.algoEnable = *algoEnable;
@@ -3909,7 +4017,7 @@ index 00000000..9643071c
 +	if (profileName) {
 +		/* The Controls class does not support array of string. So, split the concatenated string */
 +		std::string token;
-+		std::stringstream ss(*profileName);
++		std::stringstream ss{std::string(*profileName)};
 +		for (int i = 0; i < kAwbNbRef; i++) {
 +			if (!getline(ss, token, kDelimiter))
 +				token = "";
@@ -3960,6 +4068,15 @@ index 00000000..9643071c
 +		std::copy(std::begin(*refRGB), std::end(*refRGB), params_.refRGB.begin());
 +		internal_.profileDirty = true;
 +		LOG(DcmippAwb, Debug) << "Updating AwbReferenceRGB to " << (*refRGB)[0] << "...";
++	}
++	if (convergenceSpeed) {
++		if (!isConvergenceSpeedValid(*convergenceSpeed)) {
++			LOG(DcmippAwb, Error) << "Invalid ConvergenceSpeed";
++			return;
++		}
++		params_.convergenceSpeed = *convergenceSpeed;
++		internal_.convSpeedGain = kLowPassGainBySpeed[*convergenceSpeed];
++		LOG(DcmippAwb, Debug) << "Updating AwbConvergenceSpeed to " << *convergenceSpeed << " / speed coeff is now " << internal_.convSpeedGain;
 +	}
 +
 +	if (internal_.profileDirty && !configureAwbAlgo()) {
@@ -4129,6 +4246,7 @@ index 00000000..9643071c
 +	metadata.set(controls::draft::AwbColourGains3, params_.gainRGB);
 +	metadata.set(controls::draft::AwbColourCorrection, params_.cconv);
 +	metadata.set(controls::draft::AwbReferenceRGB, params_.refRGB);
++	metadata.set(controls::draft::AwbConvergenceSpeed, params_.convergenceSpeed);
 +
 +	if (internal_.colorTemp)
 +		metadata.set(controls::ColourTemperature, internal_.colorTemp);
@@ -4145,10 +4263,10 @@ index 00000000..9643071c
 +} /* namespace libcamera */
 diff --git a/src/ipa/dcmipp/algorithms/awb.h b/src/ipa/dcmipp/algorithms/awb.h
 new file mode 100644
-index 00000000..d581ebe8
+index 000000000..db1dfc53d
 --- /dev/null
 +++ b/src/ipa/dcmipp/algorithms/awb.h
-@@ -0,0 +1,71 @@
+@@ -0,0 +1,74 @@
 +/* SPDX-License-Identifier: LGPL-2.1-or-later */
 +/*
 + * Copyright (C) 2024 ST Microelectronics
@@ -4192,6 +4310,7 @@ index 00000000..d581ebe8
 +		std::array<int32_t, kAwbNbRef * 3> refRGB;
 +		struct IPAIspGain gainStatic;
 +		struct IPAIspColorConv cconvStatic;
++		int32_t convergenceSpeed;
 +	} params_;
 +
 +	struct algoInternal {
@@ -4200,9 +4319,10 @@ index 00000000..d581ebe8
 +		std::string profileName;
 +		int32_t customColorTemp;
 +		bool profileDirty;
-+		std::array<int32_t, 3> currentAverageRGB;
 +		std::array<uint32_t, kAwbNbRef> profileRBRatio;
 +		uint32_t profileNb;
++		int32_t convSpeedGain;
++		uint32_t rbRatioPrevious;
 +	} internal_;
 +
 +	struct algoConfig {
@@ -4214,6 +4334,7 @@ index 00000000..d581ebe8
 +	bool configureAwbAlgo();
 +	void applyProfile(int profId);
 +	void applyInterpolatedProfile(int downProfId, int upProfId, double ratio);
++	void selectProfiles(uint32_t rb_ratio, int *exactProfId, int *upProfId, int *downProfId, double *interpolRatio);
 +	void processAwb(IPAContext &context, const stm32_dcmipp_stat_buf *stats);
 +};
 +
@@ -4222,7 +4343,7 @@ index 00000000..d581ebe8
 +} /* namespace libcamera */
 diff --git a/src/ipa/dcmipp/algorithms/badpixel.cpp b/src/ipa/dcmipp/algorithms/badpixel.cpp
 new file mode 100644
-index 00000000..eb681c13
+index 000000000..eb681c13e
 --- /dev/null
 +++ b/src/ipa/dcmipp/algorithms/badpixel.cpp
 @@ -0,0 +1,185 @@
@@ -4413,7 +4534,7 @@ index 00000000..eb681c13
 +} /* namespace libcamera */
 diff --git a/src/ipa/dcmipp/algorithms/badpixel.h b/src/ipa/dcmipp/algorithms/badpixel.h
 new file mode 100644
-index 00000000..0db7645a
+index 000000000..0db7645ac
 --- /dev/null
 +++ b/src/ipa/dcmipp/algorithms/badpixel.h
 @@ -0,0 +1,50 @@
@@ -4469,7 +4590,7 @@ index 00000000..0db7645a
 +} /* namespace libcamera */
 diff --git a/src/ipa/dcmipp/algorithms/blc.cpp b/src/ipa/dcmipp/algorithms/blc.cpp
 new file mode 100644
-index 00000000..c633d12b
+index 000000000..c633d12b2
 --- /dev/null
 +++ b/src/ipa/dcmipp/algorithms/blc.cpp
 @@ -0,0 +1,144 @@
@@ -4619,7 +4740,7 @@ index 00000000..c633d12b
 +} /* namespace libcamera */
 diff --git a/src/ipa/dcmipp/algorithms/blc.h b/src/ipa/dcmipp/algorithms/blc.h
 new file mode 100644
-index 00000000..968d5ce3
+index 000000000..968d5ce3f
 --- /dev/null
 +++ b/src/ipa/dcmipp/algorithms/blc.h
 @@ -0,0 +1,44 @@
@@ -4669,7 +4790,7 @@ index 00000000..968d5ce3
 +} /* namespace libcamera */
 diff --git a/src/ipa/dcmipp/algorithms/contrast.cpp b/src/ipa/dcmipp/algorithms/contrast.cpp
 new file mode 100644
-index 00000000..412d9888
+index 000000000..412d98881
 --- /dev/null
 +++ b/src/ipa/dcmipp/algorithms/contrast.cpp
 @@ -0,0 +1,141 @@
@@ -4816,7 +4937,7 @@ index 00000000..412d9888
 +} /* namespace libcamera */
 diff --git a/src/ipa/dcmipp/algorithms/contrast.h b/src/ipa/dcmipp/algorithms/contrast.h
 new file mode 100644
-index 00000000..51dc85e7
+index 000000000..51dc85e7b
 --- /dev/null
 +++ b/src/ipa/dcmipp/algorithms/contrast.h
 @@ -0,0 +1,44 @@
@@ -4866,7 +4987,7 @@ index 00000000..51dc85e7
 +} /* namespace libcamera */
 diff --git a/src/ipa/dcmipp/algorithms/demosaicing.cpp b/src/ipa/dcmipp/algorithms/demosaicing.cpp
 new file mode 100644
-index 00000000..e86ec86d
+index 000000000..e86ec86dd
 --- /dev/null
 +++ b/src/ipa/dcmipp/algorithms/demosaicing.cpp
 @@ -0,0 +1,152 @@
@@ -5024,7 +5145,7 @@ index 00000000..e86ec86d
 +} /* namespace libcamera */
 diff --git a/src/ipa/dcmipp/algorithms/demosaicing.h b/src/ipa/dcmipp/algorithms/demosaicing.h
 new file mode 100644
-index 00000000..9b407485
+index 000000000..9b4074852
 --- /dev/null
 +++ b/src/ipa/dcmipp/algorithms/demosaicing.h
 @@ -0,0 +1,44 @@
@@ -5074,7 +5195,7 @@ index 00000000..9b407485
 +} /* namespace libcamera */
 diff --git a/src/ipa/dcmipp/algorithms/gamma.cpp b/src/ipa/dcmipp/algorithms/gamma.cpp
 new file mode 100644
-index 00000000..34c013f6
+index 000000000..34c013f60
 --- /dev/null
 +++ b/src/ipa/dcmipp/algorithms/gamma.cpp
 @@ -0,0 +1,91 @@
@@ -5171,7 +5292,7 @@ index 00000000..34c013f6
 +} /* namespace libcamera */
 diff --git a/src/ipa/dcmipp/algorithms/gamma.h b/src/ipa/dcmipp/algorithms/gamma.h
 new file mode 100644
-index 00000000..04449bd0
+index 000000000..04449bd02
 --- /dev/null
 +++ b/src/ipa/dcmipp/algorithms/gamma.h
 @@ -0,0 +1,44 @@
@@ -5221,7 +5342,7 @@ index 00000000..04449bd0
 +} /* namespace libcamera */
 diff --git a/src/ipa/dcmipp/algorithms/luminance_utils.cpp b/src/ipa/dcmipp/algorithms/luminance_utils.cpp
 new file mode 100644
-index 00000000..05c90832
+index 000000000..05c908322
 --- /dev/null
 +++ b/src/ipa/dcmipp/algorithms/luminance_utils.cpp
 @@ -0,0 +1,26 @@
@@ -5253,7 +5374,7 @@ index 00000000..05c90832
 +} /* namespace libcamera */
 diff --git a/src/ipa/dcmipp/algorithms/luminance_utils.h b/src/ipa/dcmipp/algorithms/luminance_utils.h
 new file mode 100644
-index 00000000..08465103
+index 000000000..084651036
 --- /dev/null
 +++ b/src/ipa/dcmipp/algorithms/luminance_utils.h
 @@ -0,0 +1,21 @@
@@ -5280,7 +5401,7 @@ index 00000000..08465103
 +} /* namespace libcamera */
 diff --git a/src/ipa/dcmipp/algorithms/meson.build b/src/ipa/dcmipp/algorithms/meson.build
 new file mode 100644
-index 00000000..7c45998e
+index 000000000..7c45998e0
 --- /dev/null
 +++ b/src/ipa/dcmipp/algorithms/meson.build
 @@ -0,0 +1,13 @@
@@ -5299,7 +5420,7 @@ index 00000000..7c45998e
 +])
 diff --git a/src/ipa/dcmipp/algorithms/statistic.cpp b/src/ipa/dcmipp/algorithms/statistic.cpp
 new file mode 100644
-index 00000000..3e7ca91a
+index 000000000..3e7ca91a6
 --- /dev/null
 +++ b/src/ipa/dcmipp/algorithms/statistic.cpp
 @@ -0,0 +1,216 @@
@@ -5521,7 +5642,7 @@ index 00000000..3e7ca91a
 +} /* namespace libcamera */
 diff --git a/src/ipa/dcmipp/algorithms/statistic.h b/src/ipa/dcmipp/algorithms/statistic.h
 new file mode 100644
-index 00000000..91c0701a
+index 000000000..91c0701a9
 --- /dev/null
 +++ b/src/ipa/dcmipp/algorithms/statistic.h
 @@ -0,0 +1,45 @@
@@ -5572,10 +5693,10 @@ index 00000000..91c0701a
 +} /* namespace libcamera */
 diff --git a/src/ipa/dcmipp/data/imx335.yaml b/src/ipa/dcmipp/data/imx335.yaml
 new file mode 100644
-index 00000000..4bf84218
+index 000000000..8187cac6b
 --- /dev/null
 +++ b/src/ipa/dcmipp/data/imx335.yaml
-@@ -0,0 +1,61 @@
+@@ -0,0 +1,64 @@
 +# Copyright (c) 2026 STMicroelectronics.
 +# All rights reserved.
 +#
@@ -5596,6 +5717,8 @@ index 00000000..4bf84218
 +      SensorDelay: 3
 +      ExposureTime: 5000
 +      AeEnable: true
++      ConvergenceSpeed: 3
++      GainMaxLimit: 4294967295
 +      ExposureValue: 0.0
 +      AntiFlickerFreq: 0
 +      LuxRef:
@@ -5611,6 +5734,7 @@ index 00000000..4bf84218
 +      FixedCconvEnable: true
 +      FixedCconv: [150570000, 2440000, -53010000, -37350000, 193760000, -56420000, -11100000, -35490000, 146590000]
 +      AwbEnable: true
++      ConvergenceSpeed: 3
 +      ProfileName: ["JudgeII-A", "JudgeII-TL84", "JudgeII-DAY", "Free Slot", "Free Slot"]
 +      RefColorTemp: [2810, 4015, 6650, 0, 0]
 +      GainR: [124000000, 182000000, 244000000, 0, 0]
@@ -5639,7 +5763,7 @@ index 00000000..4bf84218
 +# NOTE : parameters of 'statRemoval' are not handled in libcamera
 diff --git a/src/ipa/dcmipp/data/meson.build b/src/ipa/dcmipp/data/meson.build
 new file mode 100644
-index 00000000..d2dde358
+index 000000000..d2dde3589
 --- /dev/null
 +++ b/src/ipa/dcmipp/data/meson.build
 @@ -0,0 +1,12 @@
@@ -5657,7 +5781,7 @@ index 00000000..d2dde358
 +             install_tag : 'runtime')
 diff --git a/src/ipa/dcmipp/data/uncalibrated.yaml b/src/ipa/dcmipp/data/uncalibrated.yaml
 new file mode 100644
-index 00000000..d15cbc6f
+index 000000000..d15cbc6f3
 --- /dev/null
 +++ b/src/ipa/dcmipp/data/uncalibrated.yaml
 @@ -0,0 +1,21 @@
@@ -5684,10 +5808,10 @@ index 00000000..d15cbc6f
 +  - GammaCorrection:
 diff --git a/src/ipa/dcmipp/data/vd56g3.yaml b/src/ipa/dcmipp/data/vd56g3.yaml
 new file mode 100644
-index 00000000..e9d532e4
+index 000000000..c04e5f339
 --- /dev/null
 +++ b/src/ipa/dcmipp/data/vd56g3.yaml
-@@ -0,0 +1,61 @@
+@@ -0,0 +1,64 @@
 +# Copyright (c) 2026 STMicroelectronics.
 +# All rights reserved.
 +#
@@ -5708,6 +5832,8 @@ index 00000000..e9d532e4
 +      SensorDelay: 4
 +      ExposureTime: 5000
 +      AeEnable: true
++      ConvergenceSpeed: 3
++      GainMaxLimit: 4294967295
 +      ExposureValue: 0.0
 +      AntiFlickerFreq: 0
 +      LuxRef:
@@ -5721,6 +5847,7 @@ index 00000000..e9d532e4
 +      FixedGainG: 100000000
 +      FixedGainB: 150000000
 +      FixedCconvEnable: true
++      ConvergenceSpeed: 3
 +      FixedCconv: [146010000, -39280000, -14060000, -26750000, 152490000, -42520000, 1160000, -55410000, 143910000]
 +      AwbEnable: true
 +      ProfileName: ["JudgeII-A", "JudgeII-TL84", "JudgeII-DAY", "Free Slot", "Free Slot"]
@@ -5751,10 +5878,10 @@ index 00000000..e9d532e4
 +# NOTE : parameters of 'statRemoval' are not handled in libcamera
 diff --git a/src/ipa/dcmipp/data/vd56g3_mono.yaml b/src/ipa/dcmipp/data/vd56g3_mono.yaml
 new file mode 100644
-index 00000000..7966ada7
+index 000000000..894459baf
 --- /dev/null
 +++ b/src/ipa/dcmipp/data/vd56g3_mono.yaml
-@@ -0,0 +1,61 @@
+@@ -0,0 +1,64 @@
 +# Copyright (c) 2026 STMicroelectronics.
 +# All rights reserved.
 +#
@@ -5775,6 +5902,8 @@ index 00000000..7966ada7
 +      SensorDelay: 4
 +      ExposureTime: 5000
 +      AeEnable: true
++      ConvergenceSpeed: 3
++      GainMaxLimit: 4294967295
 +      ExposureValue: 0.0
 +      AntiFlickerFreq: 0
 +      LuxRef:
@@ -5790,6 +5919,7 @@ index 00000000..7966ada7
 +      FixedCconvEnable: false
 +      FixedCconv: [0, 0, 0, 0, 0, 0, 0, 0, 0]
 +      AwbEnable: false
++      ConvergenceSpeed: 3
 +      ProfileName: ["Free Slot", "Free Slot", "Free Slot", "Free Slot", "Free Slot"]
 +      RefColorTemp: [0, 0, 0, 0, 0]
 +      GainR: [0, 0, 0, 0, 0]
@@ -5818,7 +5948,7 @@ index 00000000..7966ada7
 +# NOTE : parameters of 'statRemoval' are not handled in libcamera
 diff --git a/src/ipa/dcmipp/dcmipp.cpp b/src/ipa/dcmipp/dcmipp.cpp
 new file mode 100644
-index 00000000..eea008f7
+index 000000000..eea008f7a
 --- /dev/null
 +++ b/src/ipa/dcmipp/dcmipp.cpp
 @@ -0,0 +1,578 @@
@@ -6402,7 +6532,7 @@ index 00000000..eea008f7
 +} /* namespace libcamera */
 diff --git a/src/ipa/dcmipp/ipa_context.h b/src/ipa/dcmipp/ipa_context.h
 new file mode 100644
-index 00000000..dacc38e4
+index 000000000..dacc38e4d
 --- /dev/null
 +++ b/src/ipa/dcmipp/ipa_context.h
 @@ -0,0 +1,133 @@
@@ -6541,7 +6671,7 @@ index 00000000..dacc38e4
 +} /* namespace libcamera */
 diff --git a/src/ipa/dcmipp/meson.build b/src/ipa/dcmipp/meson.build
 new file mode 100644
-index 00000000..7d3bda66
+index 000000000..0f7adaa8d
 --- /dev/null
 +++ b/src/ipa/dcmipp/meson.build
 @@ -0,0 +1,51 @@
@@ -6577,7 +6707,7 @@ index 00000000..7d3bda66
 +endif
 +
 +mod = shared_module(ipa_name,
-+                    [dcmipp_ipa_sources, libcamera_generated_ipa_headers],
++                    [dcmipp_ipa_sources, libcamera_ipa_headers],
 +                    name_prefix : '',
 +                    include_directories : [ipa_includes, libipa_includes],
 +                    dependencies : [libcamera_private, evision_algo_deps],
@@ -6598,7 +6728,7 @@ index 00000000..7d3bda66
 +ipa_names += ipa_name
 diff --git a/src/ipa/dcmipp/module.h b/src/ipa/dcmipp/module.h
 new file mode 100644
-index 00000000..2faecf85
+index 000000000..2faecf855
 --- /dev/null
 +++ b/src/ipa/dcmipp/module.h
 @@ -0,0 +1,27 @@
@@ -6629,63 +6759,17 @@ index 00000000..2faecf85
 +} /* namespace ipa::dcmipp */
 +
 +} /* namespace libcamera*/
-diff --git a/src/ipa/libipa/camera_sensor_helper.cpp b/src/ipa/libipa/camera_sensor_helper.cpp
-index 2cd61fcc..6785e272 100644
---- a/src/ipa/libipa/camera_sensor_helper.cpp
-+++ b/src/ipa/libipa/camera_sensor_helper.cpp
-@@ -631,6 +631,17 @@ public:
- };
- REGISTER_CAMERA_SENSOR_HELPER("ov13858", CameraSensorHelperOv13858)
- 
-+class CameraSensorHelperVd56g3 : public CameraSensorHelper
-+{
-+public:
-+	CameraSensorHelperVd56g3()
-+	{
-+		gainType_ = AnalogueGainLinear;
-+		gainConstants_.linear = { 0, 32, -1, 32 };
-+	}
-+};
-+REGISTER_CAMERA_SENSOR_HELPER("vd56g3", CameraSensorHelperVd56g3)
-+
- #endif /* __DOXYGEN__ */
- 
- } /* namespace ipa */
-diff --git a/src/ipa/rpi/controller/rpi/alsc.cpp b/src/ipa/rpi/controller/rpi/alsc.cpp
-index 961209ea..67029fc3 100644
---- a/src/ipa/rpi/controller/rpi/alsc.cpp
-+++ b/src/ipa/rpi/controller/rpi/alsc.cpp
-@@ -496,8 +496,8 @@ void resampleCalTable(const Array2D<double> &calTableIn,
- 	 * Precalculate and cache the x sampling locations and phases to save
- 	 * recomputing them on every row.
- 	 */
--	int *xLo = (int*)malloc(X), *xHi = (int*)malloc(X);
--	double *xf = (double*)malloc(X);
-+	int xLo[X], xHi[X];
-+	double xf[X];
- 	double scaleX = cameraMode.sensorWidth /
- 			(cameraMode.width * cameraMode.scaleX);
- 	double xOff = cameraMode.cropX / (double)cameraMode.sensorWidth;
-@@ -539,9 +539,6 @@ void resampleCalTable(const Array2D<double> &calTableIn,
- 			*(out++) = above * (1 - yf) + below * yf;
- 		}
- 	}
--	free(xf);
--	free(xHi);
--	free(xLo);
- }
- 
- /* Calculate chrominance statistics (R/G and B/G) for each region. */
 diff --git a/src/libcamera/control_ids_draft.yaml b/src/libcamera/control_ids_draft.yaml
-index 9bef5bf1..de06dd13 100644
+index 03309eeac..1f78d2877 100644
 --- a/src/libcamera/control_ids_draft.yaml
 +++ b/src/libcamera/control_ids_draft.yaml
-@@ -227,4 +227,292 @@ controls:
-             value. All of the custom test patterns will be static (that is the
-             raw image must not vary from frame to frame).
+@@ -294,4 +294,378 @@ controls:
+         Currently identical to ANDROID_STATISTICS_FACE_IDS.
+       size: [n]
  
 +  - AnalogueGain_dB:
 +      type: float
++      direction: inout
 +      description: |
 +        Analogue gain value applied in the sensor device expressed in decibel.
 +        The value of the control specifies the gain multiplier applied to all
@@ -6697,21 +6781,25 @@ index 9bef5bf1..de06dd13 100644
 +
 +  - AeExposureTarget:
 +      type: int32_t
++      direction: inout
 +      description: |
 +        Exposure target for the AE algorithm to use.
 +
 +  - AntiFlickerFreq:
 +      type: int32_t
++      direction: inout
 +      description: |
 +        Anti-flickering frequency for the AE algorithm to use.
 +
 +  - ColourGains3Enable:
 +      type: bool
++      direction: inout
 +      description: |
 +        ColourGains3 feature enable status.
 +
 +  - ColourGains3:
 +      type: int32_t
++      direction: inout
 +      description: |
 +        Gain values for the 3 colour channels, Red, Green and Blue in that
 +        order.
@@ -6720,11 +6808,13 @@ index 9bef5bf1..de06dd13 100644
 +
 +  - ColourCorrectionEnable:
 +      type: bool
++      direction: inout
 +      description: |
 +        ColourCorrection feature enable status.
 +
 +  - ColourCorrection:
 +      type: int32_t
++      direction: inout
 +      description: |
 +        The 3x3 matrix that converts camera RGB to sRGB within the
 +        imaging pipeline. This should describe the matrix that is used
@@ -6736,6 +6826,7 @@ index 9bef5bf1..de06dd13 100644
 +
 +  - AwbProfileName:
 +      type: string
++      direction: inout
 +      description: |
 +        Array of AWB profile name (one entry per profile) used by the AWB
 +        algorithm.
@@ -6743,11 +6834,13 @@ index 9bef5bf1..de06dd13 100644
 +
 +  - AwbCurrentProfileName:
 +      type: string
++      direction: out
 +      description: Report the current profile name, for this frame. The
 +        AwbCurrentProfileName control can only be returned in metadata.
 +
 +  - AwbReferenceColorTemperature:
 +      type: int32_t
++      direction: inout
 +      description: |
 +        Array of reference color tempeartures (one entry per profile) used by
 +        the AWB algorithm.
@@ -6755,12 +6848,14 @@ index 9bef5bf1..de06dd13 100644
 +
 +  - AwbColourGains3:
 +      type: int32_t
++      direction: inout
 +      description: |
 +        Array of ColourGains3 (one entry per profile) used by the AWB algorithm.
 +      size: [5,3]
 +
 +  - AwbColourCorrection:
 +      type: int32_t
++      direction: inout
 +      description: |
 +        Array of ColourCorrection (one entry per profile) used by the AWB
 +        algorithm.
@@ -6768,24 +6863,47 @@ index 9bef5bf1..de06dd13 100644
 +
 +  - AwbReferenceRGB:
 +      type: int32_t
++      direction: inout
 +      description: |
 +        Array of ReferenceRGB (one entry per profile) used by the AWB algorithm.
 +      size: [5,3]
 +
 +  - AwbCustomColorTemperature:
 +      type: int32_t
++      direction: inout
 +      description: |
 +        Color Temperature specifying a custom Awb mode. Must be a value of
 +        AwbReferenceColorTemperature[].
 +        Applicable when AwbMode is set to AwbCustom.
 +
++  - AwbConvergenceSpeed:
++      type: int32_t
++      direction: inout
++      description: |
++        Speed of convergence of the AWB algorithm.
++      enum:
++        - name: AwbConvergenceSpeedSlow
++          value: 0
++          description: AWB slow convergence speed
++        - name: AwbConvergenceSpeedMedium
++          value: 1
++          description: AWB medium convergence speed
++        - name: AwbConvergenceSpeedFast
++          value: 2
++          description: AWB fast convergence speed
++        - name: AwbConvergenceSpeedVeryFast
++          value: 3
++          description: AWB very fast convergence speed
++
 +  - BadPixelRemovalEnable:
 +      type: bool
++      direction: inout
 +      description: |
 +        BadPixelRemoval feature enable status.
 +
 +  - BadPixelRemovalStrength:
 +      type: int32_t
++      direction: inout
 +      description: |
 +        Strength of the detection and correction artifacts generated by a bad
 +        pixel on the sensor array.
@@ -6794,6 +6912,7 @@ index 9bef5bf1..de06dd13 100644
 +
 +  - BadPixelRemovalThreshold:
 +      type: int32_t
++      direction: inout
 +      description: |
 +        If set to a positive value, the BadPixelRemoval algorithm adjusts the
 +        strength of detection so the amount of expected bad pixel corrected is
@@ -6801,16 +6920,19 @@ index 9bef5bf1..de06dd13 100644
 +
 +  - BadPixelRemovalCount:
 +      type: int32_t
++      direction: inout
 +      description: |
 +        Report of the amount of bad components corrected.
 +
 +  - BlackLevelCorrectionEnable:
 +      type: bool
++      direction: inout
 +      description: |
 +        BlackLevelCorrection feature enable status.
 +
 +  - BlackLevelCorrectionLevels:
 +      type: int32_t
++      direction: inout
 +      description: |
 +        Black levels correction of the Red, Green and Blue colour channels, in
 +        that order.
@@ -6818,11 +6940,13 @@ index 9bef5bf1..de06dd13 100644
 +
 +  - DemosaicingEnable:
 +      type: bool
++      direction: inout
 +      description: |
 +        Demosaicing feature enable status.
 +
 +  - DemosaicingFilter:
 +      type: int32_t
++      direction: inout
 +      description: |
 +        Demosaicing filter parameters (strength of the detection) to adapt to
 +        specific shapes in this order: Peak, Vertical line, Horizontal line,
@@ -6831,11 +6955,13 @@ index 9bef5bf1..de06dd13 100644
 +
 +  - ContrastLuminanceEnable:
 +      type: bool
++      direction: inout
 +      description: |
 +        ContrastLuminance feature enable status.
 +
 +  - ContrastLuminance:
 +      type: int32_t
++      direction: inout
 +      description: |
 +        Luminance amplification factor table for preset luminance segments.
 +        Entry 0 is for pixel with luminance of 0, entry 1 is for pixel with
@@ -6845,17 +6971,20 @@ index 9bef5bf1..de06dd13 100644
 +
 +  - IspDecimationRatio:
 +      type: int32_t
++      direction: inout
 +      description: |
 +        ISP decimation ratio. This control can only be returned in metadata.
 +
 +  - StatisticArea:
 +      type: Rectangle
++      direction: inout
 +      description: |
 +        Area defining where the statistics are extracted within the frame.
 +        If not defined, the statistics are extracted within the whole frame.
 +
 +  - StatisticProfile:
 +      type: int32_t
++      direction: inout
 +      description: |
 +        Defines which statistics are reported.
 +      enum:
@@ -6873,6 +7002,7 @@ index 9bef5bf1..de06dd13 100644
 +
 +  - StatisticAverageUp:
 +      type: int32_t
++      direction: inout
 +      description: |
 +        Reported average value (from 0 to 255) measured at the up part of the
 +        ISP pipeline. Red, Green, Blue colour channels and Luminance in that
@@ -6881,6 +7011,7 @@ index 9bef5bf1..de06dd13 100644
 +
 +  - StatisticAverageDown:
 +      type: int32_t
++      direction: inout
 +      description: |
 +        Reported average value (from 0 to 255) measured at the down part of the
 +        ISP pipeline. Red, Green, Blue colour channels and Luminance in that
@@ -6889,6 +7020,7 @@ index 9bef5bf1..de06dd13 100644
 +
 +  - StatisticBinsUp:
 +      type: int32_t
++      direction: inout
 +      description: |
 +        Reported bins (number of pixels in one of the 12 ranges of luminance)
 +        measured at the up part of the ISP pipeline.
@@ -6896,6 +7028,7 @@ index 9bef5bf1..de06dd13 100644
 +
 +  - StatisticBinsDown:
 +      type: int32_t
++      direction: inout
 +      description: |
 +        Reported bins (number of pixels in one of the 12 ranges of luminance)
 +        measured at the up part of the ISP pipeline.
@@ -6903,39 +7036,46 @@ index 9bef5bf1..de06dd13 100644
 +
 +  - SensorBitsPerPixel:
 +      type: int32_t
++      direction: out
 +      description: |
 +        Number of bits per pixel of the sensor.
 +        This control can only be returned in metadata.
 +
 +  - SensorDelay:
 +      type: int32_t
++      direction: inout
 +      description: |
 +        Delay (in number of VSYNC) between the time a sensor control (gain or
 +        exposure) is updated, and the time the frame is actually updated.
 +
 +  - SensorDelayMeasure:
 +      type: int32_t
++      direction: out
 +      description: |
 +        Reported sensor delay measured by the IPA. -1 if the measure is not
 +        available
 +
 +  - DoSensorDelayMeasure:
 +      type: bool
++      direction: inout
 +      description: |
 +        When set to True, order the IPA to perform the sensor delay measure
 +
 +  - PipelineHwRevision:
 +      type: int32_t
++      direction: out
 +      description: |
 +        IPA hardware revision identifier.
 +
 +  - GammaCorrectionEnable:
 +      type: bool
++      direction: inout
 +      description: |
 +        GammaCorrection feature enable status.
 +
 +  - ScalerCrops:
 +      type: Rectangle
++      direction: inout
 +      size: [n]
 +      description: |
 +        An array of rectangles, where each singular value has identical
@@ -6948,6 +7088,7 @@ index 9bef5bf1..de06dd13 100644
 +
 +  - LuxRef:
 +      type: int32_t
++      direction: inout
 +      description: |
 +        Lux reference values in lux. First one is HL_LuxRef. Second one is
 +        LL_LuxRef.
@@ -6955,6 +7096,7 @@ index 9bef5bf1..de06dd13 100644
 +
 +  - LuxRefExpo:
 +      type: int32_t
++      direction: inout
 +      description: |
 +        Exposure values. Values are in following order: HL_Expo1, HL_Expo2,
 +        LL_Expo1 and LL_Expo2.
@@ -6962,6 +7104,7 @@ index 9bef5bf1..de06dd13 100644
 +
 +  - LuxRefLum:
 +      type: int32_t
++      direction: inout
 +      description: |
 +        Luminance values. Values are in following order: HL_Lum1, HL_Lum2,
 +        LL_Lum1 and LL_Lum2.
@@ -6969,97 +7112,42 @@ index 9bef5bf1..de06dd13 100644
 +
 +  - LuxRefCalibFactor:
 +      type: float
++      direction: inout
 +      description: |
 +        Calibration factor.
 +
++  - AeConvergenceSpeed:
++      type: int32_t
++      direction: inout
++      description: |
++        Speed of convergence of the AE algorithm.
++      enum:
++        - name: AeConvergenceSpeedSlow
++          value: 0
++          description: AE slow convergence speed
++        - name: AeConvergenceSpeedMedium
++          value: 1
++          description: AE medium convergence speed
++        - name: AeConvergenceSpeedFast
++          value: 2
++          description: AE fast convergence speed
++        - name: AeConvergenceSpeedVeryFast
++          value: 3
++          description: AE very fast convergence speed
++
++  - AeGainMaxLimit:
++      type: uint32_t
++      direction: inout
++      description: |
++        Maximum limit of the AE gain. The value is expressed in mbdecibel.
++
  ...
-diff --git a/src/libcamera/ipc_unixsocket.cpp b/src/libcamera/ipc_unixsocket.cpp
-index 0163deed..75285b67 100644
---- a/src/libcamera/ipc_unixsocket.cpp
-+++ b/src/libcamera/ipc_unixsocket.cpp
-@@ -8,7 +8,6 @@
- #include "libcamera/internal/ipc_unixsocket.h"
- 
- #include <array>
--#include <cstdint>
- #include <poll.h>
- #include <string.h>
- #include <sys/socket.h>
-@@ -248,8 +247,8 @@ int IPCUnixSocket::sendData(const void *buffer, size_t length,
- 	iov[0].iov_base = const_cast<void *>(buffer);
- 	iov[0].iov_len = length;
- 
--	char *buf = (char*)malloc(CMSG_SPACE(num * sizeof(uint32_t)));
--	memset((void*)buf, 0, sizeof(buf));
-+	char buf[CMSG_SPACE(num * sizeof(uint32_t))];
-+	memset(buf, 0, sizeof(buf));
- 
- 	struct cmsghdr *cmsg = (struct cmsghdr *)buf;
- 	cmsg->cmsg_len = CMSG_LEN(num * sizeof(uint32_t));
-@@ -271,11 +270,9 @@ int IPCUnixSocket::sendData(const void *buffer, size_t length,
- 		int ret = -errno;
- 		LOG(IPCUnixSocket, Error)
- 			<< "Failed to sendmsg: " << strerror(-ret);
--		free(buf);
- 		return ret;
- 	}
- 
--	free(buf);
- 	return 0;
- }
- 
-@@ -286,8 +283,8 @@ int IPCUnixSocket::recvData(void *buffer, size_t length,
- 	iov[0].iov_base = buffer;
- 	iov[0].iov_len = length;
- 
--	char *buf = (char*)malloc(CMSG_SPACE(num * sizeof(uint32_t)));
--	memset((void*)buf, 0, sizeof(buf));
-+	char buf[CMSG_SPACE(num * sizeof(uint32_t))];
-+	memset(buf, 0, sizeof(buf));
- 
- 	struct cmsghdr *cmsg = (struct cmsghdr *)buf;
- 	cmsg->cmsg_len = CMSG_LEN(num * sizeof(uint32_t));
-@@ -308,14 +305,12 @@ int IPCUnixSocket::recvData(void *buffer, size_t length,
- 		if (ret != -EAGAIN)
- 			LOG(IPCUnixSocket, Error)
- 				<< "Failed to recvmsg: " << strerror(-ret);
--		free(buf);
- 		return ret;
- 	}
- 
- 	if (fds)
- 		memcpy(fds, CMSG_DATA(cmsg), num * sizeof(uint32_t));
- 
--	free(buf);
- 	return 0;
- }
- 
-diff --git a/src/libcamera/media_device.cpp b/src/libcamera/media_device.cpp
-index 04f40132..bd054552 100644
---- a/src/libcamera/media_device.cpp
-+++ b/src/libcamera/media_device.cpp
-@@ -159,12 +159,12 @@ bool MediaDevice::lock()
-  *
-  * \sa lock()
-  */
--bool MediaDevice::unlock()
-+void MediaDevice::unlock()
- {
- 	if (!fd_.isValid())
--		return false;
-+		return;
- 
--	return lockf(fd_.get(), F_ULOCK, 0) == 0;
-+	lockf(fd_.get(), F_ULOCK, 0);
- }
- 
- /**
 diff --git a/src/libcamera/pipeline/dcmipp/dcmipp.cpp b/src/libcamera/pipeline/dcmipp/dcmipp.cpp
 new file mode 100644
-index 00000000..15bf65a2
+index 000000000..40455693e
 --- /dev/null
 +++ b/src/libcamera/pipeline/dcmipp/dcmipp.cpp
-@@ -0,0 +1,1436 @@
+@@ -0,0 +1,1467 @@
 +/* SPDX-License-Identifier: LGPL-2.1-or-later */
 +/*
 + * Copyright (C) 2024, ST Microelectronics
@@ -7085,7 +7173,6 @@ index 00000000..15bf65a2
 +#include <libcamera/controls.h>
 +#include <libcamera/formats.h>
 +#include <libcamera/property_ids.h>
-+#include <libcamera/request.h>
 +#include <libcamera/stream.h>
 +
 +#include <libcamera/ipa/dcmipp_ipa_interface.h>
@@ -7100,6 +7187,7 @@ index 00000000..15bf65a2
 +#include "libcamera/internal/ipa_manager.h"
 +#include "libcamera/internal/media_device.h"
 +#include "libcamera/internal/pipeline_handler.h"
++#include <libcamera/internal/request.h>
 +#include "libcamera/internal/v4l2_subdevice.h"
 +#include "libcamera/internal/v4l2_videodevice.h"
 +
@@ -7239,7 +7327,7 @@ index 00000000..15bf65a2
 +	DcmippMainPath mainPath_;
 +	DcmippAuxPath auxPath_;
 +
-+	MediaDevice *media_;
++	std::shared_ptr<MediaDevice> media_;
 +	std::unique_ptr<V4L2Subdevice> bridge_;
 +	std::unique_ptr<V4L2Subdevice> input_;
 +
@@ -7896,18 +7984,29 @@ index 00000000..15bf65a2
 +
 +	for (std::unique_ptr<FrameBuffer> &buffer : isp_stats_) {
 +		buffer->setCookie(ipaBufferId++);
-+		data->ipaBuffers_.emplace_back(buffer->cookie(), buffer->planes());
++
++		libcamera::IPABuffer ipaBuf{};
++		ipaBuf.id = static_cast<std::uint32_t>(buffer->cookie());
++		ipaBuf.planes.assign(buffer->planes().begin(), buffer->planes().end());
++		data->ipaBuffers_.push_back(std::move(ipaBuf));
++
 +		available_isp_stats_.push(buffer.get());
 +	}
 +
 +	for (std::unique_ptr<FrameBuffer> &buffer : isp_params_) {
 +		buffer->setCookie(ipaBufferId++);
 +		buffer->_d()->metadata().planes()[0].bytesused = sizeof(struct stm32_dcmipp_params_cfg);
-+		data->ipaBuffers_.emplace_back(buffer->cookie(), buffer->planes());
++
++		libcamera::IPABuffer ipaBuf{};
++		ipaBuf.id = static_cast<std::uint32_t>(buffer->cookie());
++		ipaBuf.planes.assign(buffer->planes().begin(), buffer->planes().end());
++		data->ipaBuffers_.push_back(std::move(ipaBuf));
++
 +		available_isp_params_.push(buffer.get());
 +	}
 +
-+	data->ipa_->mapBuffers(data->ipaBuffers_);
++	if (data->ipa_)
++		data->ipa_->mapBuffers(data->ipaBuffers_);
 +
 +	return 0;
 +
@@ -7921,6 +8020,9 @@ index 00000000..15bf65a2
 +int PipelineHandlerDcmipp::freeBuffers(Camera *camera)
 +{
 +	DcmippCameraData *data = cameraData(camera);
++
++	if (!data->ipa_)
++		return 0;
 +
 +	while (!available_isp_stats_.empty())
 +		available_isp_stats_.pop();
@@ -7988,29 +8090,32 @@ index 00000000..15bf65a2
 +	if (!data->mainPath_->isEnabled() && !data->auxPath_->isEnabled())
 +		return 0;
 +
-+	ret = allocateBuffers(camera);
-+	if (ret < 0) {
-+		freeBuffers(camera);
-+		if (data->dumpPath_->isEnabled())
-+			data->dumpPath_->stop();
-+		LOG(DCMIPP, Error) << "Cannot allocate stats & params buffers for IPA";
-+		return ret;
-+	}
++	if (data->ipa_) {
++		ret = allocateBuffers(camera);
++		if (ret < 0) {
++			freeBuffers(camera);
++			if (data->dumpPath_->isEnabled())
++				data->dumpPath_->stop();
++			LOG(DCMIPP, Error) << "Cannot allocate stats & params buffers for IPA";
++			return ret;
++		}
 +
-+	ret = data->ipa_->start();
-+	if (ret) {
-+		LOG(DCMIPP, Error) << "Cannot start IPA";
-+		freeBuffers(camera);
-+		if (data->dumpPath_->isEnabled())
-+			data->dumpPath_->stop();
-+		return ret;
++		ret = data->ipa_->start();
++		if (ret) {
++			LOG(DCMIPP, Error) << "Cannot start IPA";
++			freeBuffers(camera);
++			if (data->dumpPath_->isEnabled())
++				data->dumpPath_->stop();
++			return ret;
++		}
 +	}
 +
 +	if (data->mainPath_->isEnabled()) {
 +		ret = data->mainPath_->start();
 +		if (ret < 0) {
 +			LOG(DCMIPP, Error) << "Cannot start pixelcapture";
-+			data->ipa_->stop();
++			if (data->ipa_)
++				data->ipa_->stop();
 +			freeBuffers(camera);
 +			if (data->dumpPath_->isEnabled())
 +				data->dumpPath_->stop();
@@ -8024,7 +8129,8 @@ index 00000000..15bf65a2
 +			LOG(DCMIPP, Error) << "Cannot start pixelcapture";
 +			if (data->mainPath_->isEnabled())
 +				data->mainPath_->stop();
-+			data->ipa_->stop();
++			if (data->ipa_)
++				data->ipa_->stop();
 +			freeBuffers(camera);
 +			if (data->dumpPath_->isEnabled())
 +				data->dumpPath_->stop();
@@ -8032,27 +8138,33 @@ index 00000000..15bf65a2
 +		}
 +	}
 +
-+	ret = stats_->streamOn();
-+	if (ret < 0) {
-+		LOG(DCMIPP, Error) << "Cannot start stat buffers";
-+		mainPath_.stop();
-+		data->ipa_->stop();
-+		freeBuffers(camera);
-+		if (data->dumpPath_->isEnabled())
-+			data->dumpPath_->stop();
-+		return ret;
++	if (data->ipa_) {
++		ret = stats_->streamOn();
++		if (ret < 0) {
++			LOG(DCMIPP, Error) << "Cannot start stat buffers";
++			mainPath_.stop();
++			if (data->ipa_)
++				data->ipa_->stop();
++			freeBuffers(camera);
++			if (data->dumpPath_->isEnabled())
++				data->dumpPath_->stop();
++			return ret;
++		}
 +	}
 +
-+	ret = params_->streamOn();
-+	if (ret < 0) {
-+		LOG(DCMIPP, Error) << "Cannot start params buffers";
-+		stats_->streamOff();
-+		mainPath_.stop();
-+		data->ipa_->stop();
-+		freeBuffers(camera);
-+		if (data->dumpPath_->isEnabled())
-+			data->dumpPath_->stop();
-+		return ret;
++	if (data->ipa_) {
++		ret = params_->streamOn();
++		if (ret < 0) {
++			LOG(DCMIPP, Error) << "Cannot start params buffers";
++			stats_->streamOff();
++			mainPath_.stop();
++			if (data->ipa_)
++				data->ipa_->stop();
++			freeBuffers(camera);
++			if (data->dumpPath_->isEnabled())
++				data->dumpPath_->stop();
++			return ret;
++		}
 +	}
 +
 +	return 0;
@@ -8064,14 +8176,17 @@ index 00000000..15bf65a2
 +
 +	LOG(DCMIPP, Debug) << "stop";
 +
-+	if (data->mainPath_->isEnabled() || data->mainPath_->isEnabled()) {
-+		params_->streamOff();
-+		stats_->streamOff();
++	if (data->mainPath_->isEnabled() || data->auxPath_->isEnabled()) {
++		if (data->ipa_) {
++			params_->streamOff();
++			stats_->streamOff();
++		}
 +		if (data->auxPath_->isEnabled())
 +			data->auxPath_->stop();
 +		if (data->mainPath_->isEnabled())
 +			data->mainPath_->stop();
-+		data->ipa_->stop();
++		if (data->ipa_)
++			data->ipa_->stop();
 +		freeBuffers(camera);
 +	}
 +	if (data->dumpPath_->isEnabled())
@@ -8119,15 +8234,19 @@ index 00000000..15bf65a2
 +		return 0;
 +
 +	/* Inform IPA of control update */
-+	data->ipa_->queueRequest(request->sequence(), request->controls());
++	if (data->ipa_)
++		data->ipa_->queueRequest(request->sequence(), request->controls());
 +
 +	/* Sends the params buffer to the IPA for filling */
-+	if (available_isp_params_.empty()) {
-+		LOG(DCMIPP, Error) << "ISP parameters buffer underrun";
-+	} else {
-+		paramBuffer = available_isp_params_.front();
-+		available_isp_params_.pop();
-+		data->ipa_->fillParamsBuffer(request->sequence(), paramBuffer->cookie());
++	if (data->ipa_) {
++		if (available_isp_params_.empty()) {
++			LOG(DCMIPP, Error) << "ISP parameters buffer underrun";
++		} else {
++			paramBuffer = available_isp_params_.front();
++			available_isp_params_.pop();
++			if (data->ipa_)
++				data->ipa_->fillParamsBuffer(request->sequence(), paramBuffer->cookie());
++		}
 +	}
 +
 +	/* Queue pipeline buffers */
@@ -8184,50 +8303,49 @@ index 00000000..15bf65a2
 +
 +	data->ipa_ = IPAManager::createIPA<ipa::dcmipp::IPAProxyDcmipp>(this, 0, 0);
 +	if (!data->ipa_) {
-+		LOG(DCMIPP, Error) << "no matching IPA found";
-+		return false;
-+	}
-+
-+	/* Connect the two event callback from IPA */
-+	data->ipa_->paramsBufferReady.connect(data.get(), &DcmippCameraData::paramsFilled);
-+	data->ipa_->statsBufferProcessed.connect(data.get(), &DcmippCameraData::statsFreed);
-+	data->ipa_->metadataReady.connect(data.get(), &DcmippCameraData::metadataReady);
-+	data->ipa_->setSensorControls.connect(data.get(), &DcmippCameraData::setSensorControls);
-+	data->ipa_->setIspControls.connect(data.get(), &DcmippCameraData::setIspControls);
-+	data->ipa_->setPostprocControls.connect(data.get(), &DcmippCameraData::setPostprocControls);
-+
-+	/*
-+	 * Initialize IPA. IPA is reponsible for setting data->controlInfo_ which
-+	 * specifies the list of controls supported by the camera.
-+	 */
-+	IPACameraSensorInfo sensorInfo;
-+	if (data->sensor_->sensorInfo(&sensorInfo)) {
-+		LOG(DCMIPP, Error) << "Camera sensor information not available";
-+		return false;
-+	}
-+
-+	/* Check is the sensor is a monochrome sensor. If yes, load the <model>_mono.yaml file */
-+	bool monoSensor = sensorInfo.cfaPattern == properties::draft::ColorFilterArrangementEnum::MONO;
-+
-+	/* Tuning file made from sensor name or from environment variable */
-+	std::string ipaTuningFile;
-+	char const *configFromEnv = utils::secure_getenv("LIBCAMERA_DCMIPP_TUNING_FILE");
-+	if (configFromEnv && *configFromEnv != '\0') {
-+		ipaTuningFile = std::string(configFromEnv);
++		LOG(DCMIPP, Warning) << "no matching IPA found, image quality will be low";
 +	} else {
-+		if (monoSensor)
-+			ipaTuningFile = data->ipa_->configurationFile(data->sensor_->model() + "_mono.yaml");
-+		else
-+			ipaTuningFile = data->ipa_->configurationFile(data->sensor_->model() + ".yaml");
-+		if (ipaTuningFile.empty())
-+			ipaTuningFile = data->ipa_->configurationFile("uncalibrated.yaml");
-+	}
++		/* Connect the two event callback from IPA */
++		data->ipa_->paramsBufferReady.connect(data.get(), &DcmippCameraData::paramsFilled);
++		data->ipa_->statsBufferProcessed.connect(data.get(), &DcmippCameraData::statsFreed);
++		data->ipa_->metadataReady.connect(data.get(), &DcmippCameraData::metadataReady);
++		data->ipa_->setSensorControls.connect(data.get(), &DcmippCameraData::setSensorControls);
++		data->ipa_->setIspControls.connect(data.get(), &DcmippCameraData::setIspControls);
++		data->ipa_->setPostprocControls.connect(data.get(), &DcmippCameraData::setPostprocControls);
 +
-+	if (data->ipa_->init(IPASettings{ ipaTuningFile, data->sensor_->model() },
-+			     media_->hwRevision(), sensorInfo, data->sensor_->controls(),
-+			     &data->controlInfo_) < 0) {
-+		LOG(DCMIPP, Error) << "IPA initialization failure";
-+		return false;
++		/*
++		 * Initialize IPA. IPA is reponsible for setting data->controlInfo_ which
++		 * specifies the list of controls supported by the camera.
++		 */
++		IPACameraSensorInfo sensorInfo;
++		if (data->sensor_->sensorInfo(&sensorInfo)) {
++			LOG(DCMIPP, Error) << "Camera sensor information not available";
++			return false;
++		}
++
++		/* Check is the sensor is a monochrome sensor. If yes, load the <model>_mono.yaml file */
++		bool monoSensor = sensorInfo.cfaPattern == properties::draft::ColorFilterArrangementEnum::MONO;
++
++		/* Tuning file made from sensor name or from environment variable */
++		std::string ipaTuningFile;
++		char const *configFromEnv = utils::secure_getenv("LIBCAMERA_DCMIPP_TUNING_FILE");
++		if (configFromEnv && *configFromEnv != '\0') {
++			ipaTuningFile = std::string(configFromEnv);
++		} else {
++			if (monoSensor)
++				ipaTuningFile = data->ipa_->configurationFile(data->sensor_->model() + "_mono.yaml");
++			else
++				ipaTuningFile = data->ipa_->configurationFile(data->sensor_->model() + ".yaml");
++			if (ipaTuningFile.empty())
++				ipaTuningFile = data->ipa_->configurationFile("uncalibrated.yaml");
++		}
++
++		if (data->ipa_->init(IPASettings{ ipaTuningFile, data->sensor_->model() },
++			     media_.get()->hwRevision(), sensorInfo, data->sensor_->controls(),
++				     &data->controlInfo_) < 0) {
++			LOG(DCMIPP, Error) << "IPA initialization failure";
++			return false;
++		}
 +	}
 +
 +	/* Create and register the camera. */
@@ -8247,7 +8365,7 @@ index 00000000..15bf65a2
 +
 +	LOG(DCMIPP, Debug) << "init";
 +
-+	input_ = V4L2Subdevice::fromEntityName(media_, "dcmipp_input");
++	input_ = V4L2Subdevice::fromEntityName(media_.get(), "dcmipp_input");
 +	if (input_->open())
 +		return -ENODEV;
 +
@@ -8277,34 +8395,34 @@ index 00000000..15bf65a2
 +	}
 +
 +	/* Open the sensor subdev */
-+	data->sensor_ = std::make_unique<CameraSensor>(remotePad->entity());
-+	if (data->sensor_->init())
++	data->sensor_ = CameraSensorFactoryBase::create(remotePad->entity());
++	if (!data->sensor_)
 +		return -ENODEV;
 +
-+	data->input_ = V4L2Subdevice::fromEntityName(media_, "dcmipp_input");
++	data->input_ = V4L2Subdevice::fromEntityName(media_.get(), "dcmipp_input");
 +	if (data->input_->open() < 0)
 +		return -ENODEV;
 +
 +	/* Initialize all path */
-+	if (!dumpPath_.init(media_))
++	if (!dumpPath_.init(media_.get()))
 +		return -ENODEV;
 +	dumpPath_.bufferReady().connect(this, &PipelineHandlerDcmipp::bufferReady);
 +
-+	if (!mainPath_.init(media_))
++	if (!mainPath_.init(media_.get()))
 +		return -ENODEV;
 +	mainPath_.bufferReady().connect(this, &PipelineHandlerDcmipp::bufferReady);
 +
-+	if (!auxPath_.init(media_))
++	if (!auxPath_.init(media_.get()))
 +		return -ENODEV;
 +	auxPath_.bufferReady().connect(this, &PipelineHandlerDcmipp::bufferReady);
 +
 +	/* Initialize ISP video devices */
-+	params_ = V4L2VideoDevice::fromEntityName(media_, "dcmipp_main_isp_params_output");
++	params_ = V4L2VideoDevice::fromEntityName(media_.get(), "dcmipp_main_isp_params_output");
 +	if (params_->open())
 +		return -ENODEV;
 +	params_->bufferReady.connect(this, &PipelineHandlerDcmipp::paramsReady);
 +
-+	stats_ = V4L2VideoDevice::fromEntityName(media_, "dcmipp_main_isp_stat_capture");
++	stats_ = V4L2VideoDevice::fromEntityName(media_.get(), "dcmipp_main_isp_stat_capture");
 +	if (stats_->open())
 +		return -ENODEV;
 +	stats_->bufferReady.connect(this, &PipelineHandlerDcmipp::statsReady);
@@ -8365,7 +8483,7 @@ index 00000000..15bf65a2
 +	}
 +
 +	/* Record the sensor's timestamp in the request metadata. */
-+	request->metadata().set(controls::SensorTimestamp,
++	request->_d()->metadata().set(controls::SensorTimestamp,
 +				buffer->metadata().timestamp);
 +
 +	completeBuffer(request, buffer);
@@ -8386,7 +8504,8 @@ index 00000000..15bf65a2
 +	LOG(DCMIPP, Debug) << "Function: " << __func__;
 +
 +	/* Sends the stats buffer to the IPA for analysis */
-+	data->ipa_->processStatsBuffer(info->frame, buffer->cookie());
++	if (data->ipa_)
++		data->ipa_->processStatsBuffer(info->frame, buffer->cookie());
 +}
 +
 +void PipelineHandlerDcmipp::paramsReady(FrameBuffer *buffer)
@@ -8442,7 +8561,7 @@ index 00000000..15bf65a2
 +	if (!info)
 +		return;
 +
-+	info->request->metadata().merge(metadata);
++	info->request->_d()->metadata().merge(metadata);
 +	info->metadataProcessed = true;
 +
 +	pipe()->tryCompleteRequest(info);
@@ -8498,7 +8617,7 @@ index 00000000..15bf65a2
 +} /* namespace libcamera */
 diff --git a/src/libcamera/pipeline/dcmipp/dcmipp.h b/src/libcamera/pipeline/dcmipp/dcmipp.h
 new file mode 100644
-index 00000000..b1564070
+index 000000000..b15640702
 --- /dev/null
 +++ b/src/libcamera/pipeline/dcmipp/dcmipp.h
 @@ -0,0 +1,128 @@
@@ -8632,7 +8751,7 @@ index 00000000..b1564070
 +#define DCMIPP_STATS_FRAME_DELAY 10
 diff --git a/src/libcamera/pipeline/dcmipp/dcmipp_path.cpp b/src/libcamera/pipeline/dcmipp/dcmipp_path.cpp
 new file mode 100644
-index 00000000..0f07485a
+index 000000000..92ee0c9cd
 --- /dev/null
 +++ b/src/libcamera/pipeline/dcmipp/dcmipp_path.cpp
 @@ -0,0 +1,488 @@
@@ -8774,7 +8893,7 @@ index 00000000..0f07485a
 +		isp_ = V4L2Subdevice::fromEntityName(media, "dcmipp_main_isp");
 +		if (isp_->open() < 0)
 +			return false;
-+		link_ = media->link("dcmipp_main_isp", 1, "dcmipp_aux_postproc", 0);
++		link_ = media->link("dcmipp_main_isp", 2, "dcmipp_aux_postproc", 0);
 +		if (!link_)
 +			return false;
 +		input_source_pad_ = 3;
@@ -9126,35 +9245,20 @@ index 00000000..0f07485a
 +} /* namespace libcamera */
 diff --git a/src/libcamera/pipeline/dcmipp/meson.build b/src/libcamera/pipeline/dcmipp/meson.build
 new file mode 100644
-index 00000000..4f1555d9
+index 000000000..1cf6ebb43
 --- /dev/null
 +++ b/src/libcamera/pipeline/dcmipp/meson.build
 @@ -0,0 +1,5 @@
 +# SPDX-License-Identifier: CC0-1.0
 +
-+libcamera_sources += files([
++libcamera_internal_sources += files([
 +    'dcmipp.cpp', 'dcmipp_path.cpp'
 +])
-diff --git a/src/libcamera/sensor/camera_sensor_properties.cpp b/src/libcamera/sensor/camera_sensor_properties.cpp
-index b18524d8..1b2a29ae 100644
---- a/src/libcamera/sensor/camera_sensor_properties.cpp
-+++ b/src/libcamera/sensor/camera_sensor_properties.cpp
-@@ -267,6 +267,10 @@ const CameraSensorProperties *CameraSensorProperties::get(const std::string &sen
- 				{ controls::draft::TestPatternModeColorBars, 1 },
- 			},
- 		} },
-+		{ "vd56g3", {
-+			.unitCellSize = { 2610, 2610 },
-+			.testPatternModes = {},
-+		} },
- 	};
- 
- 	const auto it = sensorProps.find(sensor);
 diff --git a/src/libcamera/v4l2_device.cpp b/src/libcamera/v4l2_device.cpp
-index 4a2048cf..3131243a 100644
+index b49d73b1c..265e5042a 100644
 --- a/src/libcamera/v4l2_device.cpp
 +++ b/src/libcamera/v4l2_device.cpp
-@@ -334,7 +334,13 @@ int V4L2Device::setControls(ControlList *ctrls)
+@@ -386,7 +386,13 @@ int V4L2Device::setControls(ControlList *ctrls, const V4L2Request *request)
  
  		default:
  			/* \todo To be changed to support strings. */
@@ -9169,7 +9273,7 @@ index 4a2048cf..3131243a 100644
  			break;
  		}
  	}
-@@ -553,9 +559,13 @@ std::optional<ControlInfo> V4L2Device::v4l2ControlInfo(const v4l2_query_ext_ctrl
+@@ -657,9 +663,13 @@ std::optional<ControlInfo> V4L2Device::v4l2ControlInfo(const v4l2_query_ext_ctrl
  		return v4l2MenuControlInfo(ctrl);
  
  	default:
@@ -9186,7 +9290,7 @@ index 4a2048cf..3131243a 100644
  	}
  }
  
-@@ -627,6 +637,8 @@ void V4L2Device::listControls()
+@@ -733,6 +743,8 @@ void V4L2Device::listControls()
  			break;
  		/* \todo Support other control types. */
  		default:
