@@ -1,0 +1,40 @@
+From 25ff2e96eb3dc5d2b416f4f6982dee9d5927e8f0 Mon Sep 17 00:00:00 2001
+From: Christophe Priouzeau <christophe.priouzeau@foss.st.com>
+Date: Tue, 18 Feb 2025 15:09:02 +0100
+Subject: [PATCH 08/22] v4l2codecs: format: Add UYVY format support
+
+Add UYVY pixel format support.
+
+Upstream-Status: Pending
+---
+ sys/v4l2codecs/gstv4l2format.c | 1 +
+ sys/v4l2codecs/gstv4l2format.h | 1 +
+ 2 files changed, 2 insertions(+)
+
+diff --git a/sys/v4l2codecs/gstv4l2format.c b/sys/v4l2codecs/gstv4l2format.c
+index 6a1207b..38051b9 100644
+--- a/sys/v4l2codecs/gstv4l2format.c
++++ b/sys/v4l2codecs/gstv4l2format.c
+@@ -50,6 +50,7 @@ static const GstV4l2FormatDesc gst_v4l2_descriptions[] = {
+   {V4L2_PIX_FMT_NV15,             GST_VIDEO_FORMAT_NV12_10LE40,     DRM_FORMAT_INVALID, DRM_FORMAT_MOD_INVALID, 0},
+   {V4L2_PIX_FMT_P010,             GST_VIDEO_FORMAT_P010_10LE,       DRM_FORMAT_INVALID, DRM_FORMAT_MOD_INVALID, 0},
+   {V4L2_PIX_FMT_YUYV,             GST_VIDEO_FORMAT_YUY2,            DRM_FORMAT_INVALID, DRM_FORMAT_MOD_INVALID, 0},
++  {V4L2_PIX_FMT_UYVY,             GST_VIDEO_FORMAT_UYVY,            DRM_FORMAT_INVALID, DRM_FORMAT_MOD_INVALID, 0},
+   {V4L2_PIX_FMT_MM21,             GST_VIDEO_FORMAT_NV12_16L32S,     DRM_FORMAT_INVALID, DRM_FORMAT_MOD_INVALID, 0},
+   {V4L2_PIX_FMT_SUNXI_TILED_NV12, GST_VIDEO_FORMAT_NV12_32L32,      DRM_FORMAT_INVALID, DRM_FORMAT_MOD_INVALID, 0},
+   {V4L2_PIX_FMT_NV12_4L4,         GST_VIDEO_FORMAT_NV12_4L4,        DRM_FORMAT_INVALID, DRM_FORMAT_MOD_INVALID, 0},
+diff --git a/sys/v4l2codecs/gstv4l2format.h b/sys/v4l2codecs/gstv4l2format.h
+index 4012d7d..98583ff 100644
+--- a/sys/v4l2codecs/gstv4l2format.h
++++ b/sys/v4l2codecs/gstv4l2format.h
+@@ -36,6 +36,7 @@
+     "NV12_10LE40, " \
+     "P010_10LE, " \
+     "YUY2, " \
++    "UYVY, " \
+     "NV12_16L32S, " \
+     "NV12_32L32, " \
+     "NV12_4L4, " \
+-- 
+2.43.0
+

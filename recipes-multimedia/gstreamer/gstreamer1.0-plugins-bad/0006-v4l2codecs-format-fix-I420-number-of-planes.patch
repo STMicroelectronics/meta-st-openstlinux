@@ -1,0 +1,28 @@
+From e76e1d24d4ebafd1738ba75d7fda2a083ce47687 Mon Sep 17 00:00:00 2001
+From: Hugues Fruchet <hugues.fruchet@foss.st.com>
+Date: Thu, 29 Jan 2026 17:43:52 +0100
+Subject: [PATCH 06/22] v4l2codecs: format: fix I420 number of planes
+
+I420 has 3 planes.
+
+Upstream-Status: Pending
+---
+ sys/v4l2codecs/gstv4l2format.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/sys/v4l2codecs/gstv4l2format.c b/sys/v4l2codecs/gstv4l2format.c
+index 717c791..fe584fe 100644
+--- a/sys/v4l2codecs/gstv4l2format.c
++++ b/sys/v4l2codecs/gstv4l2format.c
+@@ -55,7 +55,7 @@ static const GstV4l2FormatDesc gst_v4l2_descriptions[] = {
+   {V4L2_PIX_FMT_NV12_4L4,         GST_VIDEO_FORMAT_NV12_4L4,        DRM_FORMAT_INVALID, DRM_FORMAT_MOD_INVALID, 0},
+   {V4L2_PIX_FMT_NC12,             GST_VIDEO_FORMAT_UNKNOWN,         DRM_FORMAT_NV12,    DRM_FORMAT_MOD_BROADCOM_SAND128, 2},
+   {V4L2_PIX_FMT_NV12,             GST_VIDEO_FORMAT_NV12,            DRM_FORMAT_INVALID, DRM_FORMAT_MOD_INVALID, 0},
+-  {V4L2_PIX_FMT_YUV420M,          GST_VIDEO_FORMAT_I420,            DRM_FORMAT_INVALID, DRM_FORMAT_MOD_INVALID, 0},
++  {V4L2_PIX_FMT_YUV420M,          GST_VIDEO_FORMAT_I420,            DRM_FORMAT_INVALID, DRM_FORMAT_MOD_INVALID, 3},
+ };
+ /* *INDENT-ON* */
+ #define GST_V4L2_FORMAT_DESC_COUNT (G_N_ELEMENTS (gst_v4l2_descriptions))
+-- 
+2.43.0
+

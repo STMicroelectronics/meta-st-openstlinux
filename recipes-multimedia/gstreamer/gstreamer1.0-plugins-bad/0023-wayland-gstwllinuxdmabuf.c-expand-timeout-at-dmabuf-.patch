@@ -1,0 +1,28 @@
+From 88129541005fb8b2a13f642ca304327d0a2eab16 Mon Sep 17 00:00:00 2001
+From: Florian LEPELTIER <florian.lepeltier@st.com>
+Date: Mon, 14 Sep 2026 09:25:52 +0200
+Subject: [PATCH] wayland/gstwllinuxdmabuf.c: expand timeout at dmabuf request
+
+Since Gstreamer 1.28.2 and Weston 15.0 there is an overhead in the time needed to create dmabuf between waylandsink and weston which sometimes lasts more than 1 second.
+Increase to 3 seconds allows those very specific dmabuf to be created without penalty on the pipeline. If really the buffer must timeout it will fire after 3 seconds.
+
+Upstream-Status: Inappropriate
+---
+ gst-libs/gst/wayland/gstwllinuxdmabuf.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/gst-libs/gst/wayland/gstwllinuxdmabuf.c b/gst-libs/gst/wayland/gstwllinuxdmabuf.c
+index cb77324..2ee4992 100644
+--- a/gst-libs/gst/wayland/gstwllinuxdmabuf.c
++++ b/gst-libs/gst/wayland/gstwllinuxdmabuf.c
+@@ -190,7 +190,7 @@ gst_wl_linux_dmabuf_construct_wl_buffer (GstBuffer * buf,
+   /* Wait for the request answer */
+   wl_display_flush (gst_wl_display_get_display (display));
+   data.wbuf = (gpointer) 0x1;
+-  timeout = g_get_monotonic_time () + G_TIME_SPAN_SECOND;
++  timeout = g_get_monotonic_time () + 3*G_TIME_SPAN_SECOND;
+   while (data.wbuf == (gpointer) 0x1) {
+     if (!g_cond_wait_until (&data.cond, &data.lock, timeout)) {
+       GST_ERROR_OBJECT (mem->allocator, "zwp_linux_buffer_params_v1 time out");
+--
+2.43.0

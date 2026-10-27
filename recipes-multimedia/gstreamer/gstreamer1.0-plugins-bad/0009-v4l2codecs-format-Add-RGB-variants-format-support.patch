@@ -1,0 +1,63 @@
+From d95cfac3d745617f1391e65137644ac1d6907112 Mon Sep 17 00:00:00 2001
+From: Christophe Priouzeau <christophe.priouzeau@foss.st.com>
+Date: Wed, 26 Jun 2024 16:35:46 +0200
+Subject: [PATCH 09/22] v4l2codecs: format: Add RGB variants format support
+
+Add support RGB pixel format support in 16 bits and 32 bits:
+- RGB16
+- BGRx/A
+- RGBx/A
+- A/xBGR
+- A/xRGB
+
+Upstream-Status: Pending
+---
+ sys/v4l2codecs/gstv4l2format.c | 11 +++++++++++
+ sys/v4l2codecs/gstv4l2format.h |  9 +++++++++
+ 2 files changed, 20 insertions(+)
+
+diff --git a/sys/v4l2codecs/gstv4l2format.c b/sys/v4l2codecs/gstv4l2format.c
+index 38051b9..843fe69 100644
+--- a/sys/v4l2codecs/gstv4l2format.c
++++ b/sys/v4l2codecs/gstv4l2format.c
+@@ -58,6 +58,17 @@ static const GstV4l2FormatDesc gst_v4l2_descriptions[] = {
+   {V4L2_PIX_FMT_NV12M,            GST_VIDEO_FORMAT_NV12,            DRM_FORMAT_INVALID, DRM_FORMAT_MOD_INVALID, 2},
+   {V4L2_PIX_FMT_NV12,             GST_VIDEO_FORMAT_NV12,            DRM_FORMAT_INVALID, DRM_FORMAT_MOD_INVALID, 0},
+   {V4L2_PIX_FMT_YUV420M,          GST_VIDEO_FORMAT_I420,            DRM_FORMAT_INVALID, DRM_FORMAT_MOD_INVALID, 3},
++  {V4L2_PIX_FMT_RGB565,           GST_VIDEO_FORMAT_RGB16,           DRM_FORMAT_INVALID, DRM_FORMAT_MOD_INVALID, 0},
++  {V4L2_PIX_FMT_XBGR32,           GST_VIDEO_FORMAT_BGRx,            DRM_FORMAT_INVALID, DRM_FORMAT_MOD_INVALID, 0},
++  {V4L2_PIX_FMT_ABGR32,           GST_VIDEO_FORMAT_BGRA,            DRM_FORMAT_INVALID, DRM_FORMAT_MOD_INVALID, 0},
++  {V4L2_PIX_FMT_BGR32,            GST_VIDEO_FORMAT_BGRx,            DRM_FORMAT_INVALID, DRM_FORMAT_MOD_INVALID, 0},
++  {V4L2_PIX_FMT_RGBX32,           GST_VIDEO_FORMAT_RGBx,            DRM_FORMAT_INVALID, DRM_FORMAT_MOD_INVALID, 0},
++  {V4L2_PIX_FMT_RGBA32,           GST_VIDEO_FORMAT_RGBA,            DRM_FORMAT_INVALID, DRM_FORMAT_MOD_INVALID, 0},
++  {V4L2_PIX_FMT_BGRX32,           GST_VIDEO_FORMAT_xBGR,            DRM_FORMAT_INVALID, DRM_FORMAT_MOD_INVALID, 0},
++  {V4L2_PIX_FMT_BGRA32,           GST_VIDEO_FORMAT_ABGR,            DRM_FORMAT_INVALID, DRM_FORMAT_MOD_INVALID, 0},
++  {V4L2_PIX_FMT_XRGB32,           GST_VIDEO_FORMAT_xRGB,            DRM_FORMAT_INVALID, DRM_FORMAT_MOD_INVALID, 0},
++  {V4L2_PIX_FMT_ARGB32,           GST_VIDEO_FORMAT_ARGB,            DRM_FORMAT_INVALID, DRM_FORMAT_MOD_INVALID, 0},
++  {V4L2_PIX_FMT_RGB32,            GST_VIDEO_FORMAT_xRGB,            DRM_FORMAT_INVALID, DRM_FORMAT_MOD_INVALID, 0},
+ };
+ /* *INDENT-ON* */
+ #define GST_V4L2_FORMAT_DESC_COUNT (G_N_ELEMENTS (gst_v4l2_descriptions))
+diff --git a/sys/v4l2codecs/gstv4l2format.h b/sys/v4l2codecs/gstv4l2format.h
+index 98583ff..a08f345 100644
+--- a/sys/v4l2codecs/gstv4l2format.h
++++ b/sys/v4l2codecs/gstv4l2format.h
+@@ -42,6 +42,15 @@
+     "NV12_4L4, " \
+     "NV12, " \
+     "I420, " \
++    "RGB16, " \
++    "BGRx, " \
++    "BGRA, " \
++    "RGBx, " \
++    "RGBA, " \
++    "xBGR, " \
++    "ABGR, " \
++    "xRGB," \
++    "ARGB," \
+     "}"
+ 
+ 
+-- 
+2.43.0
+

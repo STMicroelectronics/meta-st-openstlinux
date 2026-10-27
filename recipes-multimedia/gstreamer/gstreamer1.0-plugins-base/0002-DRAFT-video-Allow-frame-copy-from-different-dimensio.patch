@@ -1,6 +1,6 @@
-From 4e3dc15635d1a3fbd49fca2c5478bd10623fac7d Mon Sep 17 00:00:00 2001
-From: Nicolas Dufresne <nicolas.dufresne@collabora.com>
-Date: Mon, 6 Nov 2023 16:35:47 -0500
+From b489bd5d7837cb1bac22a61abb5a78cc7b5a3461 Mon Sep 17 00:00:00 2001
+From: Christophe Priouzeau <christophe.priouzeau@foss.st.com>
+Date: Fri, 10 Apr 2026 15:19:27 +0200
 Subject: [PATCH] DRAFT: video: Allow frame copy from different dimensions
 
 This removes the limitation regarding the frame dimensions when copying.
@@ -14,14 +14,14 @@ TODO:
 
 Upstream-Status: Backport
 ---
- gst-libs/gst/video/video-frame.c | 19 +++++++------------
- 1 file changed, 7 insertions(+), 12 deletions(-)
+ gst-libs/gst/video/video-frame.c | 17 ++++++-----------
+ 1 file changed, 6 insertions(+), 11 deletions(-)
 
 diff --git a/gst-libs/gst/video/video-frame.c b/gst-libs/gst/video/video-frame.c
-index bfb57e4..787af67 100644
+index dabd8dd..d092de2 100644
 --- a/gst-libs/gst/video/video-frame.c
 +++ b/gst-libs/gst/video/video-frame.c
-@@ -319,8 +319,6 @@ gst_video_frame_copy_plane (GstVideoFrame * dest, const GstVideoFrame * src,
+@@ -324,8 +324,6 @@ gst_video_frame_copy_plane (GstVideoFrame * dest, const GstVideoFrame * src,
  
    finfo = dinfo->finfo;
  
@@ -30,7 +30,7 @@ index bfb57e4..787af67 100644
    g_return_val_if_fail (finfo->n_planes > plane, FALSE);
  
    sp = src->data[plane];
-@@ -333,15 +331,19 @@ gst_video_frame_copy_plane (GstVideoFrame * dest, const GstVideoFrame * src,
+@@ -338,15 +336,18 @@ gst_video_frame_copy_plane (GstVideoFrame * dest, const GstVideoFrame * src,
    }
  
    gst_video_format_info_component (finfo, plane, comp);
@@ -39,7 +39,6 @@ index bfb57e4..787af67 100644
 +  w = MIN (GST_VIDEO_FRAME_COMP_WIDTH (dest, comp[0]),
 +      GST_VIDEO_FRAME_COMP_WIDTH (src, comp[0])) *
 +      GST_VIDEO_FRAME_COMP_PSTRIDE (dest, comp[0]);
-+
 +
    /* FIXME: workaround for complex formats like v210, UYVP and IYU1 that have
     * pstride == 0 */
@@ -53,11 +52,11 @@ index bfb57e4..787af67 100644
  
    ss = GST_VIDEO_INFO_PLANE_STRIDE (sinfo, plane);
    ds = GST_VIDEO_INFO_PLANE_STRIDE (dinfo, plane);
-@@ -409,19 +411,12 @@ gboolean
+@@ -419,19 +420,13 @@ gboolean
  gst_video_frame_copy (GstVideoFrame * dest, const GstVideoFrame * src)
  {
    guint i, n_planes;
--  const GstVideoInfo *sinfo;
+-  const GstVideoInfo *sinfo GST_UNUSED_CHECKS;
    GstVideoInfo *dinfo;
  
    g_return_val_if_fail (dest != NULL, FALSE);
@@ -65,7 +64,7 @@ index bfb57e4..787af67 100644
  
 -  sinfo = &src->info;
    dinfo = &dest->info;
--
+ 
 -  g_return_val_if_fail (dinfo->finfo->format == sinfo->finfo->format, FALSE);
 -  g_return_val_if_fail (dinfo->width <= sinfo->width
 -      && dinfo->height <= sinfo->height, FALSE);
@@ -74,5 +73,5 @@ index bfb57e4..787af67 100644
  
    for (i = 0; i < n_planes; i++)
 -- 
-2.25.1
+2.43.0
 

@@ -1,0 +1,40 @@
+From ec6a81e0fea2f7be935855ae656a7bf895bf3ef3 Mon Sep 17 00:00:00 2001
+From: Christophe Priouzeau <christophe.priouzeau@foss.st.com>
+Date: Wed, 26 Jun 2024 16:43:02 +0200
+Subject: [PATCH 22/22] v4l2codecs: Register V4L2 H264 stateless encoder
+
+If a V4L2 H264 stateless encoder is detected, register the matching element.
+
+Upstream-Status: Pending
+---
+ sys/v4l2codecs/plugin.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/sys/v4l2codecs/plugin.c b/sys/v4l2codecs/plugin.c
+index b14be33..0e31502 100644
+--- a/sys/v4l2codecs/plugin.c
++++ b/sys/v4l2codecs/plugin.c
+@@ -47,6 +47,7 @@
+ #include "gstv4l2codecav1dec.h"
+ #include "gstv4l2codecdevice.h"
+ #include "gstv4l2codech264dec.h"
++#include "gstv4l2codech264enc.h"
+ #include "gstv4l2codech265dec.h"
+ #include "gstv4l2codecmpeg2dec.h"
+ #include "gstv4l2codecvp8dec.h"
+@@ -141,6 +142,12 @@ register_video_encoder (GstPlugin * plugin, GstV4l2CodecDevice * device)
+         gst_v4l2_codec_vp8_enc_register (plugin, encoder, device,
+             GST_RANK_PRIMARY + 1);
+         break;
++      case V4L2_PIX_FMT_H264_SLICE:
++        GST_INFO_OBJECT (encoder, "Registering %s as H264 Encoder",
++            device->name);
++        gst_v4l2_codec_h264_enc_register (plugin, encoder, device,
++            GST_RANK_PRIMARY + 1);
++        break;
+       default:
+         GST_FIXME_OBJECT (encoder, "%" GST_FOURCC_FORMAT " is not supported.",
+             GST_FOURCC_ARGS (fmt));
+-- 
+2.43.0
+

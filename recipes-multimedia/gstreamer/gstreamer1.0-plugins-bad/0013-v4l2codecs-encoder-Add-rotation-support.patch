@@ -1,0 +1,111 @@
+From baf45781815a72a5fc91ff71063a7c79778e09ff Mon Sep 17 00:00:00 2001
+From: Hugues Fruchet <hugues.fruchet@foss.st.com>
+Date: Tue, 12 Mar 2024 15:27:33 +0100
+Subject: [PATCH 13/22] v4l2codecs: encoder: Add rotation support
+
+Add rotation support based on V4L2_CID_ROTATE control.
+90 and 270 degrees rotation requires swap of src width & height
+which must be take into account when allocating src pool.
+
+Upstream-Status: Pending
+---
+ sys/v4l2codecs/gstv4l2encoder.c | 41 +++++++++++++++++++++++++++++++++
+ 1 file changed, 41 insertions(+)
+
+diff --git a/sys/v4l2codecs/gstv4l2encoder.c b/sys/v4l2codecs/gstv4l2encoder.c
+index 2599d7b..2d62215 100644
+--- a/sys/v4l2codecs/gstv4l2encoder.c
++++ b/sys/v4l2codecs/gstv4l2encoder.c
+@@ -44,6 +44,7 @@ enum
+   PROP_0,
+   PROP_MEDIA_DEVICE,
+   PROP_VIDEO_DEVICE,
++  PROP_ROTATION,
+ };
+ 
+ struct _GstV4l2Request
+@@ -95,6 +96,7 @@ struct _GstV4l2Encoder
+   gchar *media_device;
+   gchar *video_device;
+   guint render_delay;
++  guint rotation;
+ 
+   /* detected features */
+   gboolean supports_holding_capture;
+@@ -687,6 +689,29 @@ gst_v4l2_encoder_set_src_fmt (GstV4l2Encoder * self, GstVideoInfo * info,
+   gint width = info->width;
+   gint height = info->height;
+ 
++  /* Apply rotation, this will affect src width/height */
++  if (self->rotation) {
++    struct v4l2_control ctl = { 0, };
++
++    ctl.id = V4L2_CID_ROTATE;
++    ctl.value = self->rotation;
++    ret = ioctl (self->video_fd, VIDIOC_S_CTRL, &ctl);
++    if (ret < 0) {
++      GST_ERROR_OBJECT (self, "VIDIOC_S_CTRL failed: %s", g_strerror (errno));
++      return FALSE;
++    }
++
++    if (self->rotation == 90 || self->rotation == 270) {
++      /*
++       * Swap width & height, this will trigger a call
++       * to S_FMT to let driver know the final
++       * rotated resolution
++       */
++      width = info->height;
++      height = info->width;
++    }
++  }
++
+   ret = ioctl (self->video_fd, VIDIOC_G_FMT, &fmt);
+   if (ret < 0) {
+     GST_ERROR_OBJECT (self, "VIDIOC_G_FMT failed: %s", g_strerror (errno));
+@@ -720,6 +745,10 @@ gst_v4l2_encoder_set_src_fmt (GstV4l2Encoder * self, GstVideoInfo * info,
+     return FALSE;
+   }
+ 
++  /* Stick to driver negotiated resolution */
++  info->width = fmt.fmt.pix_mp.width;
++  info->height = fmt.fmt.pix_mp.height;
++
+   return TRUE;
+ }
+ 
+@@ -1116,6 +1145,12 @@ gst_v4l2_encoder_install_properties (GObjectClass * gobject_class,
+       g_param_spec_string ("video-device", "Video Device Path",
+           "Path to the video device node", video_device_path,
+           G_PARAM_CONSTRUCT_ONLY | G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
++
++  g_object_class_install_property (gobject_class, PROP_ROTATION,
++      g_param_spec_uint ("rotation", "Rotation",
++          "Set rotation angle in degrees",
++          0, 270, 0,
++          G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS | G_PARAM_CONSTRUCT));
+ }
+ 
+ void
+@@ -1133,6 +1168,9 @@ gst_v4l2_encoder_set_property (GObject * object, guint prop_id,
+       g_free (self->video_device);
+       self->video_device = g_value_dup_string (value);
+       break;
++    case PROP_ROTATION:
++      self->rotation = g_value_get_uint (value);
++      break;
+     default:
+       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+       break;
+@@ -1152,6 +1190,9 @@ gst_v4l2_encoder_get_property (GObject * object, guint prop_id,
+     case PROP_VIDEO_DEVICE:
+       g_value_set_string (value, self->video_device);
+       break;
++    case PROP_ROTATION:
++      g_value_set_uint (value, self->rotation);
++      break;
+     default:
+       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+       break;
+-- 
+2.43.0
+
