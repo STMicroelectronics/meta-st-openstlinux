@@ -52,7 +52,10 @@ class Service(SimpleService):
         self.sysfs_start = 0
 
     def check(self):
-        if os.path.exists("/sys/kernel/debug/gc/idle"):
+        result = getpipeoutput(["lsmod", "grep -E 'galcore' | wc -l"] ).split('\n')
+        #self.error("Check: result >{}".format(result) )
+
+        if int(result[0]) > 0:
             return True
         else:
             return False
@@ -65,9 +68,10 @@ class Service(SimpleService):
         try:
             data = dict(_DATA_TEMPLATE)
 
-            if os.path.exists("/sys/kernel/debug/gc/idle"):
+            result = getpipeoutput(["lsmod", "grep -E 'galcore' | wc -l"] ).split('\n')
+            if  int(result[0]) > 0:
                 percent_data = 0.0
-                result = getpipeoutput(["cat /sys/kernel/debug/gc/idle"]).split('\n')
+                result = getpipeoutput(["sudo cat /sys/kernel/debug/gc/idle"]).split('\n')
                 for line in result:
                     parts = line.split(' ')
                     subline = " ".join(parts[1:]).replace(" ", "")

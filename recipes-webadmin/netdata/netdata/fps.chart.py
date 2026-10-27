@@ -52,11 +52,14 @@ class Service(SimpleService):
         try:
             data = dict()
 
-            result = getpipeoutput(["cat /sys/kernel/debug/dri/0/state", "grep '[pu][ls][ae][nr][e_][\[u]'"]).split('\n')
+            if os.path.exists("/dev/dri/card0"):
+                result = getpipeoutput(["sudo cat /sys/kernel/debug/dri/0/state", "grep '[pu][ls][ae][nr][e_]'" , "grep -v mask", "grep -v changed"]).split('\n')
+            else:
+                return None
             name = None
             plane_fps = None
             for line in result:
-                if re.search('plane\[', line):
+                if re.search('plane', line):
                     name = line.split('[')[1].split(']')[0]
                 if re.search('user_updates=', line):
                     plane_fps = line.split('=')[1].split('f')[0]
