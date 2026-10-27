@@ -114,8 +114,8 @@ SIMULATE_SCREEN_SIZE_HEIGHT = 480
 # -------------------------------------------------------------------
 ICON_SIZE_1080 = 260
 ICON_SIZE_720 = 180
-ICON_SIZE_480 = 128
-ICON_SIZE_272 = 64
+ICON_SIZE_480 = 120
+ICON_SIZE_272 = 56
 
 # return format:
 # [ icon_size, font_size, logo_size, exit_size, column_spacing, row_spacing ]
@@ -143,17 +143,17 @@ def get_sizes_from_screen_size(width, height):
     elif minsize == 480:
         icon_size = ICON_SIZE_480
         font_size = 15
-        logo_size = 160
+        logo_size = 156
         exit_size = 50
-        column_spacing = 10
+        column_spacing = 5
         row_spacing = 10
     elif minsize == 272:
         icon_size = ICON_SIZE_272
         font_size = 8
-        logo_size = 60
+        logo_size = 44
         exit_size = 25
-        column_spacing = 5
-        row_spacing = 5
+        column_spacing = 2
+        row_spacing = 2
     elif minsize == 600:
         icon_size = ICON_SIZE_720
         font_size = 15
@@ -169,6 +169,21 @@ def get_sizes_from_screen_size(width, height):
         column_spacing = 20
         row_spacing = 20
     return [icon_size, font_size, logo_size, exit_size, column_spacing, row_spacing]
+
+def get_screen_size(display):
+    geometry= None
+    for i in range(display.get_n_monitors()):
+        if display.get_monitor(i).get_model().find("pipewire")<0 and display.get_monitor(i).get_model().find("Virtual")<0:
+            geometry = display.get_monitor(i).get_geometry()
+            #print("debug ", display.get_monitor(i).get_geometry().width , display.get_monitor(i).get_geometry().height, display.get_monitor(i).get_model())
+    if geometry is None:
+        return 480, 800
+    x0 = geometry.x
+    y0 = geometry.y
+    x1 = geometry.x + geometry.width
+    y1 = geometry.y + geometry.height
+
+    return x1 - x0, y1 - y0
 
 # -------------------------------------------------------------------
 # -------------------------------------------------------------------
@@ -293,7 +308,7 @@ def _load_image_Box(parent, mp1filename, infofilename, label_text, scale_w, scal
     eventBox.connect("button_press_event", parent.highlight_eventBox)
 
     label3 = Gtk.Label()
-    label3.set_markup("<span font='10' color='#FFFFFFFF'><b>Python GTK launcher</b></span>\n")
+    label3.set_markup("<span font='%d' color='#FFFFFFFF'><b>Python GTK launcher</b></span>\n" % parent.font_size)
     label3.set_justify(Gtk.Justification.CENTER)
     label3.set_line_wrap(True)
 
@@ -644,25 +659,7 @@ class MainUIWindow(Gtk.Window):
             try:
                 print_debug(3, "get default screen size")
                 display = Gdk.Display.get_default()
-                monitor = display.get_primary_monitor()
-                if monitor:
-                    print_debug(3, "  get geometry from primary monitor")
-                    geometry = monitor.get_geometry()
-                    scale_factor = monitor.get_scale_factor()
-                    self.screen_width = scale_factor * geometry.width
-                    self.screen_height = scale_factor * geometry.height
-                else:
-                    print_debug(3, "  get geometry from monitors (primary monitor not set)")
-                    monitor_geometries = [
-                        display.get_monitor(i).get_geometry()
-                        for i in range(display.get_n_monitors())
-                    ]
-                    x0 = min(mg.x             for mg in monitor_geometries)
-                    y0 = min(mg.y             for mg in monitor_geometries)
-                    x1 = max(mg.x + mg.width  for mg in monitor_geometries)
-                    y1 = max(mg.y + mg.height for mg in monitor_geometries)
-                    self.screen_width  = x1 - x0
-                    self.screen_height = y1 - y0
+                self.screen_width, self.screen_height = get_screen_size(display)
             except:
                 # deprecated Gtk functions
                 self.screen_width = self.get_screen().get_width()

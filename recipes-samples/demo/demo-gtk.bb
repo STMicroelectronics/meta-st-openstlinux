@@ -10,7 +10,6 @@ SRC_URI = " \
     file://application \
     file://board \
     file://launch-demo-gtk.sh \
-    file://audio.sh \
     "
 
 S = "${UNPACKDIR}"
@@ -43,14 +42,10 @@ do_install() {
     if [ -n "$LIST" ]; then
         cp -r ${UNPACKDIR}/board/* ${D}${prefix}/local/demo/board/
     fi
-
-    # start at startup
-    install -d ${D}${prefix}/local/weston-start-at-startup/
-    install -m 0755 ${WORKDIR}/audio.sh ${D}${prefix}/local/weston-start-at-startup/
 }
 
-FILES:${PN} += "${prefix}/local/demo ${prefix}/local/weston-start-at-startup/"
+FILES:${PN} += "${prefix}/local/demo"
 
-RDEPENDS:${PN} += "python3-pygobject gtk+3 python3-resource python3-threading pulseaudio-profile"
+RDEPENDS:${PN} += "python3-pygobject gtk+3 python3-resource python3-threading"
 #since zeus
 RDEPENDS:${PN} += " python3-core "

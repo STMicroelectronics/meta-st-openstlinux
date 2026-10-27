@@ -1,6 +1,7 @@
 #!/bin/sh
 source /etc/profile.d/weston_profile.sh
 source /etc/profile.d/pulse_profile.sh
+/usr/bin/pipewire_hdmi_switch.sh
 
 # options:
 # --log_level=3 : display log with level 3
