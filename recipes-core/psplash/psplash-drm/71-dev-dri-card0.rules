@@ -1,1 +1,1 @@
-ENV{DEVNAME}=="/dev/dri/card0", DRIVERS=="stm32-display", TAG+="systemd"
+ENV{DEVNAME}=="/dev/dri/card0", DRIVERS=="stm32-display", TAG+="systemd", ENV{SYSTEMD_WANTS}+="psplash-drm-start@%k.service"

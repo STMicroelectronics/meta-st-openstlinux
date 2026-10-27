@@ -15,22 +15,21 @@ SRC_URI = " \
         file://pictures-animated \
     "
 
-SRC_URI += " file://psplash-drm-start.service file://psplash-drm-start.sh file://71-dev-dri-card0.rules"
+SRC_URI += " file://psplash-drm-start@.service file://psplash-drm-start.sh file://71-dev-dri-card0.rules"
+
 S = "${UNPACKDIR}"
 
+PV = "1.1"
 
 PROVIDES = "virtual/psplash"
 RPROVIDES:${PN} = "virtual-psplash virtual-psplash-support"
 
-inherit systemd
+inherit systemd pkgconfig
 
 SYSTEMD_PACKAGES = "${@bb.utils.contains('DISTRO_FEATURES','systemd','${PN}','',d)}"
-SYSTEMD_SERVICE:${PN} = "${@bb.utils.contains('DISTRO_FEATURES','systemd','psplash-drm-start.service ','',d)}"
-
-S = "${WORKDIR}"
+SYSTEMD_SERVICE:${PN} = "${@bb.utils.contains('DISTRO_FEATURES','systemd','psplash-drm-start@.service ','',d)}"
 
 do_configure[noexec] = "1"
-
 
 do_compile() {
     bbnote "EXTRA_OEMAKE=${EXTRA_OEMAKE}"
