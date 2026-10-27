@@ -1,0 +1,59 @@
+From 2d7d0a15b7077c52ff2cdb3295dd02d01e842c1a Mon Sep 17 00:00:00 2001
+From: Christophe Priouzeau <christophe.priouzeau@foss.st.com>
+Date: Wed, 27 May 2026 13:03:31 +0200
+Subject: [PATCH] Adapt to /etc/init.d/functions
+
+
+Upstream-Status: Inappropriate [oe specific]
+---
+ iiod/init/iiod.init.cmakein | 27 +++++++++++++++++++++------
+ 1 file changed, 21 insertions(+), 6 deletions(-)
+
+diff --git a/iiod/init/iiod.init.cmakein b/iiod/init/iiod.init.cmakein
+index 27999256..abd3c813 100644
+--- a/iiod/init/iiod.init.cmakein
++++ b/iiod/init/iiod.init.cmakein
+@@ -11,7 +11,21 @@
+ # Debian init.d script for the IIO Daemon
+ # Copyright (C) 2016 Analog Devices Inc.
+ 
+-. /lib/lsb/init-functions
++. /etc/init.d/functions
++
++log_daemon_msg() {
++    echo $*
++}
++log_end_msg() {
++    if [ "$1" = "0" ]; then
++        echo 'done'
++    else
++        echo 'error'
++    fi
++}
++log_action_msg() {
++    echo $*
++}
+ 
+ # Server-side demuxing by default
+ IIOD_OPTS=-D
+@@ -45,11 +59,12 @@ case "$1" in
+ 		;;
+ 
+ 	status)
+-		if [ -f /var/run/iiod.pid ] ; then
+-			status_of_proc -p /var/run/iiod.pid @CMAKE_INSTALL_FULL_SBINDIR@/iiod iiod && exit 0 || exit $?
+-		else
+-			status_of_proc @CMAKE_INSTALL_FULL_SBINDIR@/iiod iiod && exit 0 || exit $?
+-		fi
++		#if [ -f /var/run/iiod.pid ] ; then
++		#	status_of_proc -p /var/run/iiod.pid @CMAKE_INSTALL_FULL_SBINDIR@/iiod iiod && exit 0 || exit $?
++		#else
++		#	status_of_proc @CMAKE_INSTALL_FULL_SBINDIR@/iiod iiod && exit 0 || exit $?
++		#fi
++		status @CMAKE_INSTALL_FULL_SBINDIR@/iiod iiod && exit 0 || exit $?
+ 		;;
+ 
+ 	*)
+-- 
+2.43.0
+
