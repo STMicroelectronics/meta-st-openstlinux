@@ -3,11 +3,13 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
 SRC_URI += " \
     file://weston-apt \
+    file://netdata \
 "
 
 # whole ${sysconfdir} goes to package sudo-lib
 CONFFILES:${PN}-lib:append = " \
     ${sysconfdir}/sudoers.d/weston-apt \
+    ${sysconfdir}/sudoers.d/netdata \
 "
 
 do_install:append() {
