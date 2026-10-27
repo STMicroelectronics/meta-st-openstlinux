@@ -1,0 +1,39 @@
+From 2d2cc4be31a36538a705894b033771db942632dc Mon Sep 17 00:00:00 2001
+From: Florian LEPELTIER <florian.lepeltier@st.com>
+Date: Tue, 11 Aug 2026 17:39:40 +0200
+Subject: [PATCH] cubepp: update wayland message protocol management to reflect
+ cube.c
+Upstream-Status: Inappropriate [specific ST]
+
+---
+ cube/cube.cpp | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+diff --git a/cube/cube.cpp b/cube/cube.cpp
+index de411cfa..00b9503d 100644
+--- a/cube/cube.cpp
++++ b/cube/cube.cpp
+@@ -3406,10 +3406,21 @@ void Demo::create_window<WsiPlatform::xcb>() {
+ template <>
+ void Demo::run<WsiPlatform::wayland>() {
+     while (!quit) {
++        // Flush queued requests to the compositor before handling events.
++        wl_display_flush(wayland_display);
++
+         if (pause) {
+             wl_display_dispatch(wayland_display);
+         } else {
++            // Keep dispatching already-queued events until we can prepare for a blocking read.
++            while (wl_display_prepare_read(wayland_display) != 0) {
++                wl_display_dispatch_pending(wayland_display);
++            }
++
++            // Read from the Wayland socket, then dispatch what we just received.
++            wl_display_read_events(wayland_display);
+             wl_display_dispatch_pending(wayland_display);
++
+             if (initialized && swapchain_ready) {
+                 draw();
+                 if (!is_minimized) {
+--
+2.43.0
