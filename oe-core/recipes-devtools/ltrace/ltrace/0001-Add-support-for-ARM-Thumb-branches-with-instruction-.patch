@@ -8,6 +8,8 @@ This is issue has been detected on OpenSTLinux 2019-10-09, where
 ltrace failed to single-step on a "bx lr" instruction when tracing
 weston-simple-egl.
 ---
+Upstream-Status: Inappropriate [specific to ST boards]
+
  sysdeps/linux-gnu/arm/trace.c | 8 ++++++++
  1 file changed, 8 insertions(+)
 
