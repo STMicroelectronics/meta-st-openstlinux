@@ -15,10 +15,13 @@ SRC_URI = " \
     file://120-3d-cube-pictures-shader.yaml \
     file://launch_cube_3D_1_picture_shader.sh \
     file://launch_cube_3D_3_pictures_shader.sh \
+    file://launch_cube_3D_camera.sh \
+    file://launch_cube_3D_camera_shader.sh \
     file://launch_cube_3D_color.sh \
     file://launch_cube_3D_color_shader.sh \
     file://launch_cube_3D_video.sh \
     file://launch_cube_3D_video_shader.sh \
+    file://check_presence_gpu.sh \
     file://ST153_cube_purple.png \
     file://ST20578_Label_OpenSTlinux_V.png \
     file://ST13028_Linux_picto_13.png \

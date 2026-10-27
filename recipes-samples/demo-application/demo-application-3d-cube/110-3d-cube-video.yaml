@@ -7,7 +7,7 @@ Application:
     Type: script
     Script:
         Exist:
-            File: /dev/galcore
+            Command: /usr/local/demo/application/3d-cube/bin/check_presence_gpu.sh
             Msg_false: No GCNANO GPU STACK capabilities to run 3D GPU demo
         Start: application/3d-cube-extra/bin/launch_cube_3D_video.sh
     Action:
