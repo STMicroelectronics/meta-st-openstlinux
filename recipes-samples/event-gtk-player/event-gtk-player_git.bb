@@ -12,7 +12,7 @@ DEPENDS += "gstreamer1.0 gstreamer1.0-plugins-base gstreamer1.0-plugins-bad gtk+
 
 inherit meson pkgconfig
 
-S = "${WORKDIR}/git/touch-event-gtk-player"
+S = "${UNPACKDIR}/${BP}/touch-event-gtk-player"
 
 do_install () {
 	install -d ${D}${prefix}/local/demo/bin

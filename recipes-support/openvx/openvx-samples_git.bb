@@ -11,8 +11,6 @@ SRC_URI = "git://github.com/KhronosGroup/openvx-samples.git;protocol=https;branc
 PV = "1.0+git${SRCPV}"
 SRCREV = "458c983626ed2d574ccd1058a203f999e132131e"
 
-S = "${WORKDIR}/git"
-
 inherit cmake features_check
 
 REQUIRED_MACHINE_FEATURES = "openvx"

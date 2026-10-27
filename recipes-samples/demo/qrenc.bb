@@ -12,7 +12,7 @@ SRC_URI = " file://qrenc.c \
             file://Makefile \
           "
 
-S = "${WORKDIR}"
+S = "${UNPACKDIR}"
 
 do_install() {
     install -d ${D}${prefix}/bin/

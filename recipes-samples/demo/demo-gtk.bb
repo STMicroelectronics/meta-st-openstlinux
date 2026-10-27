@@ -13,6 +13,8 @@ SRC_URI = " \
     file://audio.sh \
     "
 
+S = "${UNPACKDIR}"
+
 PV = "2.2"
 
 do_configure[noexec] = "1"
@@ -26,20 +28,20 @@ do_install() {
     install -d ${D}${prefix}/local/demo/application
     install -d ${D}${prefix}/local/demo/board
 
-    install -m 0755 ${WORKDIR}/demo_launcher.py ${D}${prefix}/local/demo/
-    install -m 0755 ${WORKDIR}/launch-demo-gtk.sh ${D}${prefix}/local/demo/
+    install -m 0755 ${UNPACKDIR}/demo_launcher.py ${D}${prefix}/local/demo/
+    install -m 0755 ${UNPACKDIR}/launch-demo-gtk.sh ${D}${prefix}/local/demo/
 
-    LIST=$(ls ${WORKDIR}/pictures/*)
+    LIST=$(ls ${UNPACKDIR}/pictures/*)
     if [ -n "$LIST" ]; then
-        install -m 0644 ${WORKDIR}/pictures/* ${D}${prefix}/local/demo/pictures/
+        install -m 0644 ${UNPACKDIR}/pictures/* ${D}${prefix}/local/demo/pictures/
     fi
-    LIST=$(ls ${WORKDIR}/application/*)
+    LIST=$(ls ${UNPACKDIR}/application/*)
     if [ -n "$LIST" ]; then
-        cp -r ${WORKDIR}/application/* ${D}${prefix}/local/demo/application/
+        cp -r ${UNPACKDIR}/application/* ${D}${prefix}/local/demo/application/
     fi
-    LIST=$(ls ${WORKDIR}/board/*)
+    LIST=$(ls ${UNPACKDIR}/board/*)
     if [ -n "$LIST" ]; then
-        cp -r ${WORKDIR}/board/* ${D}${prefix}/local/demo/board/
+        cp -r ${UNPACKDIR}/board/* ${D}${prefix}/local/demo/board/
     fi
 
     # start at startup

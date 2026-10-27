@@ -10,7 +10,7 @@ RDEPENDS:${PN} += " apt "
 
 SRC_URI = " file://userfs-cleanup-package.service  file://userfs-cleanup-package.sh"
 
-S = "${WORKDIR}/git"
+S = "${UNPACKDIR}"
 
 inherit systemd update-rc.d
 
@@ -22,11 +22,11 @@ SYSTEMD_AUTO_ENABLE:${PN} = "${@bb.utils.contains('ST_USERFS', '1', 'enable', 'd
 
 do_install() {
     install -d ${D}${systemd_unitdir}/system ${D}${base_sbindir}
-    install -m 0644 ${WORKDIR}/userfs-cleanup-package.service ${D}${systemd_unitdir}/system
-    install -m 0755 ${WORKDIR}/userfs-cleanup-package.sh ${D}${base_sbindir}
+    install -m 0644 ${UNPACKDIR}/userfs-cleanup-package.service ${D}${systemd_unitdir}/system
+    install -m 0755 ${UNPACKDIR}/userfs-cleanup-package.sh ${D}${base_sbindir}
 
     install -d ${D}${sysconfdir}/init.d
-    install -m 0755 ${WORKDIR}/userfs-cleanup-package.sh ${D}${sysconfdir}/init.d/userfs-cleanup-package.sh
+    install -m 0755 ${UNPACKDIR}/userfs-cleanup-package.sh ${D}${sysconfdir}/init.d/userfs-cleanup-package.sh
 
     sed -i -e "s:@sbindir@:${base_sbindir}:; s:@sysconfdir@:${sysconfdir}:" ${D}${sysconfdir}/init.d/userfs-cleanup-package.sh
     sed -i -e "s:@sbindir@:${base_sbindir}:; s:@sysconfdir@:${sysconfdir}:" ${D}${systemd_unitdir}/system/userfs-cleanup-package.service

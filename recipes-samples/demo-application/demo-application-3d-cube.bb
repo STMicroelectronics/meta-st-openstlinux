@@ -31,6 +31,8 @@ SRC_URI = " \
     file://cube_3d.png \
     "
 
+S = "${UNPACKDIR}"
+
 do_configure[noexec] = "1"
 do_compile[noexec] = "1"
 
@@ -43,22 +45,23 @@ do_install() {
 
     # desktop application
     install -d ${D}${datadir}/applications
-    install -m 0644 ${WORKDIR}/cube_3d.desktop ${D}${datadir}/applications
+    install -m 0644 ${UNPACKDIR}/cube_3d.desktop ${D}${datadir}/applications
 
     # picture for desktop application
     install -d ${D}${datadir}/pixmaps
-    install -m 0644 ${WORKDIR}/cube_3d.png ${D}${datadir}/pixmaps
+    install -m 0644 ${UNPACKDIR}/cube_3d.png ${D}${datadir}/pixmaps
 
     # install yaml file
-    install -m 0644 ${WORKDIR}/*.yaml ${D}${prefix}/local/demo/gtk-application/
+    install -m 0644 ${UNPACKDIR}/*.yaml ${D}${prefix}/local/demo/gtk-application/
 
     # install bin
-    install -m 0755 ${WORKDIR}/*.sh ${D}${prefix}/local/demo/application/3d-cube-extra/bin
-    install -m 0755 ${WORKDIR}/launch_cube_3D.sh ${D}${prefix}/local/demo/application/3d-cube/bin
+    install -m 0755 ${UNPACKDIR}/*.sh ${D}${prefix}/local/demo/application/3d-cube-extra/bin
+    install -m 0755 ${UNPACKDIR}/launch_cube_3D.sh ${D}${prefix}/local/demo/application/3d-cube/bin
+    install -m 0755 ${UNPACKDIR}/check_presence_gpu.sh ${D}${prefix}/local/demo/application/3d-cube/bin
 
     # install pictures
-    install -m 0644 ${WORKDIR}/*.png ${D}${prefix}/local/demo/application/3d-cube-extra/pictures
-    install -m 0644 ${WORKDIR}/*.png ${D}${prefix}/local/demo/application/3d-cube/pictures
+    install -m 0644 ${UNPACKDIR}/*.png ${D}${prefix}/local/demo/application/3d-cube-extra/pictures
+    install -m 0644 ${UNPACKDIR}/*.png ${D}${prefix}/local/demo/application/3d-cube/pictures
 }
 
 PACKAGES += "${PN}-extra"

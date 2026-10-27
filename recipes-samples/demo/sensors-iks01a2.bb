@@ -11,6 +11,8 @@ SRC_URI = " \
     file://README.txt\
     "
 
+S = "${UNPACKDIR}"
+
 do_configure[noexec] = "1"
 do_compile[noexec] = "1"
 
@@ -18,10 +20,10 @@ do_install() {
     install -d ${D}${prefix}/local/demo/pictures
 
 
-    install -m 0755 ${WORKDIR}/sensors_temperature.py ${D}${prefix}/local/demo/
+    install -m 0755 ${UNPACKDIR}/sensors_temperature.py ${D}${prefix}/local/demo/
 
-    install -m 0644 ${WORKDIR}/pictures/* ${D}${prefix}/local/demo/pictures
-    install -m 0644 ${WORKDIR}/README.txt ${D}${prefix}/local/demo/README_sensor_iks01a2.txt
+    install -m 0644 ${UNPACKDIR}/pictures/* ${D}${prefix}/local/demo/pictures
+    install -m 0644 ${UNPACKDIR}/README.txt ${D}${prefix}/local/demo/README_sensor_iks01a2.txt
 }
 
 FILES:${PN} += "${prefix}/local/demo/"

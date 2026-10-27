@@ -16,6 +16,8 @@ SRC_URI = " \
     "
 
 SRC_URI += " file://psplash-drm-start.service file://psplash-drm-start.sh file://71-dev-dri-card0.rules"
+S = "${UNPACKDIR}"
+
 
 PROVIDES = "virtual/psplash"
 RPROVIDES:${PN} = "virtual-psplash virtual-psplash-support"
@@ -37,20 +39,20 @@ do_compile() {
 }
 do_install() {
     install -d ${D}${bindir}
-    install -m 755 ${WORKDIR}/psplash-drm ${D}${bindir}
+    install -m 755 ${S}/psplash-drm ${D}${bindir}
 
-    install -m 755 ${WORKDIR}/psplash-drm-quit ${D}${bindir}
+    install -m 755 ${S}/psplash-drm-quit ${D}${bindir}
 
     if ${@bb.utils.contains('DISTRO_FEATURES','systemd','true','false',d)}; then
         install -d ${D}${systemd_unitdir}/system ${D}${datadir}/splashscreen ${D}${sysconfdir}/udev/rules.d/
-        install -m 644 ${WORKDIR}/*.service ${D}/${systemd_unitdir}/system
-        install -m 755 ${WORKDIR}/psplash-drm-start.sh ${D}/${bindir}
-        install -m 644 ${WORKDIR}/pictures/* ${D}${datadir}/splashscreen/
-        install -m 644 ${WORKDIR}/71-dev-dri-card0.rules ${D}${sysconfdir}/udev/rules.d/
+        install -m 644 ${S}/*.service ${D}/${systemd_unitdir}/system
+        install -m 755 ${S}/psplash-drm-start.sh ${D}/${bindir}
+        install -m 644 ${S}/pictures/* ${D}${datadir}/splashscreen/
+        install -m 644 ${S}/71-dev-dri-card0.rules ${D}${sysconfdir}/udev/rules.d/
 
         # extra animation
         install -d ${D}${prefix}/local/splashscreen/animated
-        install -m 644 ${WORKDIR}/pictures-animated/* ${D}${prefix}/local/splashscreen/animated/
+        install -m 644 ${S}/pictures-animated/* ${D}${prefix}/local/splashscreen/animated/
     fi
 }
 PACKAGES += "${PN}-extra"

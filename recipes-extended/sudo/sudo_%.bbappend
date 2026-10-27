@@ -12,7 +12,8 @@ CONFFILES:${PN}-lib:append = " \
 
 do_install:append() {
     install -d ${D}${sysconfdir}/sudoers.d
-    install -m 0644 ${WORKDIR}/weston-apt ${D}${sysconfdir}/sudoers.d
+    install -m 0644 ${UNPACKDIR}/weston-apt ${D}${sysconfdir}/sudoers.d
+    install -m 0644 ${UNPACKDIR}/netdata ${D}${sysconfdir}/sudoers.d
 
     # for sdk purpose
     chmod 4755 ${D}${bindir}/sudo

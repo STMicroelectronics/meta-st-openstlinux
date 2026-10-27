@@ -17,8 +17,6 @@ SRCREV = "f301ee9df2129c0db683e726c91dc2cefe4cdb65"
 
 PV = "3.19.0+git${SRCPV}"
 
-S = "${WORKDIR}/git"
-
 OPTEE_CLIENT_EXPORT = "${STAGING_DIR_HOST}${prefix}"
 TEEC_EXPORT = "${STAGING_DIR_HOST}${prefix}"
 TA_DEV_KIT_DIR = "${STAGING_INCDIR}/optee/${@bb.utils.contains('TUNE_FEATURES', 'aarch64', 'export-user_ta_arm64', 'export-user_ta', d)}"

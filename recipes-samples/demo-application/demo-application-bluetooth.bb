@@ -20,6 +20,8 @@ SRC_URI = " \
     file://bluetooth_audio.png \
     "
 
+S = "${UNPACKDIR}"
+
 do_configure[noexec] = "1"
 do_compile[noexec] = "1"
 
@@ -30,20 +32,20 @@ do_install() {
 
     # desktop application
     install -d ${D}${datadir}/applications
-    install -m 0644 ${WORKDIR}/bluetooth_audio.desktop ${D}${datadir}/applications
+    install -m 0644 ${UNPACKDIR}/bluetooth_audio.desktop ${D}${datadir}/applications
 
     # picture for desktop application
     install -d ${D}${datadir}/pixmaps
-    install -m 0644 ${WORKDIR}/bluetooth_audio.png ${D}${datadir}/pixmaps
+    install -m 0644 ${UNPACKDIR}/bluetooth_audio.png ${D}${datadir}/pixmaps
 
     # install yaml file
-    install -m 0644 ${WORKDIR}/*.yaml ${D}${prefix}/local/demo/gtk-application/
+    install -m 0644 ${UNPACKDIR}/*.yaml ${D}${prefix}/local/demo/gtk-application/
     # install pictures
-    install -m 0644 ${WORKDIR}/*.png ${D}${prefix}/local/demo/application/bluetooth/pictures
+    install -m 0644 ${UNPACKDIR}/*.png ${D}${prefix}/local/demo/application/bluetooth/pictures
     # python script
-    install -m 0755 ${WORKDIR}/*.py ${D}${prefix}/local/demo/application/bluetooth/
+    install -m 0755 ${UNPACKDIR}/*.py ${D}${prefix}/local/demo/application/bluetooth/
     # install check script
-    install -m 0755 ${WORKDIR}/*.sh ${D}${prefix}/local/demo/application/bluetooth/bin/
+    install -m 0755 ${UNPACKDIR}/*.sh ${D}${prefix}/local/demo/application/bluetooth/bin/
 }
 RDEPENDS:${PN} += "python3-core python3-pexpect python3-pickle python3-pygobject gtk+3 demo-launcher"
 FILES:${PN} += "${prefix}/local/demo ${datadir}/applications ${datadir}/pixmaps"

@@ -8,9 +8,11 @@ SRC_URI += " \
     file://stm32_ddr_pmu.py \
 "
 
+S = "${UNPACKDIR}"
+
 do_install() {
        install -d ${D}/${bindir}
-       install -m 0755 ${WORKDIR}/stm32_ddr_pmu.py ${D}/${bindir}
+       install -m 0755 ${UNPACKDIR}/stm32_ddr_pmu.py ${D}/${bindir}
 }
 
 FILES:${PN} = "${bindir}/stm32_ddr_pmu.py"

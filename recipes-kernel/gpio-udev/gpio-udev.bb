@@ -9,7 +9,9 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
 SRC_URI = "file://99-gpio-group.rules"
 
+S = "${UNPACKDIR}"
+
 do_install() {
-    install -D -p -m0664 ${WORKDIR}/99-gpio-group.rules \
+    install -D -p -m0664 ${UNPACKDIR}/99-gpio-group.rules \
         ${D}${sysconfdir}/udev/rules.d/99-gpio-group.rules
 }

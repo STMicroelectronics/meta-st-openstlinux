@@ -6,10 +6,12 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/meta/COPYING.MIT;md5=3da9cfbcb788c80a0384
 
 SRC_URI = "file://st-hotspot-wifi-service.sh"
 
+S = "${UNPACKDIR}"
+
 do_install() {
     install -d ${D}${prefix}/local/demo/bin
 
-    install -m 755 ${WORKDIR}/st-hotspot-wifi-service.sh ${D}${prefix}/local/demo/bin
+    install -m 755 ${UNPACKDIR}/st-hotspot-wifi-service.sh ${D}${prefix}/local/demo/bin
 }
 
 FILES:${PN} += "${prefix}/local/demo/bin"

@@ -6,7 +6,7 @@ SRC_URI:append = " \
 
 do_install:prepend() {
     install -d ${D}${sysconfdir}/systemd/coredump.conf.d/
-    install -m 644 ${WORKDIR}/coredump-custom.conf ${D}${sysconfdir}/systemd/coredump.conf.d/
+    install -m 644 ${UNPACKDIR}/coredump-custom.conf ${D}${sysconfdir}/systemd/coredump.conf.d/
 
     # ignore poweroff key on logind
     install -d ${D}${systemd_unitdir}/logind.conf.d/

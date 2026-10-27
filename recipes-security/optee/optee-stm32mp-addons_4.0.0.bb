@@ -17,8 +17,6 @@ DEPENDS:append = " openssl "
 
 inherit python3native systemd
 
-S = "${WORKDIR}/git"
-
 TA_DEV_KIT_DIR      = "${STAGING_INCDIR}/optee/${@bb.utils.contains('TUNE_FEATURES', 'aarch64', 'export-user_ta_arm64', 'export-user_ta', d)}"
 TA_DEV_KIT_DIR_aarch32_aarch64 = "${WORKDIR}/lib64-recipe-sysroot${includedir}/optee/${@bb.utils.contains('TUNE_FEATURES', 'aarch64', 'export-user_ta_arm64', 'export-user_ta_arm32', d)}"
 TA_DEV_KIT_DIR:stm32mp2aarch32common = "${@oe.utils.ifelse(d.getVar('MULTILIBS'), '${TA_DEV_KIT_DIR_aarch32_aarch64}','')}"

@@ -17,6 +17,8 @@ SRC_URI = " \
     file://m33_shutdown.desktop \
     "
 
+S = "${UNPACKDIR}"
+
 do_configure[noexec] = "1"
 do_compile[noexec] = "1"
 
@@ -27,18 +29,18 @@ do_install() {
 
     # desktop application
     install -d ${D}${datadir}/applications
-    install -m 0644 ${WORKDIR}/m33_shutdown.desktop ${D}${datadir}/applications
+    install -m 0644 ${S}/m33_shutdown.desktop ${D}${datadir}/applications
 
     # picture for desktop application
     install -d ${D}${datadir}/pixmaps
-    install -m 0644 ${WORKDIR}/linux_black_shutdown.png ${D}${datadir}/pixmaps
+    install -m 0644 ${S}/linux_black_shutdown.png ${D}${datadir}/pixmaps
 
     # install yaml file
-    install -m 0644 ${WORKDIR}/*.yaml ${D}${prefix}/local/demo/gtk-application/
+    install -m 0644 ${S}/*.yaml ${D}${prefix}/local/demo/gtk-application/
     # install pictures
-    install -m 0644 ${WORKDIR}/*.png ${D}${prefix}/local/demo/application/m33/pictures
+    install -m 0644 ${S}/*.png ${D}${prefix}/local/demo/application/m33/pictures
     # script
-    install -m 0755 ${WORKDIR}/*.sh ${D}${prefix}/local/demo/application/m33/bin
+    install -m 0755 ${S}/*.sh ${D}${prefix}/local/demo/application/m33/bin
 }
 
 FILES:${PN} += "${prefix}/local/demo ${datadir}/applications ${datadir}/pixmaps"

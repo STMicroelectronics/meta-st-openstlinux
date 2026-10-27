@@ -8,7 +8,7 @@ SRC_URI = " \
     file://remote_shutdown.service \
     file://remote_shutdown.sh \
 "
-S = "${WORKDIR}"
+S = "${UNPACKDIR}"
 
 inherit systemd
 

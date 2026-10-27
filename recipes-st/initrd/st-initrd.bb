@@ -7,7 +7,7 @@ PACKAGE_ARCH = "${MACHINE_ARCH}"
 
 inherit deploy
 
-S = "${WORKDIR}"
+S = "${UNPACKDIR}"
 
 # Set InitRD image list
 INITRD_IMAGE ??= ""

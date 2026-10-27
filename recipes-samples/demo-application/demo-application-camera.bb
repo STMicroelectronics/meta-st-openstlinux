@@ -28,6 +28,8 @@ SRC_URI = " \
     file://camera_preview.png \
     "
 
+S = "${UNPACKDIR}"
+
 do_configure[noexec] = "1"
 do_compile[noexec] = "1"
 
@@ -38,24 +40,24 @@ do_install() {
     install -d ${D}${prefix}/local/demo/application/camera/shaders
 
     # update the launch_camera.sh script with correct ${SUFFIX_FOR_FILE} value
-    sed -i -e 's,@suffix_for_file@,${SUFFIX_FOR_FILE},g' ${WORKDIR}/launch_camera.sh
+    sed -i -e 's,@suffix_for_file@,${SUFFIX_FOR_FILE},g' ${UNPACKDIR}/launch_camera.sh
 
     # desktop application
     install -d ${D}${datadir}/applications
-    install -m 0644 ${WORKDIR}/camera_preview.desktop ${D}${datadir}/applications
+    install -m 0644 ${UNPACKDIR}/camera_preview.desktop ${D}${datadir}/applications
 
     # picture for desktop application
     install -d ${D}${datadir}/pixmaps
-    install -m 0644 ${WORKDIR}/camera_preview.png ${D}${datadir}/pixmaps
+    install -m 0644 ${UNPACKDIR}/camera_preview.png ${D}${datadir}/pixmaps
 
     # install yaml file
-    install -m 0644 ${WORKDIR}/*.yaml ${D}${prefix}/local/demo/gtk-application/
+    install -m 0644 ${UNPACKDIR}/*.yaml ${D}${prefix}/local/demo/gtk-application/
     # install pictures
-    install -m 0644 ${WORKDIR}/*.png ${D}${prefix}/local/demo/application/camera/pictures
+    install -m 0644 ${UNPACKDIR}/*.png ${D}${prefix}/local/demo/application/camera/pictures
     # script
-    install -m 0755 ${WORKDIR}/*.sh ${D}${prefix}/local/demo/application/camera/bin
+    install -m 0755 ${UNPACKDIR}/*.sh ${D}${prefix}/local/demo/application/camera/bin
     # shaders
-    install -m 0644 ${WORKDIR}/*.fs ${D}${prefix}/local/demo/application/camera/shaders
+    install -m 0644 ${UNPACKDIR}/*.fs ${D}${prefix}/local/demo/application/camera/shaders
 }
 
 FILES:${PN} += "${prefix}/local/demo ${datadir}/applications ${datadir}/pixmaps"

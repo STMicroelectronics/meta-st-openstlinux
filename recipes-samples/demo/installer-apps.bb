@@ -10,6 +10,8 @@ SRC_URI = " \
     file://uninstall \
 "
 
+S = "${UNPACKDIR}"
+
 PV = "1.0"
 
 inherit python3-dir
@@ -20,21 +22,21 @@ do_compile[noexec] = "1"
 do_install() {
     # install common resources
     install -d ${D}${prefix}/local/demo/gtk-installer/common
-    LIST=$(ls ${WORKDIR}/common/*)
+    LIST=$(ls ${UNPACKDIR}/common/*)
     if [ -n "$LIST" ]; then
-        cp -r ${WORKDIR}/common/* ${D}${prefix}/local/demo/gtk-installer/common
+        cp -r ${UNPACKDIR}/common/* ${D}${prefix}/local/demo/gtk-installer/common
     fi
     # install application installers
     install -d ${D}${prefix}/local/demo/gtk-installer/install
-    LIST=$(ls ${WORKDIR}/install/*)
+    LIST=$(ls ${UNPACKDIR}/install/*)
     if [ -n "$LIST" ]; then
-        cp -r ${WORKDIR}/install/* ${D}${prefix}/local/demo/gtk-installer/install
+        cp -r ${UNPACKDIR}/install/* ${D}${prefix}/local/demo/gtk-installer/install
     fi
     # install application uninstallers
     install -d ${D}${prefix}/local/demo/gtk-installer/uninstall
-    LIST=$(ls ${WORKDIR}/uninstall/*)
+    LIST=$(ls ${UNPACKDIR}/uninstall/*)
     if [ -n "$LIST" ]; then
-        cp -r ${WORKDIR}/uninstall/* ${D}${prefix}/local/demo/gtk-installer/uninstall
+        cp -r ${UNPACKDIR}/uninstall/* ${D}${prefix}/local/demo/gtk-installer/uninstall
     fi
 }
 

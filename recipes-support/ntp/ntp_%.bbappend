@@ -5,7 +5,7 @@ SYSTEMD_AUTO_ENABLE:sntp = "disable"
 
 do_configure:prepend() {
     for ns in ${NTP_SERVERS}; do
-        grep -q ${ns} ${WORKDIR}/ntp.conf || echo "server ${ns}" >> ${WORKDIR}/ntp.conf
+        grep -q ${ns} ${UNPACKDIR}/ntp.conf || echo "server ${ns}" >> ${WORKDIR}/ntp.conf
     done
 }
 

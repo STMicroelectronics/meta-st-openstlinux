@@ -15,8 +15,6 @@ SRC_URI = "git://github.com/ZBar/Zbar;branch=master;protocol=https \
            file://0002-support-of-ImageMagick-7.patch \
 "
 
-S = "${WORKDIR}/git"
-
 inherit autotools pkgconfig python3native
 
 PACKAGECONFIG = " \

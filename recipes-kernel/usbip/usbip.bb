@@ -43,23 +43,23 @@ do_configure[prefuncs] += "base_do_unpack"
 
 do_configure:prepend() {
     # copy source source from kernel to workdir
-    mkdir -p ${WORKDIR}/${USBIP_SRC}
-    tar --xattrs --xattrs-include='*' -cf - -S -C ${STAGING_KERNEL_DIR}/${USBIP_SRC} -p . | tar --xattrs --xattrs-include='*' -xf - -C ${WORKDIR}/${USBIP_SRC}
+    mkdir -p ${S}
+    tar --xattrs --xattrs-include='*' -cf - -S -C ${STAGING_KERNEL_DIR}/${USBIP_SRC} -p . | tar --xattrs --xattrs-include='*' -xf - -C ${S}
 }
 do_install:append() {
     install -d ${D}${datadir}/hwdata/
-    install -m 0644 ${WORKDIR}/usb.ids ${D}${datadir}/hwdata/
+    install -m 0644 ${UNPACKDIR}/usb.ids ${D}${datadir}/hwdata/
 
     install -d ${D}${sbindir}
-    install -m 0755 ${WORKDIR}/stm32mp-usbip-bind-unbind.sh ${D}${sbindir}/
+    install -m 0755 ${UNPACKDIR}/stm32mp-usbip-bind-unbind.sh ${D}${sbindir}/
 
     install -d ${D}${sysconfdir}/udev/rules.d/
-    install -m 0644 ${WORKDIR}/99-usb-usbip.rules ${D}${sysconfdir}/udev/rules.d/
+    install -m 0644 ${UNPACKDIR}/99-usb-usbip.rules ${D}${sysconfdir}/udev/rules.d/
 
     install -d ${D}${sysconfdir}/modprobe.d/
-    install -m 0644 ${WORKDIR}/usbip.conf ${D}${sysconfdir}/modprobe.d/
+    install -m 0644 ${UNPACKDIR}/usbip.conf ${D}${sysconfdir}/modprobe.d/
 
     install -d ${D}${systemd_system_unitdir}/
-    install -m 0644 ${WORKDIR}/usbip.service ${D}${systemd_system_unitdir}/
+    install -m 0644 ${UNPACKDIR}/usbip.service ${D}${systemd_system_unitdir}/
 }
 FILES:${PN} += "${datadir}/hwdata/ ${sbindir} ${sysconfdir}/udev/rules.d/ ${systemd_system_unitdir}/ ${sysconfdir}/modprobe.d/"

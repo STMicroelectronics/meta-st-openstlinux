@@ -6,7 +6,7 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/BSD-3-Clause;m
 
 SRC_URI = " file://st-hostname.service file://st-hostname.sh"
 
-S = "${WORKDIR}/git"
+S = "${UNPACKDIR}"
 
 START_RESIZE_HELPER_SERVICE ?= "1"
 
@@ -18,7 +18,7 @@ SYSTEMD_AUTO_ENABLE:${PN} = "enable"
 
 do_install() {
     install -d ${D}${systemd_unitdir}/system ${D}${bindir}
-    install -m 0644 ${WORKDIR}/st-hostname.service ${D}${systemd_unitdir}/system
-    install -m 0755 ${WORKDIR}/st-hostname.sh ${D}${bindir}
+    install -m 0644 ${UNPACKDIR}/st-hostname.service ${D}${systemd_unitdir}/system
+    install -m 0755 ${UNPACKDIR}/st-hostname.sh ${D}${bindir}
 
 }

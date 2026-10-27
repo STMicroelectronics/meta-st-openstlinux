@@ -4,8 +4,6 @@ PROVIDES += "libcamera"
 
 PE = "1"
 
-S = "${WORKDIR}/git"
-
 DEPENDS = "python3-pyyaml-native python3-jinja2-native python3-ply-native python3-jinja2-native udev gnutls chrpath-native libevent libyaml"
 DEPENDS += "${@bb.utils.contains('DISTRO_FEATURES', 'qt', 'qtbase qtbase-native', '', d)}"
 

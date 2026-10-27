@@ -55,50 +55,48 @@ do_install() {
     install -d ${D}${datadir}/weston/backgrounds
     install -d ${D}${datadir}/weston/icon
 
-    install -m 0644 ${WORKDIR}/utilities-terminal.png ${D}${datadir}/weston/icon/utilities-terminal.png
-    install -m 0644 ${WORKDIR}/ST13345_Products_light_blue_24x24.png ${D}${datadir}/weston/icon/ST13345_Products_light_blue_24x24.png
+    install -m 0644 ${UNPACKDIR}/utilities-terminal.png ${D}${datadir}/weston/icon/utilities-terminal.png
+    install -m 0644 ${UNPACKDIR}/ST13345_Products_light_blue_24x24.png ${D}${datadir}/weston/icon/ST13345_Products_light_blue_24x24.png
 
     if [ "${@bb.utils.filter('DISTRO_FEATURES', 'pam', d)}" ]; then
-        install -D -p -m0644 ${WORKDIR}/weston-autologin ${D}${sysconfdir}/pam.d/weston-autologin
+        install -D -p -m0644 ${UNPACKDIR}/weston-autologin ${D}${sysconfdir}/pam.d/weston-autologin
     fi
 
 
     # backgrounds & weston.ini
-    install -m 0644 ${WORKDIR}/weston.ini ${D}${sysconfdir}/xdg/weston
+    install -m 0644 ${UNPACKDIR}/weston.ini ${D}${sysconfdir}/xdg/weston
     sed -i -e "s:##DEFAULT_BACKGROUND##:${DEFAULT_WESTON_BACKGROUND}:g" ${D}${sysconfdir}/xdg/weston/weston.ini
     sed -i -e "s:##HDMI_MODE##:${WESTON_HDMI_MODE}:g" ${D}${sysconfdir}/xdg/weston/weston.ini
 
-    install -m 0644 ${WORKDIR}/${DEFAULT_WESTON_BACKGROUND} ${D}${datadir}/weston/backgrounds/
+    install -m 0644 ${UNPACKDIR}/${DEFAULT_WESTON_BACKGROUND} ${D}${datadir}/weston/backgrounds/
 
-    install -m 0644 ${WORKDIR}/space.png ${D}${datadir}/weston/icon/
+    install -m 0644 ${UNPACKDIR}/space.png ${D}${datadir}/weston/icon/
 
     install -d ${D}${systemd_system_unitdir} ${D}${sbindir}
 
     if ${@bb.utils.contains('DISTRO_FEATURES','systemd','true','false',d)}; then
-        install -D -p -m0644 ${WORKDIR}/weston-graphical-session.service ${D}${systemd_system_unitdir}/weston-graphical-session.service
+        install -D -p -m0644 ${UNPACKDIR}/weston-graphical-session.service ${D}${systemd_system_unitdir}/weston-graphical-session.service
         sed -i -e s:/etc:${sysconfdir}:g \
             -e s:/usr/bin:${bindir}:g \
             -e s:/var:${localstatedir}:g \
             ${D}${systemd_unitdir}/system/weston-graphical-session.service
-        install -D -m 0755 ${WORKDIR}/systemd-graphical-weston-session.sh ${D}${bindir}/systemd-graphical-weston-session.sh
-        install -D -p -m0644 ${WORKDIR}/weston-checkgpu.service ${D}${systemd_system_unitdir}/weston-checkgpu.service
+        install -D -m 0755 ${UNPACKDIR}/systemd-graphical-weston-session.sh ${D}${bindir}/systemd-graphical-weston-session.sh
+        install -D -p -m0644 ${UNPACKDIR}/weston-checkgpu.service ${D}${systemd_system_unitdir}/weston-checkgpu.service
 
         install -d ${D}${systemd_user_unitdir}
-        install -D -p -m0644 ${WORKDIR}/weston.service ${D}${systemd_user_unitdir}/weston.service
-        install -D -p -m0644 ${WORKDIR}/weston.socket ${D}${systemd_user_unitdir}/weston.socket
-
-        install -D -p -m0644 ${WORKDIR}/seatd-weston.service ${D}${systemd_system_unitdir}/seatd-weston.service
+        install -D -p -m0644 ${UNPACKDIR}/weston.service ${D}${systemd_user_unitdir}/weston.service
+        install -D -p -m0644 ${UNPACKDIR}/weston.socket ${D}${systemd_user_unitdir}/weston.socket
     fi
 
     install -d ${D}${sysconfdir}/profile.d
-    install -m 0755 ${WORKDIR}/weston_profile.sh ${D}${sysconfdir}/profile.d/
+    install -m 0755 ${UNPACKDIR}/weston_profile.sh ${D}${sysconfdir}/profile.d/
 
     if ${@bb.utils.contains('DISTRO_FEATURES','xwayland','true','false',d)}; then
         # uncomment modules line for support of xwayland
         sed -i -e 's,#xwayland=true,xwayland=true,g' ${D}${sysconfdir}/xdg/weston/weston.ini
     fi
 
-    install -Dm755 ${WORKDIR}/weston-start ${D}${bindir}/weston-start
+    install -Dm755 ${UNPACKDIR}/weston-start ${D}${bindir}/weston-start
     sed -i 's,@DATADIR@,${datadir},g' ${D}${bindir}/weston-start
     sed -i 's,@LOCALSTATEDIR@,${localstatedir},g' ${D}${bindir}/weston-start
 
@@ -107,18 +105,17 @@ do_install() {
     echo "WESTON_USER=weston" > ${D}${sysconfdir}/default/weston
 
     # check GPU
-    install -d ${D}/home/root/
-    install -m 644 ${WORKDIR}/README-CHECK-GPU ${D}/home/root/
+    install -d ${D}${ROOT_HOME}
+    install -m 644 ${UNPACKDIR}/README-CHECK-GPU ${D}${ROOT_HOME}
     if ! test -f ${D}${base_sbindir}/check-gpu; then
         install -d ${D}${base_sbindir}
-        echo '#!/bin/sh' > ${WORKDIR}/check-gpu.empty
-        echo '/bin/true' >> ${WORKDIR}/check-gpu.empty
-        install -m 755 ${WORKDIR}/check-gpu.empty ${D}${base_sbindir}/check-gpu
+        echo '#!/bin/sh' > ${UNPACKDIR}/check-gpu.empty
+        echo '/bin/true' >> ${UNPACKDIR}/check-gpu.empty
+        install -m 755 ${UNPACKDIR}/check-gpu.empty ${D}${base_sbindir}/check-gpu
     fi
 
     # udev rules for galcore
-    install -D -p -m0644 ${WORKDIR}/72-galcore.rules ${D}${sysconfdir}/udev/rules.d/72-galcore.rules
-
+    install -D -p -m0644 ${UNPACKDIR}/72-galcore.rules ${D}${sysconfdir}/udev/rules.d/72-galcore.rules
     # AUDIO: swith between analog stero and HDMI
     install -d ${D}${sysconfdir}/default
     install -m 0644 ${WORKDIR}/default_pulseaudio_profile ${D}${sysconfdir}/default/pulseaudio_profile
@@ -131,7 +128,7 @@ do_install() {
 do_install:append:stm32mpcommon() {
     if ${@bb.utils.contains('DISTRO_FEATURES','systemd','true','false',d)}; then
         install -d ${D}${base_sbindir}
-        install -m 755 ${WORKDIR}/check-gpu ${D}${base_sbindir}
+        install -m 755 ${UNPACKDIR}/check-gpu ${D}${base_sbindir}
     fi
 }
 

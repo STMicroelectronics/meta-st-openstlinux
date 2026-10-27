@@ -12,6 +12,8 @@ SRC_URI = " \
     file://pictures \
 "
 
+S = "${UNPACKDIR}"
+
 PV = "1.0"
 
 inherit python3-dir
@@ -22,20 +24,20 @@ do_compile[noexec] = "1"
 do_install() {
     # install the x-linux installer into the demo launcher
     install -d ${D}${prefix}/local/demo/gtk-application
-    install -m 0755 ${WORKDIR}/9990-x-linux-installer.yaml ${D}${prefix}/local/demo/gtk-application
-    install -m 0755 ${WORKDIR}/9991-x-linux-uninstaller.yaml ${D}${prefix}/local/demo/gtk-application
+    install -m 0755 ${UNPACKDIR}/9990-x-linux-installer.yaml ${D}${prefix}/local/demo/gtk-application
+    install -m 0755 ${UNPACKDIR}/9991-x-linux-uninstaller.yaml ${D}${prefix}/local/demo/gtk-application
 
     # install the x-linux installer / uninstaller
     install -d ${D}${prefix}/local/demo/bin/
-    install -m 0755 ${WORKDIR}/launch_x_linux_installer.sh ${D}${prefix}/local/demo/bin
+    install -m 0755 ${UNPACKDIR}/launch_x_linux_installer.sh ${D}${prefix}/local/demo/bin
 
     # install the common resources when installing / uninstalling applications
     install -d ${D}${prefix}/local/demo/common
-    install -m 0755 ${WORKDIR}/common/* ${D}${prefix}/local/demo/common
+    install -m 0755 ${UNPACKDIR}/common/* ${D}${prefix}/local/demo/common
 
     # install the icons for the demo launcher
     install -d ${D}${prefix}/local/demo/pictures
-    install -m 0755 ${WORKDIR}/pictures/* ${D}${prefix}/local/demo/pictures
+    install -m 0755 ${UNPACKDIR}/pictures/* ${D}${prefix}/local/demo/pictures
 }
 
 FILES:${PN} += " \

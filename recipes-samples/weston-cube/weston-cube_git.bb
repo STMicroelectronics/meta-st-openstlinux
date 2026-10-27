@@ -16,7 +16,7 @@ DEPENDS += "patchelf-native"
 
 inherit meson pkgconfig
 
-S = "${WORKDIR}/git/weston-cube"
+S = "${UNPACKDIR}/${BP}/weston-cube"
 
 do_install () {
 	install -d ${D}${prefix}/local/demo/bin

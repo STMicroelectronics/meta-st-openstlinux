@@ -8,7 +8,6 @@ DEPENDS = "python3-pillow zbar-openstlinux"
 
 SRC_URI = "git://github.com/NaturalHistoryMuseum/pyzbar.git;protocol=https;branch=master"
 SRCREV = "b6853df71aee4b38a9986af8565603a0115e81b7"
-S = "${WORKDIR}/git"
 
 BBCLASSEXTEND += "native nativesdk"
 

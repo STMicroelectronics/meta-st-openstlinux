@@ -8,7 +8,5 @@ SRCREV = "04c18aa6c4a7017957e2dfe88c3ff7ef34a1b3a0"
 
 PV = "0.4.0"
 
-S = "${WORKDIR}/git"
-
 DEPENDS += "libcamera-stm32mp jpeg"
 inherit meson pkgconfig

@@ -16,18 +16,20 @@ SRC_URI = " \
     file://stm32mp-net-alias-wlan-udev.sh \
     "
 
+S = "${UNPACKDIR}"
+
 do_install() {
     install -d ${D}${systemd_unitdir}/network
-    install -m 644 ${WORKDIR}/50-wired-nfs.network ${D}${systemd_unitdir}/network
-    install -m 644 ${WORKDIR}/52-static.network.static ${D}${systemd_unitdir}/network
-    install -m 644 ${WORKDIR}/51-wireless.network.sample ${D}${systemd_unitdir}/network
+    install -m 644 ${UNPACKDIR}/50-wired-nfs.network ${D}${systemd_unitdir}/network
+    install -m 644 ${UNPACKDIR}/52-static.network.static ${D}${systemd_unitdir}/network
+    install -m 644 ${UNPACKDIR}/51-wireless.network.sample ${D}${systemd_unitdir}/network
 
     # install link creation
     install -d ${D}${sysconfdir}/udev/rules.d/
-    install -m 0644 ${WORKDIR}/98-net-alias-stm32mp.rules ${D}${sysconfdir}/udev/rules.d/
+    install -m 0644 ${UNPACKDIR}/98-net-alias-stm32mp.rules ${D}${sysconfdir}/udev/rules.d/
     install -d ${D}${sbindir}/
-    install -m 0755 ${WORKDIR}/stm32mp-net-alias-udev.sh ${D}${sbindir}/
-    install -m 0755 ${WORKDIR}/stm32mp-net-alias-wlan-udev.sh ${D}${sbindir}/
+    install -m 0755 ${UNPACKDIR}/stm32mp-net-alias-udev.sh ${D}${sbindir}/
+    install -m 0755 ${UNPACKDIR}/stm32mp-net-alias-wlan-udev.sh ${D}${sbindir}/
 }
 
 FILES:${PN} += "${systemd_unitdir}/network"

@@ -9,15 +9,15 @@ SRC_URI = " \
         file://psplash-drm-quit \
     "
 
+S = "${UNPACKDIR}"
+
 PROVIDES = "virtual/psplash"
 RPROVIDES:${PN} = "virtual-psplash virtual-psplash-support"
-
-S = "${WORKDIR}"
 
 do_configure[noexec] = "1"
 do_compile[noexec] = "1"
 
 do_install() {
     install -d ${D}${bindir}
-    install -m 755 ${WORKDIR}/psplash-drm-quit ${D}${bindir}
+    install -m 755 ${UNPACKDIR}/psplash-drm-quit ${D}${bindir}
 }

@@ -19,6 +19,8 @@ SRC_URI = " \
     file://video_playback.png \
     "
 
+S = "${UNPACKDIR}"
+
 do_configure[noexec] = "1"
 do_compile[noexec] = "1"
 
@@ -30,21 +32,21 @@ do_install() {
 
     # desktop application
     install -d ${D}${datadir}/applications
-    install -m 0644 ${WORKDIR}/video_playback.desktop ${D}${datadir}/applications
+    install -m 0644 ${UNPACKDIR}/video_playback.desktop ${D}${datadir}/applications
 
     # picture for desktop application
     install -d ${D}${datadir}/pixmaps
-    install -m 0644 ${WORKDIR}/video_playback.png ${D}${datadir}/pixmaps
+    install -m 0644 ${UNPACKDIR}/video_playback.png ${D}${datadir}/pixmaps
 
     # install yaml file
-    install -m 0644 ${WORKDIR}/*.yaml ${D}${prefix}/local/demo/gtk-application/
+    install -m 0644 ${UNPACKDIR}/*.yaml ${D}${prefix}/local/demo/gtk-application/
     # install pictures
-    install -m 0644 ${WORKDIR}/*.png ${D}${prefix}/local/demo/application/video/pictures
+    install -m 0644 ${UNPACKDIR}/*.png ${D}${prefix}/local/demo/application/video/pictures
     # script
-    install -m 0755 ${WORKDIR}/*.sh ${D}${prefix}/local/demo/application/video/bin
+    install -m 0755 ${UNPACKDIR}/*.sh ${D}${prefix}/local/demo/application/video/bin
     # video
-    install -m 0644 ${WORKDIR}/ST2297_visionv3.webm ${D}${prefix}/local/demo/media
-    install -m 0644 ${WORKDIR}/ST19619_ST_Company_Video_16_9_EN_272p.webm ${D}${prefix}/local/demo/media
+    install -m 0644 ${UNPACKDIR}/ST2297_visionv3.webm ${D}${prefix}/local/demo/media
+    install -m 0644 ${UNPACKDIR}/ST19619_ST_Company_Video_16_9_EN_272p.webm ${D}${prefix}/local/demo/media
 }
 
 FILES:${PN} += "${prefix}/local/demo ${prefix}/local/demo/media ${datadir}/applications ${datadir}/pixmaps"

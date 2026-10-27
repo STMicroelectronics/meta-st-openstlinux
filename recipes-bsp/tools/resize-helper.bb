@@ -13,7 +13,7 @@ RDEPENDS:${PN} += " e2fsprogs-resize2fs "
 
 SRC_URI = " file://resize-helper.service file://resize-helper file://resize-helper.sh.in"
 
-S = "${WORKDIR}/git"
+S = "${UNPACKDIR}"
 
 START_RESIZE_HELPER_SERVICE ?= "1"
 
@@ -25,11 +25,11 @@ SYSTEMD_AUTO_ENABLE:${PN} = "${@bb.utils.contains('START_RESIZE_HELPER_SERVICE',
 
 do_install() {
     install -d ${D}${systemd_unitdir}/system ${D}${base_sbindir}
-    install -m 0644 ${WORKDIR}/resize-helper.service ${D}${systemd_unitdir}/system
-    install -m 0755 ${WORKDIR}/resize-helper ${D}${base_sbindir}
+    install -m 0644 ${UNPACKDIR}/resize-helper.service ${D}${systemd_unitdir}/system
+    install -m 0755 ${UNPACKDIR}/resize-helper ${D}${base_sbindir}
 
     install -d ${D}${sysconfdir}/init.d
-    install -m 0755 ${WORKDIR}/resize-helper.sh.in ${D}${sysconfdir}/init.d/resize-helper.sh
+    install -m 0755 ${UNPACKDIR}/resize-helper.sh.in ${D}${sysconfdir}/init.d/resize-helper.sh
 
     sed -i -e "s:@sbindir@:${base_sbindir}:; s:@sysconfdir@:${sysconfdir}:" \
 ${D}${sysconfdir}/init.d/resize-helper.sh

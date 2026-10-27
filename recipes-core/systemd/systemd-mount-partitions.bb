@@ -14,6 +14,8 @@ SRC_URI = " \
     file://${MOUNT_BASENAME}.sh         \
     "
 
+S = "${UNPACKDIR}"
+
 inherit systemd update-rc.d
 
 INITSCRIPT_NAME = "${MOUNT_BASENAME}.sh"
@@ -62,14 +64,14 @@ do_install() {
 
         if ${@bb.utils.contains('DISTRO_FEATURES','systemd','true','false',d)}; then
             install -d ${D}${systemd_unitdir}/system ${D}/${base_sbindir}
-            install -m 644 ${WORKDIR}/${MOUNT_BASENAME}.service ${D}/${systemd_unitdir}/system
-            install -m 755 ${WORKDIR}/${MOUNT_BASENAME}.sh ${D}/${base_sbindir}/
+            install -m 644 ${UNPACKDIR}/${MOUNT_BASENAME}.service ${D}/${systemd_unitdir}/system
+            install -m 755 ${UNPACKDIR}/${MOUNT_BASENAME}.sh ${D}/${base_sbindir}/
 
             # Update script
             sed 's:^MOUNT_PARTITIONS_LIST=.*$:MOUNT_PARTITIONS_LIST=\"'"${MOUNT_PARTITIONS_LIST}"'\":' -i ${D}/${base_sbindir}/${MOUNT_BASENAME}.sh
         fi
         install -d ${D}/${INIT_D_DIR}
-        install -m 755 ${WORKDIR}/${MOUNT_BASENAME}.sh ${D}/${INIT_D_DIR}/
+        install -m 755 ${UNPACKDIR}/${MOUNT_BASENAME}.sh ${D}/${INIT_D_DIR}/
         # Update script
         sed 's:^MOUNT_PARTITIONS_LIST=.*$:MOUNT_PARTITIONS_LIST=\"'"${MOUNT_PARTITIONS_LIST}"'\":' -i ${D}/${INIT_D_DIR}/${MOUNT_BASENAME}.sh
     else

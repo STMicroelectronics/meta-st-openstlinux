@@ -25,6 +25,8 @@ SRC_URI = " \
     file://netdata.png \
     "
 
+S = "${UNPACKDIR}"
+
 do_configure[noexec] = "1"
 do_compile[noexec] = "1"
 
@@ -35,24 +37,24 @@ do_install() {
 
     # desktop application
     install -d ${D}${datadir}/applications
-    install -m 0644 ${WORKDIR}/netdata.desktop ${D}${datadir}/applications
+    install -m 0644 ${UNPACKDIR}/netdata.desktop ${D}${datadir}/applications
 
     # picture for desktop application
     install -d ${D}${datadir}/pixmaps
-    install -m 0644 ${WORKDIR}/netdata.png ${D}${datadir}/pixmaps
+    install -m 0644 ${UNPACKDIR}/netdata.png ${D}${datadir}/pixmaps
 
     # install yaml file
-    install -m 0644 ${WORKDIR}/*.yaml ${D}${prefix}/local/demo/gtk-application/
+    install -m 0644 ${UNPACKDIR}/*.yaml ${D}${prefix}/local/demo/gtk-application/
     # install bin
-    install -m 0755 ${WORKDIR}/*.sh ${D}${prefix}/local/demo/application/netdata/bin
+    install -m 0755 ${UNPACKDIR}/*.sh ${D}${prefix}/local/demo/application/netdata/bin
     # install pictures
-    install -m 0644 ${WORKDIR}/*.png ${D}${prefix}/local/demo/application/netdata/pictures
+    install -m 0644 ${UNPACKDIR}/*.png ${D}${prefix}/local/demo/application/netdata/pictures
     # python script
-    install -m 0755 ${WORKDIR}/*.py ${D}${prefix}/local/demo/application/netdata/
+    install -m 0755 ${UNPACKDIR}/*.py ${D}${prefix}/local/demo/application/netdata/
 
     # for wifi hotspot
     install -d ${D}${sysconfdir}/default
-    install -m 0644 ${WORKDIR}/hostapd ${D}${sysconfdir}/default
+    install -m 0644 ${UNPACKDIR}/hostapd ${D}${sysconfdir}/default
 }
 RDEPENDS:${PN} += "python3-core python3-pygobject gtk+3 python3-threading demo-launcher demo-hotspot-wifi qrenc"
 FILES:${PN} += "${sysconfdir}/default ${prefix}/local/demo ${datadir}/applications ${datadir}/pixmaps"
