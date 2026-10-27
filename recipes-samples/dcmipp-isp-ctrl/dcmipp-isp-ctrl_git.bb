@@ -6,9 +6,7 @@ SRC_URI = "git://github.com/STMicroelectronics/st-openstlinux-application.git;pr
 
 # Modify these as desired
 PV = "5.1+git-${@d.getVar("SRCREV")[0:8]}"
-SRCREV = "31551e7487c2c014248462565383e3912c0f9ad5"
-
-S = "${WORKDIR}/git"
+SRCREV = "62f0d0b0ea4bca81f55a3042284d47ceebe86919"
 
 do_compile () {
 	cd ${S}/dcmipp-isp-ctrl
