@@ -1,0 +1,59 @@
+From d0da8ba0a512f08c6e44c73280b59ee4852b967a Mon Sep 17 00:00:00 2001
+From: Philippe Cornu <philippe.cornu@foss.st.com>
+Date: Tue, 8 Sep 2026 18:03:39 +0200
+Subject: [PATCH] Revert "gst-decoder.c: switch to decodebin3"
+
+This reverts commit 4961a04b4a434aefbd412eb24fb76998036eaaf6.
+
+On GStreamer 1.28.2, decodebin3 creates the following
+error messages.
+"
+(kmscube:7332): GStreamer-WARNING **: 20:15:56.267:
+Trying to join task 0xaaab1b613ad0 from its thread would deadlock.
+You cannot change the state of an element from its streaming
+thread. Use g_idle_add() or post a GstMessage on the bus to
+schedule the state change from the main thread.
+(kmscube:7332): GStreamer-CRITICAL **: 20:15:56.269: pushing
+on pad src:src but it was not activated in push mode
+"
+
+Until a fix is released in decodebin3 and GStreamer GL plugins
+are better supported (glupload...), it is preferable to revert
+this commit to get back to previous performances.
+
+Signed-off-by: Philippe Cornu <philippe.cornu@foss.st.com>
+Upstream-Status: Inappropriate [decodebin3 analysis in progress]
+---
+ gst-decoder.c | 2 +-
+ meson.build   | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/gst-decoder.c b/gst-decoder.c
+index 91bfe93..5431014 100644
+--- a/gst-decoder.c
++++ b/gst-decoder.c
+@@ -271,7 +271,7 @@ video_init(const struct egl *egl, const struct gbm *gbm, const char *filename)
+ 
+ 	/* Setup pipeline: */
+ 	static const char *pipeline =
+-		"filesrc name=\"src\" ! decodebin3 name=\"decode\" ! video/x-raw ! appsink sync=false name=\"sink\"";
++		"filesrc name=\"src\" ! decodebin name=\"decode\" ! video/x-raw ! appsink sync=false name=\"sink\"";
+ 	dec->pipeline = gst_parse_launch(pipeline, NULL);
+ 
+ 	dec->sink = gst_bin_get_by_name(GST_BIN(dec->pipeline), "sink");
+diff --git a/meson.build b/meson.build
+index 27db939..2b962a9 100644
+--- a/meson.build
++++ b/meson.build
+@@ -83,7 +83,7 @@ foreach _dep : [
+   'gstreamer-allocators-1.0',
+   'gstreamer-video-1.0',
+ ]
+-  dep_gst += dependency(_dep, version : '>= 1.22.0', required : get_option('gstreamer'))
++  dep_gst += dependency(_dep, version : '>= 1.6.0', required : get_option('gstreamer'))
+ endforeach
+ dep_gst += dependency('glib-2.0', required : get_option('gstreamer'))
+ 
+-- 
+2.43.0
+
