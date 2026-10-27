@@ -13,9 +13,6 @@ OPENEMBEDDED = "${OPENEMBEDDED_NON_REMOVABLE}"
 
 OPENEMBEDDED_NON_REMOVABLE = "${OEROOT}/layers/openembedded-core/meta"
 
-POKY  = "${POKY_NON_REMOVABLE}"
-POKY += "${OEROOT}/layers/poky/meta-yocto-bsp"
-
 POKY_NON_REMOVABLE  = "${OEROOT}/layers/poky/meta"
 
 #--------------------------
@@ -47,5 +44,5 @@ BBLAYERS += " \
     ${BSPLAYER} \
     ${ADDONSLAYERS} \
     ${FRAMEWORKLAYERS} \
-    ${@'${OPENEMBEDDED}' if os.path.isfile('${OEROOT}/layers/openembedded-core/meta/conf/layer.conf') else '${POKY}'} \
+    ${OPENEMBEDDED} \
     "

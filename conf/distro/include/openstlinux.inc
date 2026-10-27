@@ -21,8 +21,6 @@ require openstlinux-default-naming.inc
 # =========================================================================
 # Enable uninative support
 # =========================================================================
-require conf/distro/include/no-static-libs.inc
-require conf/distro/include/yocto-uninative.inc
 INHERIT += "uninative"
 
 # =========================================================================
@@ -33,6 +31,12 @@ require conf/distro/include/cve-extra-exclusions.inc
 # =========================================================================
 # DISTRO features
 # =========================================================================
+DISTRO_FEATURES_DEFAULTS ?= " \
+    acl debuginfod vfat \
+    gobject-introspection-data ldconfig \
+    pulseaudio \
+    "
+
 DISTRO_FEATURES  = "alsa"
 DISTRO_FEATURES += "argp"
 DISTRO_FEATURES += "ext2"
@@ -70,9 +74,11 @@ DISTRO_FEATURES:append = " x11 "
 DISTRO_FEATURES:append = " kde "
 
 # add support of systemd
-DISTRO_FEATURES:append = " systemd "
+# DISTRO_FEATURES:append = " systemd " is added via include conf/distro/include/init-manager-systemd.inc
+# which is include on conf/distro/defaultsetup.conf
 DISTRO_FEATURES:append = " polkit "
-DISTRO_FEATURES:append = " usrmerge "
+# activate Predictable Network Interface Names
+DISTRO_FEATURES:append = " pni-names "
 
 # add support of efi
 DISTRO_FEATURES:append:aarch64 = " efi "
@@ -86,15 +92,12 @@ DISTRO_FEATURES:append = " autoresize "
 # add support of tpm2
 #DISTRO_FEATURES:append = " tpm2 "
 
-# Disabling pulseaudio/pipewire
-#DISTRO_FEATURES_BACKFILL_CONSIDERED += "pulseaudio"
+# Disabling pulseaudio but used pipewire instead
 DISTRO_FEATURES:append = "pipewire"
 
 # Disabling sysvinit
-DISTRO_FEATURES_BACKFILL_CONSIDERED += "sysvinit"
+DISTRO_FEATURES_OPTED_OUT += "sysvinit"
 
-VIRTUAL-RUNTIME_init_manager = "systemd"
-VIRTUAL-RUNTIME_initscripts = "systemd-compat-units"
 
 # =========================================================================
 # SDK

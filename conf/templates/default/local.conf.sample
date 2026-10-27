@@ -84,7 +84,8 @@ DISTRO ??= "nodistro"
 #
 # The default is a tmp directory under TOPDIR.
 #
-#TMPDIR = "${TOPDIR}/tmp"
+#TMPDIR = "${TOPDIR}/tmp-glibc"
+TMPDIR = "${TOPDIR}/tmp"
 
 
 #
@@ -98,8 +99,8 @@ DISTRO ??= "nodistro"
 #  - 'package_ipk' for ipk files are used by opkg (a debian style embedded package manager)
 #  - 'package_rpm' for rpm style packages
 # E.g.: PACKAGE_CLASSES ?= "package_rpm package_deb package_ipk"
-# We default to ipk:
-PACKAGE_CLASSES ?= "package_ipk"
+# We default to ipk (via meta/conf/distro/defaultsetup.conf included in meta/conf/bitbake.conf):
+#PACKAGE_CLASSES ?= "package_ipk"
 
 #
 # SDK target architecture
@@ -114,28 +115,31 @@ PACKAGE_CLASSES ?= "package_ipk"
 # Extra image configuration defaults
 #
 # The EXTRA_IMAGE_FEATURES variable allows extra packages to be added to the generated
-# images. Some of these options are added to certain image types automatically. The
-# variable can contain the following options:
-#  "dbg-pkgs"       - add -dbg packages for all installed packages
-#                     (adds symbol information for debugging/profiling)
-#  "src-pkgs"       - add -src packages for all installed packages
-#                     (adds source code for debugging)
-#  "dev-pkgs"       - add -dev packages for all installed packages
-#                     (useful if you want to develop against libs in the image)
-#  "ptest-pkgs"     - add -ptest packages for all ptest-enabled packages
-#                     (useful if you want to run the package test suites)
-#  "tools-sdk"      - add development tools (gcc, make, pkgconfig etc.)
-#  "tools-debug"    - add debugging tools (gdb, strace)
-#  "eclipse-debug"  - add Eclipse remote debugging support
-#  "tools-profile"  - add profiling tools (oprofile, lttng, valgrind)
-#  "tools-testapps" - add useful testing tools (ts_print, aplay, arecord etc.)
-#  "debug-tweaks"   - make an image suitable for development
-#                     e.g. ssh root access has a blank password
-# There are other application targets that can be used here too, see
+# images. Some of these options are added to certain image types automatically. Some
+# of the features available are:
+#  "dbg-pkgs"             - add -dbg packages for all installed packages
+#                           (adds symbol information for debugging/profiling)
+#  "src-pkgs"             - add -src packages for all installed packages
+#                           (adds source code for debugging)
+#  "dev-pkgs"             - add -dev packages for all installed packages
+#                           (useful if you want to develop against libs in the image)
+#  "ptest-pkgs"           - add -ptest packages for all ptest-enabled packages
+#                           (useful if you want to run the package test suites)
+#  "tools-sdk"            - add development tools (gcc, make, pkgconfig etc.)
+#  "tools-debug"          - add debugging tools (gdb, strace)
+#  "eclipse-debug"        - add Eclipse remote debugging support
+#  "tools-profile"        - add profiling tools (oprofile, lttng, valgrind)
+#  "tools-testapps"       - add useful testing tools (ts_print, aplay, arecord etc.)
+#  "allow-empty-password" - allow users to have an empty password
+#  "empty-root-password"  - the root user has no password set
+#  "allow-root-login      - the root user can login
+# There are other features that can be used here too, see
 # meta/classes-recipe/image.bbclass and
 # meta/classes-recipe/core-image.bbclass for more details.
-# We default to enabling the debugging tweaks.
-EXTRA_IMAGE_FEATURES ?= "debug-tweaks"
+#
+# The following will allow root login without a password for convenience.
+# Use with care, and never in product builds.
+EXTRA_IMAGE_FEATURES ?= "allow-empty-password empty-root-password allow-root-login"
 
 #
 # Additional image features
@@ -214,13 +218,22 @@ BB_DISKMON_DIRS ??= "\
 #file://.* https://someserver.tld/share/sstate/PATH;downloadfilename=PATH \
 #file://.* file:///some/local/dir/sstate/PATH"
 
+#
+# Yocto Project SState Mirror
+#
+# The Yocto Project has prebuilt artefacts available for its releases, you can enable
+# by enabling the following config fragment. This will mean the build uses the network to
+# check for artefacts at the start of builds, which does slow it down initially but it
+# will then speed up the builds by not having to build things if they are present in the
+# cache. It assumes you can download something faster than you can build it which will
+# depend on your network.
+# OE_FRAGMENTS += "core/yocto/sstate-mirror-cdn"
 
 #
 # Qemu configuration
 #
-# By default native qemu will build with a builtin VNC server where graphical output can be
-# seen. The line below enables the SDL UI frontend too.
-PACKAGECONFIG:append:pn-qemu-system-native = " sdl"
+# By default native qemu will build with a builtin VNC server and a SDL UI frontend
+# where graphical output can be seen.
 # By default libsdl2-native will be built, if you want to use your host's libSDL instead of 
 # the minimal libsdl built by libsdl2-native then uncomment the ASSUME_PROVIDED line below.
 #ASSUME_PROVIDED += "libsdl2-native"
@@ -268,7 +281,8 @@ CONF_VERSION = "2"
 # NOTE: If removing en_US.UTF-8 you will also need to uncomment, and set
 # appropriate value for IMAGE_LINGUAS.
 # WARNING: this may break localisation!
-GLIBC_GENERATE_LOCALES = "en_GB.UTF-8 en_US.UTF-8"
+#GLIBC_GENERATE_LOCALES = "en_GB.UTF-8 en_US.UTF-8"
+GLIBC_GENERATE_LOCALES = "all"
 IMAGE_LINGUAS ?= "en-gb"
 
 # Additional image generation features
