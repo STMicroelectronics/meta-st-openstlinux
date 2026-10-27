@@ -129,6 +129,7 @@ case $1 in
         unknown)
             # userfs partition are not present
             # we need to cleanup apt database
+            [ ! -d usr/local/demo/] || exit 0
             grep -l "^/usr/local/" /var/lib/dpkg/info/* | sed -e "s|/var/lib/dpkg/info/\(.*\).list|\1|" | xargs apt-get purge -y
             echo "USERFS NOT PRESENT: CLEAN DPKG DATABASE" > /dev/kmsg
             ;;
