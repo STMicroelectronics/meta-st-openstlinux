@@ -39,6 +39,7 @@ RDEPENDS:packagegroup-framework-tools-base-core = "\
     libgpiod-tools  \
     openssl-engines \
     ${@bb.utils.contains('DISTRO_FEATURES', 'usbgadget', 'usbotg-gadget-config', '', d)} \
+    ${@bb.utils.contains('DISTRO_FEATURES', 'usbgadget', 'uvc-gadget', '', d)} \
     "
 
 SUMMARY:packagegroup-framework-tools-base-kernel = "Framework tools base components for kernel"
@@ -63,6 +64,7 @@ RDEPENDS:packagegroup-framework-tools-base-network = "\
     ethtool         \
     iproute2        \
     curl            \
+    net-tools       \
     "
 
 SUMMARY:packagegroup-framework-tools-base-audio = "Framework tools base components for audio"

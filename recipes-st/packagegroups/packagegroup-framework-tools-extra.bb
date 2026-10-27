@@ -39,6 +39,7 @@ RDEPENDS:packagegroup-framework-tools-extra-core = "\
     bzip2           \
     cronie          \
     ltrace          \
+    perf            \
     "
 
 SUMMARY:packagegroup-framework-tools-extra-kernel = "Framework tools extra components for kernel"

@@ -25,9 +25,8 @@ RDEPENDS:packagegroup-framework-core-extra-display = "\
     ${@bb.utils.contains('DISTRO_FEATURES', 'wayland', 'wayland-utils', '', d)}                 \
     ${@bb.utils.contains('DISTRO_FEATURES', 'wayland', 'weston-init', '', d)}                   \
     ${@bb.utils.contains('DISTRO_FEATURES', 'wayland', 'weston-examples', '', d)}               \
+    ${@bb.utils.contains('DISTRO_FEATURES', 'wayland', 'gobject-introspection', '', d)}         \
     ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'tzdata', '', d)}                        \
-    ${@bb.utils.contains_any('DISTRO_FEATURES', '${GTK3DISTROFEATURES}', 'gtk+3', '', d)}       \
-    ${@bb.utils.contains_any('DISTRO_FEATURES', '${GTK3DISTROFEATURES}', 'gtk+3-demo', '', d)}  \
     \
     ${@bb.utils.contains('DISTRO_FEATURES', 'x11 wayland', 'weston-xwayland', '', d)}       \
     ${@bb.utils.contains('DISTRO_FEATURES', 'x11 wayland', 'xwayland', '', d)} \

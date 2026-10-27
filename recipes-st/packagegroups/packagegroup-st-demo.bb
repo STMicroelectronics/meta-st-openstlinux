@@ -22,6 +22,9 @@ RDEPENDS:${PN} += "\
     ${@bb.utils.contains('MACHINE_FEATURES', 'm4copro', 'm4projects-stm32mp1', '', d)} \
     ${@bb.utils.contains('MACHINE_FEATURES', 'm33copro', 'm33projects-stm32mp2', '', d)} \
     ${@bb.utils.contains('MACHINE_FEATURES', 'm0copro', 'm0projects-stm32mp2', '', d)} \
+    "
+
+RDEPENDS:${PN}:append:stm32mp1common = " \
     linux-examples-stm32mp1 \
     "
 

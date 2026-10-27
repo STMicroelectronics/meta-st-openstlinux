@@ -15,7 +15,6 @@ IMAGE_FEATURES += "\
     package-management  \
     ssh-server-dropbear \
     hwcodecs            \
-    tools-profile       \
     eclipse-debug       \
     "
 

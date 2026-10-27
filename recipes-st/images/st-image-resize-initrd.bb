@@ -28,6 +28,9 @@ ENABLE_IMAGE_CVE_SUMMARY = "0"
 # supposed to be done only for complete image
 ENABLE_MULTIVOLUME_UBI = "0"
 
+do_sbom_cve_check[noexec] = "1"
+do_stm32mp_sbom_compress[noexec] = "1"
+
 PACKAGE_INSTALL = " \
     busybox \
     e2fsprogs \
@@ -38,7 +41,7 @@ PACKAGE_INSTALL = " \
     initramfs-module-rootfs \
     initramfs-module-udev \
     initrd-boot \
-    kmod \
+    kmod libkmod \
     "
 
 NO_RECOMMENDATIONS = "1"

@@ -40,7 +40,6 @@ RDEPENDS:packagegroup-framework-tools-core = "\
     e2fsprogs-resize2fs \
     sysstat         \
     minicom         \
-    systemtap       \
     gptfdisk        \
     rng-tools       \
     ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'rng-tools-service', '', d)}    \
@@ -62,8 +61,8 @@ RDEPENDS:packagegroup-framework-tools-kernel = "\
     cpufrequtils    \
     sysfsutils      \
     dosfstools      \
+    util-linux-lsblk\
     mmc-utils       \
-    blktool         \
     mtd-utils-ubifs \
     sysprof         \
     "
@@ -89,6 +88,7 @@ RDEPENDS:packagegroup-framework-tools-audio = "\
     ${@bb.utils.contains('DISTRO_FEATURES', 'pipewire', 'pipewire-tools', '', d)}               \
     ${@bb.utils.contains('DISTRO_FEATURES', 'pipewire', 'wireplumber', '', d)}                  \
     ${@bb.utils.contains('DISTRO_FEATURES', 'pipewire', 'pulseaudio-tools pipewire-spa-tools', '', d)}             \
+    ${@bb.utils.contains('DISTRO_FEATURES', 'pipewire', 'jq pipewire-conf', '', d)}                \
     "
 
 SUMMARY:packagegroup-framework-tools-ui = "Framework tools components for ui"
